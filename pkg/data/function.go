@@ -22,10 +22,10 @@ type Point struct {
 
 type Function struct {
 	data  []Point
-	minX  float64
-	maxX  float64
-	minY  float64
-	maxY  float64
+	MinX  float64
+	MaxX  float64
+	MinY  float64
+	MaxY  float64
 	inter interpolationProvider
 }
 
@@ -49,10 +49,10 @@ func NewFunction(data []Point, interpolationMode int) *Function {
 
 	f := Function{
 		data:  data,
-		minX:  minX,
-		maxX:  maxX,
-		minY:  minY,
-		maxY:  maxY,
+		MinX:  minX,
+		MaxX:  maxX,
+		MinY:  minY,
+		MaxY:  maxY,
 		inter: nil,
 	}
 	var interpolation interpolationProvider
@@ -74,15 +74,18 @@ func NewFunction(data []Point, interpolationMode int) *Function {
 	f.inter = interpolation
 	return &f
 }
+func (this *Function) DataPoints() *[]Point {
+	return &this.data
+}
 
 func (this *Function) Model(resolution int) ([]Point, []Point) {
 	if this.inter == nil {
 		return this.data, this.data
 	}
 	var interpolatedModel = make([]Point, resolution)
-	deltaX := (this.maxX - this.minX) / float64(resolution)
+	deltaX := (this.MaxX - this.MinX) / float64(resolution)
 	for i := 0; i < resolution; i++ {
-		x := this.minX + float64(i)*deltaX
+		x := this.MinX + float64(i)*deltaX
 		y, _ := this.inter.eval(x)
 
 		interpolatedModel[i] = Point{

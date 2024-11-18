@@ -5,7 +5,7 @@ import (
 	"image/color"
 	"io"
 	"math"
-	"math/rand/v2"
+	"math/rand"
 	"path/filepath"
 	"physicsGUI/pkg/data"
 	"time"
@@ -91,24 +91,28 @@ func AddMainWindow() {
 	)
 
 	// create dataset 2^x
-	dataset := make([]float64, 10)
+	dataset := make([]data.Point, 10)
 	for i := 0; i < 10; i++ {
-		dataset[i] = math.Pow(2, float64(i))
+		dataset[i] = data.Point{
+			X:   float64(i),
+			Y:   math.Pow(2, float64(i)),
+			ERR: 1,
+		}
 	}
 
 	graph1 := NewGraphCanvas(&GraphConfig{
 		Title:    "Logarithmic",
 		IsLog:    true,
 		MinValue: 0.01,
-		Data:     dataset,
+		Data:     data.NewFunction(dataset, data.INTERPOLATION_NONE),
 	})
 	graph2 := NewGraphCanvas(&GraphConfig{
 		Title: "Linear",
-		Data:  dataset,
+		Data:  data.NewFunction(dataset, data.INTERPOLATION_NONE),
 	})
 	graph3 := NewGraphCanvas(&GraphConfig{
 		Title: "50ms Updates (bench)",
-		Data:  dataset,
+		Data:  data.NewFunction(dataset, data.INTERPOLATION_NONE),
 	})
 
 	graphs := container.NewHSplit(
@@ -119,12 +123,16 @@ func AddMainWindow() {
 	// "benchnmark"
 	go func(graph *GraphCanvas) {
 		for {
-			data := []float64{}
+			newData := []data.Point{}
 			for i := 0; i < 10; i++ {
-				data = append(data, float64(rand.IntN(150)))
+				newData = append(newData, data.Point{
+					X:   float64(i),
+					Y:   float64(rand.Intn(150)),
+					ERR: rand.Float64() * 20,
+				})
 			}
 
-			graph.UpdateData(data)
+			graph.UpdateData(data.NewFunction(newData, data.INTERPOLATION_NONE))
 			time.Sleep(50 * time.Millisecond)
 		}
 	}(graph3)

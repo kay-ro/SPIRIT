@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"image/color"
 	"math"
+	"physicsGUI/pkg/data"
+	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -13,13 +15,16 @@ import (
 var (
 	legendColor = color.White
 	lineColor   = color.NRGBA{R: 0, G: 0, B: 255, A: 255}
+	pointColor  = color.NRGBA{R: 0, G: 255, B: 0, A: 255}
+	errorColor  = color.NRGBA{R: 255, G: 0, B: 0, A: 255}
 	gridColor   = color.NRGBA{R: 128, G: 128, B: 128, A: 64}
 )
 
 type GraphCanvas struct {
 	widget.BaseWidget
-	data       []float64
+	data       *data.Function
 	lines      []*canvas.Line
+	points     []fyne.CanvasObject // i%2==1 -> circle, i%2==0 -> line
 	gridLines  []*canvas.Line
 	axes       []*canvas.Line
 	background *canvas.Rectangle
@@ -31,10 +36,11 @@ type GraphCanvas struct {
 }
 
 type GraphConfig struct {
-	Title    string
-	IsLog    bool
-	MinValue float64
-	Data     []float64
+	Title      string
+	IsLog      bool
+	MinValue   float64
+	Resolution int
+	Data       *data.Function
 }
 
 func NewGraphCanvas(config *GraphConfig) *GraphCanvas {
@@ -112,6 +118,9 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	// margin for labels etc.
 	margin := float32(50)
 
+	// data
+	dataPoints, modelPoints := r.graph.data.Model(r.graph.config.Resolution)
+
 	// title position
 	r.graph.title.Move(fyne.NewPos(size.Width/2-float32(len(r.graph.title.Text)*4), 0 /* margin/2 */))
 
@@ -127,17 +136,9 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	r.graph.axes[1].Position1 = fyne.NewPos(margin, size.Height-margin)
 	r.graph.axes[1].Position2 = fyne.NewPos(margin, margin)
 
-	// find min/max
-	maxData := r.graph.data[0]
-	minData := r.graph.data[0]
-	for _, v := range r.graph.data {
-		if v > maxData {
-			maxData = v
-		}
-		if v < minData {
-			minData = v
-		}
-	}
+	// get min/max
+	maxData := r.graph.data.MaxY
+	minData := r.graph.data.MinY
 
 	if r.graph.config.IsLog {
 		if minData < r.graph.config.MinValue {
@@ -170,7 +171,7 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 
 		// label
 		if i%2 == 0 {
-			value := float64(i) * float64(len(r.graph.data)) / float64(numXLines)
+			value := float64(i) * r.graph.data.MaxX / float64(numXLines)
 			label := canvas.NewText(fmt.Sprintf("%.1f", value), legendColor)
 			label.TextSize = 12
 			label.Move(fyne.NewPos(xPos-15, size.Height-margin+10))
@@ -240,26 +241,58 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	}
 
 	// calculate scales
-	xScale := (size.Width - 1.5*margin) / float32(len(r.graph.data)-1)
+	xScale := (size.Width - 1.5*margin) / float32(r.graph.data.MaxX-r.graph.data.MinX)
 	yScale := (size.Height - 1.5*margin) / float32(maxData)
 
-	// draw data lines
-	r.graph.lines = make([]*canvas.Line, 0)
-	for i := 0; i < len(r.graph.data)-1; i++ {
+	// draw model lines
+	r.graph.lines = make([]*canvas.Line, len(modelPoints)-1)
+	for i := 0; i < len(modelPoints)-1; i++ {
 		line := canvas.NewLine(lineColor)
 		line.StrokeWidth = 1
 
-		y1 := r.graph.transformValue(r.graph.data[i])
-		y2 := r.graph.transformValue(r.graph.data[i+1])
+		y1 := r.graph.transformValue(modelPoints[i].Y)
+		y2 := r.graph.transformValue(modelPoints[i+1].Y)
 
-		x1 := margin + float32(i)*xScale
+		x1 := margin + float32(modelPoints[i].X)*xScale
 		yPos1 := size.Height - margin - float32(y1-minData)*yScale
-		x2 := margin + float32(i+1)*xScale
+		x2 := margin + float32(modelPoints[i+1].X)*xScale
 		yPos2 := size.Height - margin - float32(y2-minData)*yScale
 
 		line.Position1 = fyne.NewPos(x1, yPos1)
 		line.Position2 = fyne.NewPos(x2, yPos2)
-		r.graph.lines = append(r.graph.lines, line)
+		r.graph.lines[i] = line
+	}
+
+	//draw data points
+	r.graph.points = make([]fyne.CanvasObject, len(dataPoints)*2)
+	for i := 0; i < len(dataPoints)-1; i++ {
+		y := r.graph.transformValue(dataPoints[i].Y)
+		var y1 float64
+		if r.graph.config.IsLog {
+			y1 = y
+		} else {
+			y1 = r.graph.transformValue(dataPoints[i].Y - dataPoints[i].ERR)
+		}
+		y2 := r.graph.transformValue(dataPoints[i].Y + dataPoints[i].ERR)
+		x := margin + float32(dataPoints[i].X)*xScale
+		yPos := size.Height - margin - float32(y-minData)*yScale
+		yPos1 := size.Height - margin - float32(y1-minData)*yScale
+		yPos2 := size.Height - margin - float32(y2-minData)*yScale
+
+		point := canvas.NewCircle(color.Transparent)
+		point.FillColor = color.Transparent
+		point.StrokeWidth = 2
+		point.StrokeColor = pointColor
+		point.Position1 = fyne.NewPos(x-2, yPos-2)
+		point.Position2 = fyne.NewPos(x+2, yPos+2)
+
+		errorLine := canvas.NewLine(errorColor)
+		errorLine.Position1 = fyne.NewPos(x, yPos1)
+		errorLine.Position2 = fyne.NewPos(x, yPos2)
+		errorLine.StrokeWidth = 2
+
+		r.graph.points[i*2] = errorLine
+		r.graph.points[i*2+1] = point
 	}
 
 	r.objects = []fyne.CanvasObject{r.graph.background}
@@ -271,6 +304,7 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	for _, line := range r.graph.lines {
 		r.objects = append(r.objects, line)
 	}
+	r.objects = slices.Concat(r.objects, r.graph.points)
 	for _, label := range r.graph.xLabels {
 		r.objects = append(r.objects, label)
 	}
@@ -291,7 +325,7 @@ func (r *GraphRenderer) Refresh() {
 	canvas.Refresh(r.graph)
 }
 
-func (g *GraphCanvas) UpdateData(newData []float64) {
+func (g *GraphCanvas) UpdateData(newData *data.Function) {
 	g.data = newData
 	g.Refresh()
 }
