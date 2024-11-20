@@ -22,7 +22,7 @@ var (
 
 type GraphCanvas struct {
 	widget.BaseWidget
-	data       *data.Function
+	data       data.Function
 	lines      []*canvas.Line
 	points     []fyne.CanvasObject // i%2==1 -> circle, i%2==0 -> line
 	gridLines  []*canvas.Line
@@ -40,7 +40,7 @@ type GraphConfig struct {
 	IsLog      bool
 	MinValue   float64
 	Resolution int
-	Data       *data.Function
+	Data       data.Function
 }
 
 func NewGraphCanvas(config *GraphConfig) *GraphCanvas {
@@ -137,8 +137,9 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	r.graph.axes[1].Position2 = fyne.NewPos(margin, margin)
 
 	// get min/max
-	maxData := r.graph.data.MaxY
-	minData := r.graph.data.MinY
+	minDataP, maxDataP := r.graph.data.Scope()
+	maxData := maxDataP.Y
+	minData := minDataP.Y
 
 	if r.graph.config.IsLog {
 		if minData < r.graph.config.MinValue {
@@ -171,7 +172,7 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 
 		// label
 		if i%2 == 0 {
-			value := float64(i) * r.graph.data.MaxX / float64(numXLines)
+			value := float64(i) * maxDataP.X / float64(numXLines)
 			label := canvas.NewText(fmt.Sprintf("%.1f", value), legendColor)
 			label.TextSize = 12
 			label.Move(fyne.NewPos(xPos-15, size.Height-margin+10))
@@ -241,7 +242,7 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	}
 
 	// calculate scales
-	xScale := (size.Width - 1.5*margin) / float32(r.graph.data.MaxX-r.graph.data.MinX)
+	xScale := (size.Width - 1.5*margin) / float32(maxDataP.X-minDataP.X)
 	yScale := (size.Height - 1.5*margin) / float32(maxData)
 
 	// draw model lines
@@ -325,7 +326,7 @@ func (r *GraphRenderer) Refresh() {
 	canvas.Refresh(r.graph)
 }
 
-func (g *GraphCanvas) UpdateData(newData *data.Function) {
+func (g *GraphCanvas) UpdateData(newData data.Function) {
 	g.data = newData
 	g.Refresh()
 }

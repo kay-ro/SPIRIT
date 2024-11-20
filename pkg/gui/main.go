@@ -104,15 +104,15 @@ func AddMainWindow() {
 		Title:    "Logarithmic",
 		IsLog:    true,
 		MinValue: 0.01,
-		Data:     data.NewFunction(dataset, data.INTERPOLATION_NONE),
+		Data:     data.NewDataFunction(dataset, data.INTERPOLATION_NONE),
 	})
 	graph2 := NewGraphCanvas(&GraphConfig{
 		Title: "Linear",
-		Data:  data.NewFunction(dataset, data.INTERPOLATION_NONE),
+		Data:  data.NewDataFunction(dataset, data.INTERPOLATION_NONE),
 	})
 	graph3 := NewGraphCanvas(&GraphConfig{
 		Title: "50ms Updates (bench)",
-		Data:  data.NewFunction(dataset, data.INTERPOLATION_NONE),
+		Data:  data.NewDataFunction(dataset, data.INTERPOLATION_NONE),
 	})
 
 	graphs := container.NewHSplit(
@@ -132,7 +132,7 @@ func AddMainWindow() {
 				})
 			}
 
-			graph.UpdateData(data.NewFunction(newData, data.INTERPOLATION_NONE))
+			graph.UpdateData(data.NewDataFunction(newData, data.INTERPOLATION_NONE))
 			time.Sleep(50 * time.Millisecond)
 		}
 	}(graph3)
