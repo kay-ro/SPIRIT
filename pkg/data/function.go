@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
+	"math"
 	"slices"
 )
 
@@ -162,15 +163,30 @@ type FunctionSegment struct {
 	f     *func(x float64) float64
 }
 
-func NewFunctionSegment(start float64, end float64, f *func(x float64) float64) *FunctionSegment {
-	//TODO Add min max calc
-	return &FunctionSegment{
+func NewFunctionSegment(start float64, end float64, f *func(x float64) float64) FunctionSegment {
+	//TODO Use finder for extrema?
+	// find zero of difference?
+	strct := FunctionSegment{
 		start: start,
 		end:   end,
 		minY:  0,
 		maxY:  0,
 		f:     f,
 	}
+
+	// BEGIN TMP use end and start, assuming it monotone grow
+	y1 := (*f)(start)
+	y2 := (*f)(end)
+	if y1 < y2 {
+		strct.minY = y1
+		strct.maxY = y2
+	} else {
+		strct.minY = y2
+		strct.maxY = y1
+	}
+	// END TMP
+
+	return strct
 }
 
 type SegmentedFunction struct {
@@ -183,12 +199,19 @@ func NewSegmentedFunction(segments []FunctionSegment) *SegmentedFunction {
 	var minY float64 = 0
 	var maxY float64 = 0
 
-	for _, segment := range segments {
-		if segment.minY < minY {
-			minY = segment.minY
-		}
-		if segment.maxY > maxY {
-			maxY = segment.maxY
+	if len(segments) != 0 {
+		var segBorder = segments[0].start
+		for i, segment := range segments {
+			if segBorder != segment.start {
+				println(fmt.Sprintf("FunctionSegment_Warning: Gap between befinition between segments %d and %d function isn't defined contunius!", i-1, i))
+			}
+			if segment.minY < minY {
+				minY = segment.minY
+			}
+			if segment.maxY > maxY {
+				maxY = segment.maxY
+			}
+			segBorder = segment.end
 		}
 	}
 
@@ -246,4 +269,28 @@ func (this *SegmentedFunction) Eval(x float64) (float64, error) {
 		}
 	}
 	panic("Evaluation_Error: This should not be able to happen")
+}
+
+type MathFunctionProvider interface {
+	GetF() func(x float64) float64
+}
+type LogisticFunction struct {
+	leftBorder  float64
+	growRate    float64
+	rightBorder float64
+	offsetX     float64
+}
+
+func NewLogisticFunction(offsetX float64, leftBorder float64, growRate float64, rightBorder float64) LogisticFunction {
+	return LogisticFunction{
+		leftBorder:  leftBorder,
+		growRate:    growRate,
+		rightBorder: rightBorder,
+		offsetX:     offsetX,
+	}
+}
+func (this LogisticFunction) GetF() func(x float64) float64 {
+	return func(x float64) float64 {
+		return (this.rightBorder-this.leftBorder)/(1+math.Pow(math.E, -this.growRate*(x-this.offsetX))) + this.leftBorder
+	}
 }
