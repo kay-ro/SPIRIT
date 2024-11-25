@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 	"physicsGUI/pkg/util/option"
 	"slices"
@@ -18,10 +18,12 @@ type FilteredEntry struct {
 }
 
 func NewFilteredEntry(allowedRunes []rune, accept func(s string) bool) *FilteredEntry {
-	return &FilteredEntry{
+	entry := &FilteredEntry{
 		acceptContent: accept,
 		allowedTyping: allowedRunes,
 	}
+	entry.ExtendBaseWidget(entry)
+	return entry
 }
 
 func (e *FilteredEntry) TypedRune(r rune) {
@@ -45,7 +47,6 @@ type Parameter struct {
 	OnChanged    func()
 	maxSize      fyne.Size
 	minSize      fyne.Size
-	renderer     fyne.WidgetRenderer
 	objects      []fyne.CanvasObject // weil im renderer unterschiedliche Structs für rendern und Layout verwendet werden warum auch immer
 }
 
@@ -69,9 +70,7 @@ func NewParameter(name string, defaultValue float64) *Parameter {
 		OnChanged:    func() {},
 		minSize:      fyne.NewSize(240, 80),
 		maxSize:      fyne.NewSize(400, 200),
-		renderer:     nil,
 	}
-	p.renderer = newParameterRenderer(&p)
 	p.locked.OnChanged = func(_ bool) {
 		p.OnChanged()
 	}
@@ -85,10 +84,6 @@ func NewParameter(name string, defaultValue float64) *Parameter {
 		p.OnChanged()
 	}
 	return &p
-}
-func (p *Parameter) Resize(size fyne.Size) {
-	p.BaseWidget.Resize(size)
-	p.renderer.Layout(size)
 }
 func (this *Parameter) MinSize() fyne.Size {
 	altMinX := max(this.name.MinSize().Width,
@@ -138,72 +133,22 @@ func (this *Parameter) IsFixed() bool {
 }
 
 func (this *Parameter) CreateRenderer() fyne.WidgetRenderer {
-	return newParameterRenderer(this)
-}
+	this.valEntry.MultiLine = false
+	this.valEntry.Validator = nil
+	this.valEntry.PlaceHolder = fmt.Sprintf("%f", this.defaultValue)
+	this.valEntry.Scroll = container.ScrollNone
+	this.maxEntry.MultiLine = false
+	this.maxEntry.Validator = nil
+	this.maxEntry.PlaceHolder = "Max"
+	this.maxEntry.Scroll = container.ScrollNone
+	this.minEntry.MultiLine = false
+	this.minEntry.Validator = nil
+	this.minEntry.PlaceHolder = "Min"
+	this.minEntry.Scroll = container.ScrollNone
 
-type parameterRenderer struct {
-	fyne.WidgetRenderer
-	parameter *Parameter
-}
-
-func newParameterRenderer(p *Parameter) fyne.WidgetRenderer {
-	println("test")
-	return &parameterRenderer{
-		parameter: p,
-	}
-}
-func (r *parameterRenderer) Layout(size fyne.Size) {
-	bntW := float32(0.1)
-	valueW := float32(0.6)
-	extreamsW := float32(0.3)
-
-	lockedSize := fyne.NewSize(15, 15)
-	r.parameter.locked.Resize(lockedSize)
-	r.parameter.locked.Move(fyne.NewPos(
-		(size.Width*bntW)-(lockedSize.Width/2),
-		(size.Height/2)-(lockedSize.Height/2)))
-
-	lblSize := r.parameter.name.MinSize()
-	r.parameter.name.Resize(lblSize)
-	r.parameter.name.Move(fyne.NewPos(
-		(size.Width/2)-(lblSize.Width/2),
-		lblSize.Height))
-
-	valEntrySize := fyne.NewSize(size.Width*valueW, size.Height-lblSize.Height)
-	r.parameter.valEntry.Resize(valEntrySize)
-	r.parameter.valEntry.Move(fyne.NewPos(
-		size.Width*bntW+lockedSize.Width,
-		size.Height-valEntrySize.Height))
-
-	extEntrySize := fyne.NewSize(size.Width*extreamsW, (size.Height-lblSize.Height)/2)
-	r.parameter.minEntry.Resize(extEntrySize)
-	r.parameter.minEntry.Move(fyne.NewPos(
-		size.Width-extEntrySize.Width,
-		lblSize.Height+extEntrySize.Height))
-
-	r.parameter.maxEntry.Resize(extEntrySize)
-	r.parameter.maxEntry.Move(fyne.NewPos(
-		size.Width-extEntrySize.Width,
-		lblSize.Height+(extEntrySize.Height*2)))
-
-	r.parameter.objects = []fyne.CanvasObject{
-		r.parameter.name,
-		r.parameter.locked,
-		r.parameter.valEntry,
-		r.parameter.minEntry,
-		r.parameter.maxEntry,
-	}
-}
-func (r *parameterRenderer) MinSize() fyne.Size {
-	return r.parameter.MinSize()
-}
-func (r *parameterRenderer) Objects() []fyne.CanvasObject {
-	return r.parameter.objects
-}
-func (r *parameterRenderer) Refresh() {
-	r.Layout(r.parameter.Size())
-	canvas.Refresh(r.parameter)
-}
-func (r *parameterRenderer) Destroy() {
-
+	this.maxEntry.Refresh()
+	this.minEntry.Refresh()
+	this.valEntry.Refresh()
+	cntRight := container.NewVBox(this.maxEntry, this.minEntry)
+	return widget.NewSimpleRenderer(container.NewVBox(this.name, container.NewHBox(this.locked, this.valEntry, cntRight)))
 }
