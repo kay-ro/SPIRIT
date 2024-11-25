@@ -119,7 +119,7 @@ func AddMainWindow() {
 		Data:  data.NewFunction(dataset, data.INTERPOLATION_NONE),
 	})
 
-	testParameter := NewParameter("test", 100)
+	profilePanel := NewProfilePanel(MainWindow)
 
 	graphs := container.NewHSplit(
 		graph1,
@@ -152,7 +152,7 @@ func AddMainWindow() {
 		container.NewHSplit(
 			container.NewVSplit(
 				sldGraph,
-				testParameter,
+				profilePanel,
 			),
 			container.NewVSplit(
 				graphs,

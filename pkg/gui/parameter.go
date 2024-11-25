@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 	"physicsGUI/pkg/util/option"
 	"slices"
@@ -14,12 +15,10 @@ import (
 type FilteredEntry struct {
 	widget.Entry
 	allowedTyping []rune
-	acceptContent func(s string) bool
 }
 
-func NewFilteredEntry(allowedRunes []rune, accept func(s string) bool) *FilteredEntry {
+func NewFilteredEntry(allowedRunes []rune) *FilteredEntry {
 	entry := &FilteredEntry{
-		acceptContent: accept,
 		allowedTyping: allowedRunes,
 	}
 	entry.ExtendBaseWidget(entry)
@@ -28,16 +27,13 @@ func NewFilteredEntry(allowedRunes []rune, accept func(s string) bool) *Filtered
 
 func (e *FilteredEntry) TypedRune(r rune) {
 	if slices.Contains(e.allowedTyping, r) {
-		old := e.Text
 		e.Entry.TypedRune(r)
-		if !e.acceptContent(e.Text) {
-			e.Text = old
-		}
 	}
 }
 
 type Parameter struct {
 	widget.BaseWidget
+	window       fyne.Window
 	name         *widget.Label
 	defaultValue float64
 	valEntry     *FilteredEntry
@@ -50,22 +46,16 @@ type Parameter struct {
 	objects      []fyne.CanvasObject // weil im renderer unterschiedliche Structs für rendern und Layout verwendet werden warum auch immer
 }
 
-func NewParameter(name string, defaultValue float64) *Parameter {
+func NewParameter(name string, defaultValue float64, window fyne.Window) *Parameter {
 	numberRunes := []rune("0123456789.e-+")
-	numberAccept := func(s string) bool {
-		if s == "" {
-			return true
-		}
-		_, err := strconv.ParseFloat(s, 64)
-		return err == nil
-	}
 
 	p := Parameter{
 		name:         widget.NewLabel(name),
+		window:       window,
 		defaultValue: defaultValue,
-		valEntry:     NewFilteredEntry(numberRunes, numberAccept),
-		minEntry:     NewFilteredEntry(numberRunes, numberAccept),
-		maxEntry:     NewFilteredEntry(numberRunes, numberAccept),
+		valEntry:     NewFilteredEntry(numberRunes),
+		minEntry:     NewFilteredEntry(numberRunes),
+		maxEntry:     NewFilteredEntry(numberRunes),
 		locked:       widget.NewCheck("", nil),
 		OnChanged:    func() {},
 		minSize:      fyne.NewSize(240, 80),
@@ -114,7 +104,8 @@ func (this *Parameter) GetMin() option.Option[float64] {
 	}
 	val, err := strconv.ParseFloat(this.valEntry.Text, 64)
 	if err != nil {
-		panic(errors.Join(errors.New("Float_Parsing_Error: Error while parsing Min input to float this should never happen because of rune filter"), err))
+		dialog.NewError(errors.New("Float_Parsing_Error: Error while parsing Min input to float this should never happen because of rune filter"), this.window)
+		return option.None[float64]()
 	}
 	return option.Some[float64](&val) // Maybe change for better memory layout
 }
@@ -133,16 +124,24 @@ func (this *Parameter) IsFixed() bool {
 }
 
 func (this *Parameter) CreateRenderer() fyne.WidgetRenderer {
+	parsable := func(s string) error {
+		if s == "" {
+			return nil
+		}
+		_, err := strconv.ParseFloat(s, 64)
+		return err
+	}
+
 	this.valEntry.MultiLine = false
-	this.valEntry.Validator = nil
+	this.valEntry.Validator = parsable
 	this.valEntry.PlaceHolder = fmt.Sprintf("%f", this.defaultValue)
 	this.valEntry.Scroll = container.ScrollNone
 	this.maxEntry.MultiLine = false
-	this.maxEntry.Validator = nil
+	this.maxEntry.Validator = parsable
 	this.maxEntry.PlaceHolder = "Max"
 	this.maxEntry.Scroll = container.ScrollNone
 	this.minEntry.MultiLine = false
-	this.minEntry.Validator = nil
+	this.minEntry.Validator = parsable
 	this.minEntry.PlaceHolder = "Min"
 	this.minEntry.Scroll = container.ScrollNone
 
@@ -151,4 +150,121 @@ func (this *Parameter) CreateRenderer() fyne.WidgetRenderer {
 	this.valEntry.Refresh()
 	cntRight := container.NewVBox(this.maxEntry, this.minEntry)
 	return widget.NewSimpleRenderer(container.NewVBox(this.name, container.NewHBox(this.locked, this.valEntry, cntRight)))
+}
+
+type Profile struct {
+	widget.BaseWidget
+	name      *widget.Entry
+	removeBtn *widget.Button
+	roh       *Parameter
+	intensity *Parameter
+	length    *Parameter
+}
+
+func NewProfile(name string, defaultRoh float64, defaultIntensity float64, defaultLength float64, window fyne.Window) *Profile {
+	profile := &Profile{
+		name:      widget.NewEntry(),
+		removeBtn: widget.NewButton("🗑", func() {}),
+		roh:       NewParameter("Roh", defaultRoh, window),
+		intensity: NewParameter("Intensity", defaultIntensity, window),
+		length:    NewParameter("Length", defaultLength, window),
+	}
+	profile.name.Text = name
+	profile.ExtendBaseWidget(profile)
+	return profile
+}
+
+func (this *Profile) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(container.NewVBox(container.NewBorder(nil, nil, nil, this.removeBtn, this.name), this.roh, this.intensity, this.length))
+}
+
+type ProfilePanel struct {
+	widget.BaseWidget
+	profiles  []*Profile
+	addButton *widget.Button
+	renderer  *ProfilePanelRenderer
+}
+
+func (this *ProfilePanel) Resize(size fyne.Size) {
+	if this.renderer != nil {
+		this.renderer.Layout(size)
+	}
+	this.BaseWidget.Resize(size)
+}
+
+func NewProfilePanel(window fyne.Window, profiles ...*Profile) *ProfilePanel {
+	p := &ProfilePanel{
+		profiles: profiles,
+	}
+	p.addButton = widget.NewButton("+", func() {
+		newP := NewProfile("NewLayer", 10, 1, 1, window)
+		p.AddProfile(newP) //TODO add Settings for default values
+	})
+	return p
+}
+func (this *ProfilePanel) AddProfile(profile *Profile) {
+	this.profiles = append(this.profiles, profile)
+	profile.removeBtn = widget.NewButton("🗑", func() {
+		this.RemoveProfile(profile)
+	})
+	this.renderer.Update()
+}
+func (this *ProfilePanel) RemoveProfile(profile *Profile) {
+	i := slices.Index(this.profiles, profile)
+	if i >= 0 {
+		this.profiles = append(this.profiles[:i], this.profiles[i+1:]...)
+	}
+	this.renderer.Update()
+}
+
+func (this *ProfilePanel) CreateRenderer() fyne.WidgetRenderer {
+	this.renderer = NewProfilePanelRenderer(this)
+	return this.renderer
+}
+
+type ProfilePanelRenderer struct {
+	obj    *ProfilePanel
+	layout fyne.WidgetRenderer
+}
+
+func (p *ProfilePanelRenderer) Update() {
+	objects := make([]fyne.CanvasObject, len(p.obj.profiles))
+	for i, profile := range p.obj.profiles {
+		objects[i] = profile
+	}
+
+	center := container.NewHBox(objects...)
+	center.Add(p.obj.addButton)
+	cnt := container.NewHScroll(center)
+	p.layout = widget.NewSimpleRenderer(cnt)
+	p.Refresh()
+}
+
+func (p *ProfilePanelRenderer) Destroy() {}
+
+func (p *ProfilePanelRenderer) Layout(size fyne.Size) {
+	p.layout.Layout(size)
+}
+
+func (p *ProfilePanelRenderer) MinSize() fyne.Size {
+	return p.layout.MinSize()
+}
+
+func (p *ProfilePanelRenderer) Objects() []fyne.CanvasObject {
+	if p.layout == nil {
+		p.Update()
+	}
+	return p.layout.Objects()
+}
+
+func (p *ProfilePanelRenderer) Refresh() {
+	p.layout.Layout(p.obj.Size())
+	p.layout.Refresh()
+}
+
+func NewProfilePanelRenderer(obj *ProfilePanel) *ProfilePanelRenderer {
+	return &ProfilePanelRenderer{
+		obj:    obj,
+		layout: nil,
+	}
 }
