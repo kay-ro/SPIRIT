@@ -4,16 +4,28 @@ import "math"
 
 // NewOldSLDFunction returns a DataPoint function Based on the old implementation of the getEden function
 //
-// - eden is an array with all the eden values {eden_a,eden_1,eden_2,...,eden_n,eden_b}
+// - eden is an array with all the eden values {eden_a,eden_1,eden_2,...,eden_n,eden_b} (edensity)
 //
-// - d array with the d values {d_1,d_2,...,d_n}
+// - d array with the d values {d_1,d_2,...,d_n} (Thickness)
 //
-// - sigma array with sigma values {sigma_a1,sigma_12,sigma_23,...,sigma_(n-1)(n),sigma_nb}
+// - sigma array with sigma values {sigma_a1,sigma_12,sigma_23,...,sigma_(n-1)(n),sigma_nb} (Roughness)
+//
+// Deprecated: Use new function implementation when possible
 func NewOldSLDFunction(eden []float64, d []float64, sigma []float64, zNumber int) *DataFunction {
 	return NewDataFunction(getEden(eden, d, sigma, zNumber), INTERPOLATION_NONE)
 }
 
-// Eden_a varies so eden[0] is now eden_a
+// getEden returns a DataPoints based on the old implementation of the getEden function
+//
+// - eden is an array with all the eden values {eden_a,eden_1,eden_2,...,eden_n,eden_b} (edensity)
+//
+// - d array with the d values {d_1,d_2,...,d_n} (Thickness)
+//
+// - sigma array with sigma values {sigma_a1,sigma_12,sigma_23,...,sigma_(n-1)(n),sigma_nb} (Roughness)
+//
+// **NOTE** uses the old implementation with double usage of d[1]
+//
+// Deprecated: Use new function implementation when possible
 func getEden(eden []float64, d []float64, sigma []float64, zNumber int) []Point { // TODO understand this mess?
 	zAxis := getZAxis(d, zNumber)
 	var z_a = make([]float64, len(d)+2)
