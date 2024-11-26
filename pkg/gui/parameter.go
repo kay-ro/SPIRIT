@@ -75,6 +75,14 @@ func NewParameter(name string, defaultValue float64, window fyne.Window) *Parame
 	}
 	return &p
 }
+func (p *Parameter) Refresh() {
+	p.valEntry.Refresh()
+	p.minEntry.Refresh()
+	p.maxEntry.Refresh()
+	p.locked.Refresh()
+	p.BaseWidget.Refresh()
+}
+
 func (this *Parameter) MinSize() fyne.Size {
 	altMinX := max(this.name.MinSize().Width,
 		this.valEntry.MinSize().Width+
@@ -156,30 +164,38 @@ type Profile struct {
 	widget.BaseWidget
 	name      *widget.Entry
 	removeBtn *widget.Button
-	roh       *Parameter
-	intensity *Parameter
-	length    *Parameter
+	Roughness *Parameter
+	Edensity  *Parameter
+	Thickness *Parameter
 }
 
-func NewProfile(name string, defaultRoh float64, defaultIntensity float64, defaultLength float64, window fyne.Window) *Profile {
+func NewProfile(name string, roughnessName string, defaultRoughness float64, edensityName string, defaultEdensity float64, thicknessName string, defaultThickness float64, window fyne.Window) *Profile {
 	profile := &Profile{
 		name:      widget.NewEntry(),
 		removeBtn: widget.NewButton("🗑", func() {}),
-		roh:       NewParameter("Roh", defaultRoh, window),
-		intensity: NewParameter("Intensity", defaultIntensity, window),
-		length:    NewParameter("Length", defaultLength, window),
+		Roughness: NewParameter(roughnessName, defaultRoughness, window),
+		Edensity:  NewParameter(edensityName, defaultEdensity, window),
+		Thickness: NewParameter(thicknessName, defaultThickness, window),
 	}
 	profile.name.Text = name
 	profile.ExtendBaseWidget(profile)
 	return profile
 }
+func (this *Profile) Refresh() {
+	this.Edensity.Refresh()
+	this.Thickness.Refresh()
+	this.Roughness.Refresh()
+	this.BaseWidget.Refresh()
+}
 
 func (this *Profile) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(container.NewVBox(container.NewBorder(nil, nil, nil, this.removeBtn, this.name), this.roh, this.intensity, this.length))
+	return widget.NewSimpleRenderer(container.NewVBox(container.NewBorder(nil, nil, nil, this.removeBtn, this.name), this.Roughness, this.Edensity, this.Thickness))
 }
 
 type ProfilePanel struct {
 	widget.BaseWidget
+	base      *Profile
+	bulk      *Profile
 	profiles  []*Profile
 	addButton *widget.Button
 	renderer  *ProfilePanelRenderer
@@ -193,11 +209,60 @@ func (this *ProfilePanel) Resize(size fyne.Size) {
 }
 
 func NewProfilePanel(window fyne.Window, profiles ...*Profile) *ProfilePanel {
+	//TODO read default values from some settings file
+	defaultRoughness := 10.0
+	defaultEdensity := 1.0
+	defaultThickness := 1.0
+
+	base := NewProfile("Base", "Roughness Base/Slab1", defaultRoughness, "Edensity Base", defaultEdensity, "Thickness Base", defaultThickness, window)
+	base.removeBtn = widget.NewButton("🗑", func() {
+		base.Edensity.valEntry.Text = ""
+		base.Edensity.minEntry.Text = ""
+		base.Edensity.maxEntry.Text = ""
+		base.Roughness.valEntry.Text = ""
+		base.Roughness.minEntry.Text = ""
+		base.Roughness.maxEntry.Text = ""
+		base.Thickness.valEntry.Text = ""
+		base.Thickness.minEntry.Text = ""
+		base.Thickness.maxEntry.Text = ""
+		base.Refresh()
+	})
+	bulk := NewProfile("Bulk", "Roughness Bulk", 0.0, "Edensity Bulk", defaultEdensity, "Thickness Bulk", defaultThickness, window)
+	bulk.removeBtn = widget.NewButton("🗑", func() {
+		bulk.Edensity.valEntry.Text = ""
+		bulk.Edensity.minEntry.Text = ""
+		bulk.Edensity.maxEntry.Text = ""
+		bulk.Thickness.valEntry.Text = ""
+		bulk.Thickness.minEntry.Text = ""
+		bulk.Thickness.maxEntry.Text = ""
+		bulk.Refresh()
+	})
+	bulk.Roughness.valEntry.Disable()
+	bulk.Roughness.minEntry.Disable()
+	bulk.Roughness.maxEntry.Disable()
+	bulk.Roughness.locked.Disable()
+
 	p := &ProfilePanel{
+		base:     base,
+		bulk:     bulk,
 		profiles: profiles,
 	}
+	if profiles == nil || len(profiles) == 0 {
+		profileName := fmt.Sprintf("Slab 1")
+		roughnessName := fmt.Sprintf("Rougthness Slab 1/Bulk")
+		edensityName := fmt.Sprintf("Edensity Slab 1")
+		thicknessName := fmt.Sprintf("Thickness Slab 1")
+		baseProfile := NewProfile(profileName, roughnessName, defaultRoughness, edensityName, defaultEdensity, thicknessName, defaultThickness, window)
+		p.AddProfile(baseProfile)
+	}
+
 	p.addButton = widget.NewButton("+", func() {
-		newP := NewProfile("NewLayer", 10, 1, 1, window)
+		profileName := fmt.Sprintf("Slab %d", len(p.profiles)+1)
+		roughnessName := fmt.Sprintf("Rougthness Slab %d/Bulk", len(p.profiles)+1)
+		edensityName := fmt.Sprintf("Edensity Slab %d", len(p.profiles)+1)
+		thicknessName := fmt.Sprintf("Thickness Slab %d", len(p.profiles)+1)
+		newP := NewProfile(profileName, roughnessName, defaultRoughness, edensityName, defaultEdensity, thicknessName, defaultThickness, window)
+		p.profiles[len(p.profiles)-1].Roughness.name.SetText(fmt.Sprintf("Rougthness Slab %d/Slab %d", len(p.profiles), len(p.profiles)+1))
 		p.AddProfile(newP) //TODO add Settings for default values
 	})
 	return p
@@ -207,12 +272,40 @@ func (this *ProfilePanel) AddProfile(profile *Profile) {
 	profile.removeBtn = widget.NewButton("🗑", func() {
 		this.RemoveProfile(profile)
 	})
-	this.renderer.Update()
+	if this.renderer != nil {
+		this.renderer.Update()
+	}
 }
 func (this *ProfilePanel) RemoveProfile(profile *Profile) {
 	i := slices.Index(this.profiles, profile)
 	if i >= 0 {
-		this.profiles = append(this.profiles[:i], this.profiles[i+1:]...)
+		if len(this.profiles) > 1 {
+			if i != len(this.profiles)-1 {
+				for j := i + 1; j < len(this.profiles); j++ {
+					profileName := fmt.Sprintf("Slab %d", j)
+					roughnessName := fmt.Sprintf("Rougthness Slab %d/%d", j, j+1)
+					edensityName := fmt.Sprintf("Edensity Slab %d", j)
+					thicknessName := fmt.Sprintf("Thickness Slab %d", j)
+					this.profiles[j].name.SetText(profileName)
+					this.profiles[j].Roughness.name.SetText(roughnessName)
+					this.profiles[j].Edensity.name.SetText(edensityName)
+					this.profiles[j].Thickness.name.SetText(thicknessName)
+				}
+				this.profiles = append(this.profiles[:i], this.profiles[i+1:]...)
+				this.profiles[len(this.profiles)-1].Roughness.name.SetText(fmt.Sprintf("Rougthness Slab %d/Bulk", len(this.profiles)))
+			}
+		} else {
+			this.profiles[i].Edensity.valEntry.Text = ""
+			this.profiles[i].Edensity.minEntry.Text = ""
+			this.profiles[i].Edensity.maxEntry.Text = ""
+			this.profiles[i].Roughness.valEntry.Text = ""
+			this.profiles[i].Roughness.minEntry.Text = ""
+			this.profiles[i].Roughness.maxEntry.Text = ""
+			this.profiles[i].Thickness.valEntry.Text = ""
+			this.profiles[i].Thickness.minEntry.Text = ""
+			this.profiles[i].Thickness.maxEntry.Text = ""
+			this.profiles[i].Refresh()
+		}
 	}
 	this.renderer.Update()
 }
@@ -228,13 +321,15 @@ type ProfilePanelRenderer struct {
 }
 
 func (p *ProfilePanelRenderer) Update() {
-	objects := make([]fyne.CanvasObject, len(p.obj.profiles))
+	objects := make([]fyne.CanvasObject, len(p.obj.profiles)+3)
 	for i, profile := range p.obj.profiles {
-		objects[i] = profile
+		objects[i+1] = profile
 	}
+	objects[0] = p.obj.base
+	objects[len(objects)-2] = p.obj.addButton
+	objects[len(objects)-1] = p.obj.bulk
 
 	center := container.NewHBox(objects...)
-	center.Add(p.obj.addButton)
 	cnt := container.NewHScroll(center)
 	p.layout = widget.NewSimpleRenderer(cnt)
 	p.Refresh()
