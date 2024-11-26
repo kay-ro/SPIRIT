@@ -130,6 +130,15 @@ func AddMainWindow() {
 			data.NewFunctionSegment(8, 12, &grow2),
 		}),
 	})
+	testSLDGraph := NewGraphCanvas(&GraphConfig{
+		Resolution: 100,
+		Title:      "Test SLD",
+		Data: data.NewOldSLDFunction(
+			[]float64{0.0, 0.346197, 0.458849, 0.334000},
+			[]float64{14.2657, 10.6906},
+			[]float64{3.39544, 2.15980, 3.90204},
+			150), // from refl_monolayer.pro:780
+	})
 
 	graphs := container.NewHSplit(
 		graph1,
@@ -155,9 +164,9 @@ func AddMainWindow() {
 
 	content := container.NewBorder(
 		topContainer, // top
-		graph4,       // bottom
-		nil,          // left
-		nil,          // right
+		container.NewHSplit(testSLDGraph, graph4), // bottom
+		nil, // left
+		nil, // right
 
 		container.NewVSplit(
 			graphs,

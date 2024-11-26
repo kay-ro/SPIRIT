@@ -28,9 +28,9 @@ func NewOldSLDFunction(eden []float64, d []float64, sigma []float64, zNumber int
 // Deprecated: Use new function implementation when possible
 func getEden(eden []float64, d []float64, sigma []float64, zNumber int) []Point { // TODO understand this mess?
 	zAxis := getZAxis(d, zNumber)
-	var z_a = make([]float64, len(d)+2)
+	var z_a = make([]float64, len(d)+1) // TODO all bugged for other than monolayer
 	z_a[0] = 0.0
-	for i := 1; i < len(d)+2; i++ {
+	for i := 1; i < len(z_a); i++ {
 		if i == 4 {
 			z_a[i] = z_a[i-1] + 2*d[i-1]
 		} else {
