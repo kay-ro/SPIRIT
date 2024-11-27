@@ -5,11 +5,18 @@ import (
 	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
+	"maps"
 	"physicsGUI/pkg/util/option"
 	"slices"
 	"strconv"
+	"strings"
+)
+
+const (
+	ProfileDefaultEdensityID  = iota
+	ProfileDefaultRoughnessID = iota
+	ProfileDefaultThicknessID = iota
 )
 
 type FilteredEntry struct {
@@ -33,7 +40,6 @@ func (e *FilteredEntry) TypedRune(r rune) {
 
 type Parameter struct {
 	widget.BaseWidget
-	window       fyne.Window
 	name         *widget.Label
 	defaultValue float64
 	valEntry     *FilteredEntry
@@ -46,12 +52,11 @@ type Parameter struct {
 	objects      []fyne.CanvasObject // weil im renderer unterschiedliche Structs für rendern und Layout verwendet werden warum auch immer
 }
 
-func NewParameter(name string, defaultValue float64, window fyne.Window) *Parameter {
+func NewParameter(name string, defaultValue float64) *Parameter {
 	numberRunes := []rune("0123456789.e-+")
 
 	p := Parameter{
 		name:         widget.NewLabel(name),
-		window:       window,
 		defaultValue: defaultValue,
 		valEntry:     NewFilteredEntry(numberRunes),
 		minEntry:     NewFilteredEntry(numberRunes),
@@ -94,41 +99,55 @@ func (this *Parameter) MinSize() fyne.Size {
 			max(this.minEntry.MinSize().Height+this.maxEntry.MinSize().Height))
 	return fyne.NewSize(max(altMinX, this.minSize.Width), max(altMinY, this.minSize.Height))
 }
+func (this *Parameter) Clear() {
+	if this.valEntry != nil {
+		this.valEntry.Text = ""
+	}
+	if this.minEntry != nil {
+		this.minEntry.Text = ""
+	}
+	if this.maxEntry != nil {
+		this.maxEntry.Text = ""
+	}
+	this.Refresh()
+}
 
-func (this *Parameter) GetValue() float64 {
+func (this *Parameter) GetValue() (float64, error) {
 	if this.valEntry.Text == "" {
 		this.valEntry.SetText(fmt.Sprintf("%f", this.defaultValue))
-		return this.defaultValue
+		return this.defaultValue, nil
 	}
 	val, err := strconv.ParseFloat(this.valEntry.Text, 64)
 	if err != nil {
-		panic(errors.Join(errors.New("Float_Parsing_Error: Error while parsing Value input to float this should never happen because of rune filter"), err))
+		return this.defaultValue, errors.New("Float_Parsing_Error: Error while parsing Value input to float please adjust input of all marked fields")
 	}
-	return val
+	return val, nil
 }
-func (this *Parameter) GetMin() option.Option[float64] {
+func (this *Parameter) GetMin() (option.Option[float64], error) {
 	if this.valEntry.Text == "" {
-		return option.None[float64]()
+		return option.None[float64](), nil
 	}
 	val, err := strconv.ParseFloat(this.valEntry.Text, 64)
 	if err != nil {
-		dialog.NewError(errors.New("Float_Parsing_Error: Error while parsing Min input to float this should never happen because of rune filter"), this.window)
-		return option.None[float64]()
+		return option.None[float64](), errors.New("Float_Parsing_Error: Error while parsing Min input to float please adjust input of all marked fields")
 	}
-	return option.Some[float64](&val) // Maybe change for better memory layout
+	return option.Some[float64](&val), nil // Maybe change for better memory layout
 }
-func (this *Parameter) GetMax() option.Option[float64] {
-	if this.valEntry.Text == "" {
-		return option.None[float64]()
+func (this *Parameter) GetMax() (option.Option[float64], error) {
+	if this.valEntry == nil || this.valEntry.Text == "" {
+		return option.None[float64](), nil
 	}
 	val, err := strconv.ParseFloat(this.valEntry.Text, 64)
 	if err != nil {
-		panic(errors.Join(errors.New("Float_Parsing_Error: Error while parsing Max input to float this should never happen because of rune filter"), err))
+		return option.None[float64](), errors.New("Float_Parsing_Error: Error while parsing Max input to float please adjust input of all marked fields")
 	}
-	return option.Some[float64](&val) // Maybe change for better memory layout
+	return option.Some[float64](&val), nil // Maybe change for better memory layout
 }
-func (this *Parameter) IsFixed() bool {
-	return this.locked.Checked
+func (this *Parameter) IsFixed() option.Option[bool] {
+	if this.locked != nil {
+		return option.Some[bool](&this.locked.Checked)
+	}
+	return option.None[bool]()
 }
 
 func (this *Parameter) CreateRenderer() fyne.WidgetRenderer {
@@ -139,57 +158,113 @@ func (this *Parameter) CreateRenderer() fyne.WidgetRenderer {
 		_, err := strconv.ParseFloat(s, 64)
 		return err
 	}
-
 	this.valEntry.MultiLine = false
 	this.valEntry.Validator = parsable
 	this.valEntry.PlaceHolder = fmt.Sprintf("%f", this.defaultValue)
 	this.valEntry.Scroll = container.ScrollNone
-	this.maxEntry.MultiLine = false
-	this.maxEntry.Validator = parsable
-	this.maxEntry.PlaceHolder = "Max"
-	this.maxEntry.Scroll = container.ScrollNone
-	this.minEntry.MultiLine = false
-	this.minEntry.Validator = parsable
-	this.minEntry.PlaceHolder = "Min"
-	this.minEntry.Scroll = container.ScrollNone
-
-	this.maxEntry.Refresh()
-	this.minEntry.Refresh()
 	this.valEntry.Refresh()
-	cntRight := container.NewVBox(this.maxEntry, this.minEntry)
-	return widget.NewSimpleRenderer(container.NewVBox(this.name, container.NewHBox(this.locked, this.valEntry, cntRight)))
+	if this.maxEntry != nil {
+		this.maxEntry.MultiLine = false
+		this.maxEntry.Validator = parsable
+		this.maxEntry.PlaceHolder = "Max"
+		this.maxEntry.Scroll = container.ScrollNone
+		this.maxEntry.Refresh()
+	}
+	if this.minEntry != nil {
+		this.minEntry.MultiLine = false
+		this.minEntry.Validator = parsable
+		this.minEntry.PlaceHolder = "Min"
+		this.minEntry.Scroll = container.ScrollNone
+		this.minEntry.Refresh()
+	}
+	if this.maxEntry != nil && this.minEntry != nil {
+		return widget.NewSimpleRenderer(container.NewVBox(this.name, container.NewHBox(this.locked, this.valEntry, container.NewVBox(this.maxEntry, this.minEntry))))
+	}
+	return widget.NewSimpleRenderer(container.NewVBox(this.name, container.NewHBox(this.locked, this.valEntry)))
 }
 
 type Profile struct {
 	widget.BaseWidget
 	name      *widget.Entry
 	removeBtn *widget.Button
-	Roughness *Parameter
-	Edensity  *Parameter
-	Thickness *Parameter
+	idStart   int
+	parameter map[int]*Parameter
 }
 
-func NewProfile(name string, roughnessName string, defaultRoughness float64, edensityName string, defaultEdensity float64, thicknessName string, defaultThickness float64, window fyne.Window) *Profile {
+func NewBlankProfile(name string) *Profile {
+	p := &Profile{
+		name:      widget.NewEntry(),
+		removeBtn: nil,
+		idStart:   0,
+		parameter: map[int]*Parameter{},
+	}
+	p.name.SetText(name)
+	p.ExtendBaseWidget(p)
+	return p
+}
+func (this *Profile) SetParameter(id int, parameter *Parameter) {
+	if id > this.idStart {
+		this.idStart = id
+	}
+	this.parameter[id] = parameter
+}
+func (this *Profile) AddParameter(parameter *Parameter) int {
+	newID := this.idStart + 1
+	this.parameter[newID] = parameter
+	this.idStart = newID
+	this.Refresh()
+	return newID
+}
+func (this *Profile) RemoveParameter(id int) {
+	this.parameter[id] = nil
+	keys := maps.Keys(this.parameter)
+	this.idStart = slices.Max(slices.Collect(keys))
+
+	this.Refresh()
+}
+func NewDefaultProfile(name string, roughnessName string, defaultRoughness float64, edensityName string, defaultEdensity float64, thicknessName string, defaultThickness float64) *Profile {
+	parameter := make(map[int]*Parameter, 3)
+	parameter[ProfileDefaultRoughnessID] = NewParameter(roughnessName, defaultRoughness)
+	parameter[ProfileDefaultEdensityID] = NewParameter(edensityName, defaultEdensity)
+	parameter[ProfileDefaultThicknessID] = NewParameter(thicknessName, defaultThickness)
 	profile := &Profile{
 		name:      widget.NewEntry(),
 		removeBtn: widget.NewButton("🗑", func() {}),
-		Roughness: NewParameter(roughnessName, defaultRoughness, window),
-		Edensity:  NewParameter(edensityName, defaultEdensity, window),
-		Thickness: NewParameter(thicknessName, defaultThickness, window),
+		idStart:   max(ProfileDefaultThicknessID, ProfileDefaultEdensityID, ProfileDefaultRoughnessID),
+		parameter: parameter,
 	}
+	// Default button function clears inputs
+	profile.removeBtn = widget.NewButton("🗑", func() {
+		profile.Clear()
+	})
 	profile.name.Text = name
 	profile.ExtendBaseWidget(profile)
 	return profile
 }
 func (this *Profile) Refresh() {
-	this.Edensity.Refresh()
-	this.Thickness.Refresh()
-	this.Roughness.Refresh()
 	this.BaseWidget.Refresh()
 }
 
 func (this *Profile) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(container.NewVBox(container.NewBorder(nil, nil, nil, this.removeBtn, this.name), this.Roughness, this.Edensity, this.Thickness))
+	var obj []fyne.CanvasObject
+	for v := range maps.Values(this.parameter) {
+		if v != nil {
+			obj = append(obj, v)
+		}
+	}
+	var cnt = container.NewBorder(nil, nil, nil, nil, this.name)
+	if this.removeBtn != nil {
+		cnt = container.NewBorder(nil, nil, nil, this.removeBtn, this.name)
+	}
+	return widget.NewSimpleRenderer(container.NewVBox(append([]fyne.CanvasObject{cnt}, obj...)...))
+}
+func (this *Profile) Clear() {
+	for _, parameter := range this.parameter {
+		if parameter != nil {
+			parameter.Clear()
+		}
+	}
+	this.Refresh()
 }
 
 type ProfilePanel struct {
@@ -208,39 +283,15 @@ func (this *ProfilePanel) Resize(size fyne.Size) {
 	this.BaseWidget.Resize(size)
 }
 
-func NewProfilePanel(window fyne.Window, profiles ...*Profile) *ProfilePanel {
+func NewProfilePanel(profiles ...*Profile) *ProfilePanel {
 	//TODO read default values from some settings file
 	defaultRoughness := 10.0
 	defaultEdensity := 1.0
 	defaultThickness := 1.0
 
-	base := NewProfile("Base", "Roughness Base/Slab1", defaultRoughness, "Edensity Base", defaultEdensity, "Thickness Base", defaultThickness, window)
-	base.removeBtn = widget.NewButton("🗑", func() {
-		base.Edensity.valEntry.Text = ""
-		base.Edensity.minEntry.Text = ""
-		base.Edensity.maxEntry.Text = ""
-		base.Roughness.valEntry.Text = ""
-		base.Roughness.minEntry.Text = ""
-		base.Roughness.maxEntry.Text = ""
-		base.Thickness.valEntry.Text = ""
-		base.Thickness.minEntry.Text = ""
-		base.Thickness.maxEntry.Text = ""
-		base.Refresh()
-	})
-	bulk := NewProfile("Bulk", "Roughness Bulk", 0.0, "Edensity Bulk", defaultEdensity, "Thickness Bulk", defaultThickness, window)
-	bulk.removeBtn = widget.NewButton("🗑", func() {
-		bulk.Edensity.valEntry.Text = ""
-		bulk.Edensity.minEntry.Text = ""
-		bulk.Edensity.maxEntry.Text = ""
-		bulk.Thickness.valEntry.Text = ""
-		bulk.Thickness.minEntry.Text = ""
-		bulk.Thickness.maxEntry.Text = ""
-		bulk.Refresh()
-	})
-	bulk.Roughness.valEntry.Disable()
-	bulk.Roughness.minEntry.Disable()
-	bulk.Roughness.maxEntry.Disable()
-	bulk.Roughness.locked.Disable()
+	base := NewDefaultProfile("Base", "Roughness Base/Slab1", defaultRoughness, "Edensity Base", defaultEdensity, "Thickness Base", defaultThickness)
+	bulk := NewDefaultProfile("Bulk", "Roughness Bulk", 0.0, "Edensity Bulk", defaultEdensity, "Thickness Bulk", defaultThickness)
+	bulk.parameter[ProfileDefaultRoughnessID] = nil
 
 	p := &ProfilePanel{
 		base:     base,
@@ -252,7 +303,7 @@ func NewProfilePanel(window fyne.Window, profiles ...*Profile) *ProfilePanel {
 		roughnessName := fmt.Sprintf("Rougthness Slab 1/Bulk")
 		edensityName := fmt.Sprintf("Edensity Slab 1")
 		thicknessName := fmt.Sprintf("Thickness Slab 1")
-		baseProfile := NewProfile(profileName, roughnessName, defaultRoughness, edensityName, defaultEdensity, thicknessName, defaultThickness, window)
+		baseProfile := NewDefaultProfile(profileName, roughnessName, defaultRoughness, edensityName, defaultEdensity, thicknessName, defaultThickness)
 		p.AddProfile(baseProfile)
 	}
 
@@ -261,13 +312,18 @@ func NewProfilePanel(window fyne.Window, profiles ...*Profile) *ProfilePanel {
 		roughnessName := fmt.Sprintf("Rougthness Slab %d/Bulk", len(p.profiles)+1)
 		edensityName := fmt.Sprintf("Edensity Slab %d", len(p.profiles)+1)
 		thicknessName := fmt.Sprintf("Thickness Slab %d", len(p.profiles)+1)
-		newP := NewProfile(profileName, roughnessName, defaultRoughness, edensityName, defaultEdensity, thicknessName, defaultThickness, window)
-		p.profiles[len(p.profiles)-1].Roughness.name.SetText(fmt.Sprintf("Rougthness Slab %d/Slab %d", len(p.profiles), len(p.profiles)+1))
+		newP := NewDefaultProfile(profileName, roughnessName, defaultRoughness, edensityName, defaultEdensity, thicknessName, defaultThickness)
 		p.AddProfile(newP) //TODO add Settings for default values
 	})
 	return p
 }
 func (this *ProfilePanel) AddProfile(profile *Profile) {
+	if len(this.profiles) > 0 {
+		param := this.profiles[len(this.profiles)-1].parameter[ProfileDefaultRoughnessID]
+		if param != nil {
+			param.name.SetText(fmt.Sprintf("Rougthness Slab %d/Slab %d", len(this.profiles), len(this.profiles)+1))
+		}
+	}
 	this.profiles = append(this.profiles, profile)
 	profile.removeBtn = widget.NewButton("🗑", func() {
 		this.RemoveProfile(profile)
@@ -282,28 +338,34 @@ func (this *ProfilePanel) RemoveProfile(profile *Profile) {
 		if len(this.profiles) > 1 {
 			if i != len(this.profiles)-1 {
 				for j := i + 1; j < len(this.profiles); j++ {
-					profileName := fmt.Sprintf("Slab %d", j)
 					roughnessName := fmt.Sprintf("Rougthness Slab %d/%d", j, j+1)
 					edensityName := fmt.Sprintf("Edensity Slab %d", j)
 					thicknessName := fmt.Sprintf("Thickness Slab %d", j)
-					this.profiles[j].name.SetText(profileName)
-					this.profiles[j].Roughness.name.SetText(roughnessName)
-					this.profiles[j].Edensity.name.SetText(edensityName)
-					this.profiles[j].Thickness.name.SetText(thicknessName)
+					numberIndex := strings.LastIndex(this.profiles[j].name.Text, fmt.Sprint(j+1))
+					if numberIndex != -1 {
+						name := this.profiles[j].name.Text
+						newNumber := fmt.Sprint(j)
+						this.profiles[j].name.SetText(name[:numberIndex] + newNumber + name[numberIndex+len(newNumber):])
+					}
+					if this.profiles[j].parameter[ProfileDefaultRoughnessID] != nil {
+						this.profiles[j].parameter[ProfileDefaultRoughnessID].name.SetText(roughnessName)
+					}
+					if this.profiles[j].parameter[ProfileDefaultEdensityID] != nil {
+						this.profiles[j].parameter[ProfileDefaultEdensityID].name.SetText(edensityName)
+					}
+					if this.profiles[j].parameter[ProfileDefaultThicknessID] != nil {
+						this.profiles[j].parameter[ProfileDefaultThicknessID].name.SetText(thicknessName)
+					}
 				}
 				this.profiles = append(this.profiles[:i], this.profiles[i+1:]...)
-				this.profiles[len(this.profiles)-1].Roughness.name.SetText(fmt.Sprintf("Rougthness Slab %d/Bulk", len(this.profiles)))
+			} else {
+				this.profiles = this.profiles[:i]
+			}
+			if this.profiles[len(this.profiles)-1].parameter[ProfileDefaultRoughnessID] != nil {
+				this.profiles[len(this.profiles)-1].parameter[ProfileDefaultRoughnessID].name.SetText(fmt.Sprintf("Rougthness Slab %d/Bulk", len(this.profiles)))
 			}
 		} else {
-			this.profiles[i].Edensity.valEntry.Text = ""
-			this.profiles[i].Edensity.minEntry.Text = ""
-			this.profiles[i].Edensity.maxEntry.Text = ""
-			this.profiles[i].Roughness.valEntry.Text = ""
-			this.profiles[i].Roughness.minEntry.Text = ""
-			this.profiles[i].Roughness.maxEntry.Text = ""
-			this.profiles[i].Thickness.valEntry.Text = ""
-			this.profiles[i].Thickness.minEntry.Text = ""
-			this.profiles[i].Thickness.maxEntry.Text = ""
+			this.profiles[i].Clear()
 			this.profiles[i].Refresh()
 		}
 	}
