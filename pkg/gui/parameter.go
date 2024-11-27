@@ -24,6 +24,7 @@ type FilteredEntry struct {
 	allowedTyping []rune
 }
 
+// NewFilteredEntry creates a widget.Entry, that only accept the keys specified in allowedRunes
 func NewFilteredEntry(allowedRunes []rune) *FilteredEntry {
 	entry := &FilteredEntry{
 		allowedTyping: allowedRunes,
@@ -99,6 +100,10 @@ func (this *Parameter) MinSize() fyne.Size {
 			max(this.minEntry.MinSize().Height+this.maxEntry.MinSize().Height))
 	return fyne.NewSize(max(altMinX, this.minSize.Width), max(altMinY, this.minSize.Height))
 }
+
+// Clear removes all content from user input fields and Refreshes
+//
+// **note** this does not affect the widget.Check for IsFixed()
 func (this *Parameter) Clear() {
 	if this.valEntry != nil {
 		this.valEntry.Text = ""
@@ -112,6 +117,11 @@ func (this *Parameter) Clear() {
 	this.Refresh()
 }
 
+// GetValue return the value in the value field
+//
+// - when input is empty or could not be parsed this.defaultValue is returned instead
+// - when input could not be parsed error contains the error to display to user
+// - else returns parsed value of valEntry field
 func (this *Parameter) GetValue() (float64, error) {
 	if this.valEntry.Text == "" {
 		this.valEntry.SetText(fmt.Sprintf("%f", this.defaultValue))
@@ -123,6 +133,12 @@ func (this *Parameter) GetValue() (float64, error) {
 	}
 	return val, nil
 }
+
+// GetMin return the value in the Min field
+//
+// - when input is empty or could not be parsed option.None is returned instead
+// - when input could not be parsed error contains the error to display to user
+// - else returns parsed value of minEntry field wrapped in option.Some
 func (this *Parameter) GetMin() (option.Option[float64], error) {
 	if this.valEntry.Text == "" {
 		return option.None[float64](), nil
@@ -133,6 +149,12 @@ func (this *Parameter) GetMin() (option.Option[float64], error) {
 	}
 	return option.Some[float64](&val), nil // Maybe change for better memory layout
 }
+
+// GetMax return the value in the Max field
+//
+// - when input is empty or could not be parsed option.None is returned instead
+// - when input could not be parsed error contains the error to display to user
+// - else returns parsed value of maxEntry field wrapped in option.Some
 func (this *Parameter) GetMax() (option.Option[float64], error) {
 	if this.valEntry == nil || this.valEntry.Text == "" {
 		return option.None[float64](), nil
@@ -191,6 +213,7 @@ type Profile struct {
 	parameter map[int]*Parameter
 }
 
+// NewBlankProfile creates a new Profile with nothing but a name
 func NewBlankProfile(name string) *Profile {
 	p := &Profile{
 		name:      widget.NewEntry(),
@@ -258,6 +281,8 @@ func (this *Profile) CreateRenderer() fyne.WidgetRenderer {
 	}
 	return widget.NewSimpleRenderer(container.NewVBox(append([]fyne.CanvasObject{cnt}, obj...)...))
 }
+
+// Clear removes calls Parameter.Clear() on all Parameter's and Refreshes afterward
 func (this *Profile) Clear() {
 	for _, parameter := range this.parameter {
 		if parameter != nil {
@@ -283,6 +308,11 @@ func (this *ProfilePanel) Resize(size fyne.Size) {
 	this.BaseWidget.Resize(size)
 }
 
+// NewProfilePanel creates a new ProfilePanel with given Profile's
+//
+// # If the given Profiles are empty one default Profile element gets added
+//
+// The ProfilePanel includes a Base Profile at the start and a Bulk Profile (without ProfileDefaultRoughnessID Parameter) at the end, as well as a add button to create new Profile's
 func NewProfilePanel(profiles ...*Profile) *ProfilePanel {
 	//TODO read default values from some settings file
 	defaultRoughness := 10.0
@@ -317,6 +347,13 @@ func NewProfilePanel(profiles ...*Profile) *ProfilePanel {
 	})
 	return p
 }
+
+// AddProfile adds the given Profile to the Panel.
+//
+// - The name of the ProfileDefaultRoughnessID Parameter will be updated, if the Parameter exists in the Profile,
+// as well as the name of the ProfileDefaultRoughnessID Parameter of the previous Element
+//
+// - Adds a remove button to the Profile
 func (this *ProfilePanel) AddProfile(profile *Profile) {
 	if len(this.profiles) > 0 {
 		param := this.profiles[len(this.profiles)-1].parameter[ProfileDefaultRoughnessID]
@@ -332,6 +369,13 @@ func (this *ProfilePanel) AddProfile(profile *Profile) {
 		this.renderer.Update()
 	}
 }
+
+// RemoveProfile removes the given profile address from the panel and updates the names of the parameters from the other profiles
+//
+// - The numbers in layers with custom names are also changed, when they match with the layer number
+// Example: Layer with name 'Layer 2' is the second layer and becomes first layer, it's name gets updates to 'Layer 1'
+//
+// **Note** the last Profile can not be removed, it calls Profile.Clear() instead and resets the name to a generic "Slab 1"
 func (this *ProfilePanel) RemoveProfile(profile *Profile) {
 	i := slices.Index(this.profiles, profile)
 	if i >= 0 {
@@ -366,6 +410,7 @@ func (this *ProfilePanel) RemoveProfile(profile *Profile) {
 			}
 		} else {
 			this.profiles[i].Clear()
+			this.profiles[i].name.SetText("Slab 1")
 			this.profiles[i].Refresh()
 		}
 	}
@@ -382,6 +427,9 @@ type ProfilePanelRenderer struct {
 	layout fyne.WidgetRenderer
 }
 
+// Update forces Recalculation of all Profiles on this panel
+//
+// **Note** Call this, when visual components where added or removed
 func (p *ProfilePanelRenderer) Update() {
 	objects := make([]fyne.CanvasObject, len(p.obj.profiles)+3)
 	for i, profile := range p.obj.profiles {
