@@ -31,8 +31,75 @@ var edens map[int]func(eden []float64, d []float64, sigma []float64, zNumber int
 
 func init() {
 	edens = make(map[int]func(eden []float64, d []float64, sigma []float64, zNumber int) []Point)
+	edens[1] = eden1
+	edens[2] = eden2
 	edens[3] = eden3
 	edens[7] = eden7
+}
+
+// created based on eden3
+func eden1(edensitys []float64, d []float64, sigma []float64, znumber int) []Point {
+	zaxis := get_zaxis(d, znumber)
+
+	eden_a := edensitys[0] //old ?
+	eden_1 := edensitys[1]
+	eden_b := edensitys[2]
+	d_1 := d[0]
+	sigma_a1 := math.Abs(sigma[0])
+	sigma_1b := math.Abs(sigma[1])
+
+	z_a1 := 0.0
+	z_1b := d_1
+
+	eden := make([]Point, znumber)
+	for i := 0; i < znumber; i++ {
+		z := zaxis[i]
+		step1 := (eden_1 - eden_a) * 0.5 * (1.0 + math.Erf((z-z_a1)/(math.Sqrt2*sigma_a1)))
+		step2 := (eden_b - eden_1) * 0.5 * (1.0 + math.Erf((z-z_1b)/(math.Sqrt2*sigma_1b)))
+		eden_i := step1 + step2
+		eden[i] = Point{
+			X:   z,
+			Y:   eden_i,
+			ERR: 0,
+		}
+	}
+
+	return eden
+}
+
+// created based on eden3
+func eden2(edensitys []float64, d []float64, sigma []float64, znumber int) []Point {
+	zaxis := get_zaxis(d, znumber)
+
+	eden_a := edensitys[0] // old ?
+	eden_1 := edensitys[1]
+	eden_2 := edensitys[2]
+	eden_b := edensitys[3]
+	d_1 := d[0]
+	d_2 := d[1]
+	sigma_a1 := math.Abs(sigma[0])
+	sigma_12 := math.Abs(sigma[1])
+	sigma_2b := math.Abs(sigma[2])
+
+	z_a1 := 0.0
+	z_12 := d_1
+	z_2b := d_1 + d_2
+
+	eden := make([]Point, znumber)
+	for i := 0; i < znumber; i++ {
+		z := zaxis[i]
+		step1 := (eden_1 - eden_a) * 0.5 * (1.0 + math.Erf((z-z_a1)/(math.Sqrt2*sigma_a1)))
+		step2 := (eden_2 - eden_1) * 0.5 * (1.0 + math.Erf((z-z_12)/(math.Sqrt2*sigma_12)))
+		step3 := (eden_b - eden_2) * 0.5 * (1.0 + math.Erf((z-z_2b)/(math.Sqrt2*sigma_2b)))
+		eden_i := step1 + step2 + step3
+		eden[i] = Point{
+			X:   z,
+			Y:   eden_i,
+			ERR: 0,
+		}
+	}
+
+	return eden
 }
 
 // get_eden3 from fit_refl_monolayer
