@@ -119,7 +119,7 @@ func AddMainWindow() {
 		Data:  data.NewFunction(dataset, data.INTERPOLATION_NONE),
 	})
 
-	profilePanel := NewProfilePanel()
+	profilePanel := NewProfilePanel(NewSldDefaultSettings("Settings"))
 
 	graphs := container.NewHSplit(
 		graph1,

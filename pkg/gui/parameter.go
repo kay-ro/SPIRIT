@@ -18,6 +18,14 @@ const (
 	ProfileDefaultRoughnessID = iota
 	ProfileDefaultThicknessID = iota
 )
+const (
+	SldDefaultBackgroundID = iota
+	SldDefaultScaleID      = iota
+	SldDefaultDeltaQzID    = iota
+)
+
+var ProfileReservedIDs = []int{ProfileDefaultEdensityID, ProfileDefaultRoughnessID, ProfileDefaultThicknessID}
+var SldReservedIDs = []int{SldDefaultBackgroundID, SldDefaultScaleID, SldDefaultDeltaQzID}
 
 type FilteredEntry struct {
 	widget.Entry
@@ -83,21 +91,49 @@ func NewParameter(name string, defaultValue float64) *Parameter {
 }
 func (p *Parameter) Refresh() {
 	p.valEntry.Refresh()
-	p.minEntry.Refresh()
-	p.maxEntry.Refresh()
-	p.locked.Refresh()
+	if p.minEntry != nil {
+		p.minEntry.Refresh()
+	}
+	if p.maxEntry != nil {
+		p.maxEntry.Refresh()
+	}
+	if p.locked != nil {
+		p.locked.Refresh()
+	}
 	p.BaseWidget.Refresh()
 }
 
 func (this *Parameter) MinSize() fyne.Size {
+	var maxXExt float32 = 0
+	var maxYExt float32 = 0
+	if this.minEntry != nil {
+		if this.minEntry.MinSize().Width > maxXExt {
+			maxXExt = this.minEntry.MinSize().Width
+		}
+		maxYExt += this.minEntry.MinSize().Height
+	}
+	if this.maxEntry != nil {
+		if this.maxEntry.MinSize().Width > maxXExt {
+			maxXExt = this.maxEntry.MinSize().Width
+		}
+		maxYExt += this.maxEntry.MinSize().Height
+	}
+	var maxXlock float32 = 0
+	var maxYlock float32 = 0
+	if this.locked != nil {
+		maxXlock = this.locked.MinSize().Width
+		maxYlock = this.locked.MinSize().Height
+	}
+
 	altMinX := max(this.name.MinSize().Width,
 		this.valEntry.MinSize().Width+
-			this.locked.MinSize().Width+
-			max(this.minEntry.MinSize().Width, this.maxEntry.MinSize().Width))
-	altMinY := this.name.MinSize().Height +
+			maxXlock+
+			maxXExt)
+	lblMin := this.name.MinSize().Height
+	altMinY := lblMin +
 		max(this.valEntry.MinSize().Height,
-			this.locked.MinSize().Height,
-			max(this.minEntry.MinSize().Height+this.maxEntry.MinSize().Height))
+			maxYlock,
+			maxYExt)
 	return fyne.NewSize(max(altMinX, this.minSize.Width), max(altMinY, this.minSize.Height))
 }
 
@@ -173,6 +209,35 @@ func (this *Parameter) IsFixed() option.Option[bool] {
 }
 
 func (this *Parameter) CreateRenderer() fyne.WidgetRenderer {
+	return NewParameterRenderer(this)
+}
+
+type ParameterRenderer struct {
+	layout    fyne.WidgetRenderer
+	parameter *Parameter
+}
+
+func (p ParameterRenderer) Destroy() {
+	p.layout.Destroy()
+}
+
+func (p ParameterRenderer) Layout(size fyne.Size) {
+	p.layout.Layout(size)
+}
+
+func (p ParameterRenderer) MinSize() fyne.Size {
+	return p.parameter.MinSize()
+}
+
+func (p ParameterRenderer) Objects() []fyne.CanvasObject {
+	return p.layout.Objects()
+}
+
+func (p ParameterRenderer) Refresh() {
+	p.layout.Refresh()
+}
+
+func NewParameterRenderer(parameter *Parameter) *ParameterRenderer {
 	parsable := func(s string) error {
 		if s == "" {
 			return nil
@@ -180,29 +245,39 @@ func (this *Parameter) CreateRenderer() fyne.WidgetRenderer {
 		_, err := strconv.ParseFloat(s, 64)
 		return err
 	}
-	this.valEntry.MultiLine = false
-	this.valEntry.Validator = parsable
-	this.valEntry.PlaceHolder = fmt.Sprintf("%f", this.defaultValue)
-	this.valEntry.Scroll = container.ScrollNone
-	this.valEntry.Refresh()
-	if this.maxEntry != nil {
-		this.maxEntry.MultiLine = false
-		this.maxEntry.Validator = parsable
-		this.maxEntry.PlaceHolder = "Max"
-		this.maxEntry.Scroll = container.ScrollNone
-		this.maxEntry.Refresh()
+	parameter.valEntry.MultiLine = false
+	parameter.valEntry.Validator = parsable
+	parameter.valEntry.PlaceHolder = fmt.Sprintf("%f", parameter.defaultValue)
+	parameter.valEntry.Scroll = container.ScrollNone
+	parameter.valEntry.Refresh()
+	if parameter.maxEntry != nil {
+		parameter.maxEntry.MultiLine = false
+		parameter.maxEntry.Validator = parsable
+		parameter.maxEntry.PlaceHolder = "Max"
+		parameter.maxEntry.Scroll = container.ScrollNone
+		parameter.maxEntry.Refresh()
 	}
-	if this.minEntry != nil {
-		this.minEntry.MultiLine = false
-		this.minEntry.Validator = parsable
-		this.minEntry.PlaceHolder = "Min"
-		this.minEntry.Scroll = container.ScrollNone
-		this.minEntry.Refresh()
+	if parameter.minEntry != nil {
+		parameter.minEntry.MultiLine = false
+		parameter.minEntry.Validator = parsable
+		parameter.minEntry.PlaceHolder = "Min"
+		parameter.minEntry.Scroll = container.ScrollNone
+		parameter.minEntry.Refresh()
 	}
-	if this.maxEntry != nil && this.minEntry != nil {
-		return widget.NewSimpleRenderer(container.NewVBox(this.name, container.NewHBox(this.locked, this.valEntry, container.NewVBox(this.maxEntry, this.minEntry))))
+	var lockedPnl = container.NewStack()
+	if parameter.locked != nil {
+		lockedPnl.Add(parameter.locked)
 	}
-	return widget.NewSimpleRenderer(container.NewVBox(this.name, container.NewHBox(this.locked, this.valEntry)))
+	var layout fyne.WidgetRenderer = nil
+	if parameter.maxEntry != nil && parameter.minEntry != nil {
+		layout = widget.NewSimpleRenderer(container.NewVBox(parameter.name, container.NewHBox(container.NewCenter(lockedPnl), container.NewCenter(parameter.valEntry), container.NewVBox(parameter.maxEntry, parameter.minEntry))))
+	} else {
+		layout = widget.NewSimpleRenderer(container.NewVBox(parameter.name, container.NewHBox(container.NewCenter(lockedPnl), container.NewCenter(parameter.valEntry))))
+	}
+	return &ParameterRenderer{
+		layout:    layout,
+		parameter: parameter,
+	}
 }
 
 type Profile struct {
@@ -253,7 +328,7 @@ func NewDefaultProfile(name string, roughnessName string, defaultRoughness float
 	profile := &Profile{
 		name:      widget.NewEntry(),
 		removeBtn: widget.NewButton("🗑", func() {}),
-		idStart:   max(ProfileDefaultThicknessID, ProfileDefaultEdensityID, ProfileDefaultRoughnessID),
+		idStart:   slices.Max(ProfileReservedIDs),
 		parameter: parameter,
 	}
 	// Default button function clears inputs
@@ -294,11 +369,12 @@ func (this *Profile) Clear() {
 
 type ProfilePanel struct {
 	widget.BaseWidget
-	base      *Profile
-	bulk      *Profile
-	profiles  []*Profile
-	addButton *widget.Button
-	renderer  *ProfilePanelRenderer
+	base        *Profile
+	bulk        *Profile
+	Profiles    []*Profile
+	addButton   *widget.Button
+	sldSettings *SldSettings
+	renderer    *ProfilePanelRenderer
 }
 
 func (this *ProfilePanel) Resize(size fyne.Size) {
@@ -313,7 +389,7 @@ func (this *ProfilePanel) Resize(size fyne.Size) {
 // # If the given Profiles are empty one default Profile element gets added
 //
 // The ProfilePanel includes a Base Profile at the start and a Bulk Profile (without ProfileDefaultRoughnessID Parameter) at the end, as well as a add button to create new Profile's
-func NewProfilePanel(profiles ...*Profile) *ProfilePanel {
+func NewProfilePanel(sldSettings *SldSettings, profiles ...*Profile) *ProfilePanel {
 	//TODO read default values from some settings file
 	defaultRoughness := 10.0
 	defaultEdensity := 1.0
@@ -324,9 +400,10 @@ func NewProfilePanel(profiles ...*Profile) *ProfilePanel {
 	bulk.parameter[ProfileDefaultRoughnessID] = nil
 
 	p := &ProfilePanel{
-		base:     base,
-		bulk:     bulk,
-		profiles: profiles,
+		base:        base,
+		bulk:        bulk,
+		Profiles:    profiles,
+		sldSettings: sldSettings,
 	}
 	if profiles == nil || len(profiles) == 0 {
 		profileName := fmt.Sprintf("Slab 1")
@@ -338,10 +415,10 @@ func NewProfilePanel(profiles ...*Profile) *ProfilePanel {
 	}
 
 	p.addButton = widget.NewButton("+", func() {
-		profileName := fmt.Sprintf("Slab %d", len(p.profiles)+1)
-		roughnessName := fmt.Sprintf("Rougthness Slab %d/Bulk", len(p.profiles)+1)
-		edensityName := fmt.Sprintf("Edensity Slab %d", len(p.profiles)+1)
-		thicknessName := fmt.Sprintf("Thickness Slab %d", len(p.profiles)+1)
+		profileName := fmt.Sprintf("Slab %d", len(p.Profiles)+1)
+		roughnessName := fmt.Sprintf("Rougthness Slab %d/Bulk", len(p.Profiles)+1)
+		edensityName := fmt.Sprintf("Edensity Slab %d", len(p.Profiles)+1)
+		thicknessName := fmt.Sprintf("Thickness Slab %d", len(p.Profiles)+1)
 		newP := NewDefaultProfile(profileName, roughnessName, defaultRoughness, edensityName, defaultEdensity, thicknessName, defaultThickness)
 		p.AddProfile(newP) //TODO add Settings for default values
 	})
@@ -355,13 +432,13 @@ func NewProfilePanel(profiles ...*Profile) *ProfilePanel {
 //
 // - Adds a remove button to the Profile
 func (this *ProfilePanel) AddProfile(profile *Profile) {
-	if len(this.profiles) > 0 {
-		param := this.profiles[len(this.profiles)-1].parameter[ProfileDefaultRoughnessID]
+	if len(this.Profiles) > 0 {
+		param := this.Profiles[len(this.Profiles)-1].parameter[ProfileDefaultRoughnessID]
 		if param != nil {
-			param.name.SetText(fmt.Sprintf("Rougthness Slab %d/Slab %d", len(this.profiles), len(this.profiles)+1))
+			param.name.SetText(fmt.Sprintf("Rougthness Slab %d/Slab %d", len(this.Profiles), len(this.Profiles)+1))
 		}
 	}
-	this.profiles = append(this.profiles, profile)
+	this.Profiles = append(this.Profiles, profile)
 	profile.removeBtn = widget.NewButton("🗑", func() {
 		this.RemoveProfile(profile)
 	})
@@ -370,50 +447,54 @@ func (this *ProfilePanel) AddProfile(profile *Profile) {
 	}
 }
 
-// RemoveProfile removes the given profile address from the panel and updates the names of the parameters from the other profiles
+// RemoveProfile removes the given profile address from the panel and updates the names of the parameters from the other Profiles
 //
 // - The numbers in layers with custom names are also changed, when they match with the layer number
 // Example: Layer with name 'Layer 2' is the second layer and becomes first layer, it's name gets updates to 'Layer 1'
 //
 // **Note** the last Profile can not be removed, it calls Profile.Clear() instead and resets the name to a generic "Slab 1"
 func (this *ProfilePanel) RemoveProfile(profile *Profile) {
-	i := slices.Index(this.profiles, profile)
+	i := slices.Index(this.Profiles, profile)
 	if i >= 0 {
-		if len(this.profiles) > 1 {
-			if i != len(this.profiles)-1 {
-				for j := i + 1; j < len(this.profiles); j++ {
+		if len(this.Profiles) > 1 {
+			if i != len(this.Profiles)-1 {
+				for j := i + 1; j < len(this.Profiles); j++ {
 					roughnessName := fmt.Sprintf("Rougthness Slab %d/%d", j, j+1)
 					edensityName := fmt.Sprintf("Edensity Slab %d", j)
 					thicknessName := fmt.Sprintf("Thickness Slab %d", j)
-					numberIndex := strings.LastIndex(this.profiles[j].name.Text, fmt.Sprint(j+1))
+					numberIndex := strings.LastIndex(this.Profiles[j].name.Text, fmt.Sprint(j+1))
 					if numberIndex != -1 {
-						name := this.profiles[j].name.Text
+						name := this.Profiles[j].name.Text
 						newNumber := fmt.Sprint(j)
-						this.profiles[j].name.SetText(name[:numberIndex] + newNumber + name[numberIndex+len(newNumber):])
+						this.Profiles[j].name.SetText(name[:numberIndex] + newNumber + name[numberIndex+len(newNumber):])
 					}
-					if this.profiles[j].parameter[ProfileDefaultRoughnessID] != nil {
-						this.profiles[j].parameter[ProfileDefaultRoughnessID].name.SetText(roughnessName)
+					if this.Profiles[j].parameter[ProfileDefaultRoughnessID] != nil {
+						this.Profiles[j].parameter[ProfileDefaultRoughnessID].name.SetText(roughnessName)
 					}
-					if this.profiles[j].parameter[ProfileDefaultEdensityID] != nil {
-						this.profiles[j].parameter[ProfileDefaultEdensityID].name.SetText(edensityName)
+					if this.Profiles[j].parameter[ProfileDefaultEdensityID] != nil {
+						this.Profiles[j].parameter[ProfileDefaultEdensityID].name.SetText(edensityName)
 					}
-					if this.profiles[j].parameter[ProfileDefaultThicknessID] != nil {
-						this.profiles[j].parameter[ProfileDefaultThicknessID].name.SetText(thicknessName)
+					if this.Profiles[j].parameter[ProfileDefaultThicknessID] != nil {
+						this.Profiles[j].parameter[ProfileDefaultThicknessID].name.SetText(thicknessName)
 					}
 				}
-				this.profiles = append(this.profiles[:i], this.profiles[i+1:]...)
+				this.Profiles = append(this.Profiles[:i], this.Profiles[i+1:]...)
 			} else {
-				this.profiles = this.profiles[:i]
+				this.Profiles = this.Profiles[:i]
 			}
-			if this.profiles[len(this.profiles)-1].parameter[ProfileDefaultRoughnessID] != nil {
-				this.profiles[len(this.profiles)-1].parameter[ProfileDefaultRoughnessID].name.SetText(fmt.Sprintf("Rougthness Slab %d/Bulk", len(this.profiles)))
+			if this.Profiles[len(this.Profiles)-1].parameter[ProfileDefaultRoughnessID] != nil {
+				this.Profiles[len(this.Profiles)-1].parameter[ProfileDefaultRoughnessID].name.SetText(fmt.Sprintf("Rougthness Slab %d/Bulk", len(this.Profiles)))
 			}
 		} else {
-			this.profiles[i].Clear()
-			this.profiles[i].name.SetText("Slab 1")
-			this.profiles[i].Refresh()
+			this.Profiles[i].Clear()
+			this.Profiles[i].name.SetText("Slab 1")
+			this.Profiles[i].Refresh()
 		}
 	}
+	this.renderer.Update()
+}
+func (this *ProfilePanel) SetSldSettings(sldSettings *SldSettings) {
+	this.sldSettings = sldSettings
 	this.renderer.Update()
 }
 
@@ -431,8 +512,8 @@ type ProfilePanelRenderer struct {
 //
 // **Note** Call this, when visual components where added or removed
 func (p *ProfilePanelRenderer) Update() {
-	objects := make([]fyne.CanvasObject, len(p.obj.profiles)+3)
-	for i, profile := range p.obj.profiles {
+	objects := make([]fyne.CanvasObject, len(p.obj.Profiles)+3)
+	for i, profile := range p.obj.Profiles {
 		objects[i+1] = profile
 	}
 	objects[0] = p.obj.base
@@ -440,7 +521,10 @@ func (p *ProfilePanelRenderer) Update() {
 	objects[len(objects)-1] = p.obj.bulk
 
 	center := container.NewHBox(objects...)
-	cnt := container.NewHScroll(center)
+	var cnt fyne.CanvasObject = container.NewHScroll(center)
+	if p.obj.sldSettings != nil {
+		cnt = container.NewBorder(nil, p.obj.sldSettings, nil, nil, container.NewHScroll(center))
+	}
 	p.layout = widget.NewSimpleRenderer(cnt)
 	p.Refresh()
 }
@@ -471,5 +555,106 @@ func NewProfilePanelRenderer(obj *ProfilePanel) *ProfilePanelRenderer {
 	return &ProfilePanelRenderer{
 		obj:    obj,
 		layout: nil,
+	}
+}
+
+type SldSettings struct {
+	Profile
+	renderer *SldSettingsRenderer
+}
+
+func NewSldDefaultSettings(name string) *SldSettings {
+	this := &SldSettings{}
+	this.Profile = *NewBlankProfile(name)
+	this.Profile.idStart = slices.Max(SldReservedIDs)
+	//TODO load defaults from settings
+	scaleP := NewParameter("Scale", 1.0)
+	backgroundP := NewParameter("Background", 2e-6)
+	deltaP := NewParameter("DeltaQz", 0)
+
+	scaleP.minEntry = nil
+	scaleP.maxEntry = nil
+	scaleP.locked = nil
+	scaleP.minSize = fyne.NewSize(0, 0)
+
+	backgroundP.minEntry = nil
+	backgroundP.maxEntry = nil
+	backgroundP.locked = nil
+	backgroundP.minSize = fyne.NewSize(0, 0)
+
+	deltaP.minEntry = nil
+	deltaP.maxEntry = nil
+	deltaP.locked = nil
+	deltaP.minSize = fyne.NewSize(0, 0)
+
+	this.Profile.parameter[SldDefaultScaleID] = scaleP
+	this.Profile.parameter[SldDefaultBackgroundID] = backgroundP
+	this.Profile.parameter[SldDefaultDeltaQzID] = deltaP
+
+	this.ExtendBaseWidget(this)
+	return this
+}
+func (this *SldSettings) CreateRenderer() fyne.WidgetRenderer {
+	renderer := NewSldSettingsRenderer(this)
+	this.renderer = renderer
+	return renderer
+}
+func (this *SldSettings) Resize(size fyne.Size) {
+	if this.renderer != nil {
+		this.renderer.Layout(size)
+	}
+}
+func (this *SldSettings) MinSize() fyne.Size {
+	var paramX float32 = 0
+	var paramY float32 = 10
+	for _, parameter := range this.parameter {
+		if this.parameter != nil {
+			paramX += parameter.MinSize().Width
+			if paramY < parameter.MinSize().Height {
+				paramY = parameter.MinSize().Height
+			}
+		}
+	}
+	return fyne.NewSize(max(paramX, this.name.MinSize().Width), paramY+this.name.MinSize().Height)
+}
+
+type SldSettingsRenderer struct {
+	layout fyne.WidgetRenderer
+	obj    *SldSettings
+}
+
+func (s SldSettingsRenderer) Destroy() {
+	s.layout.Destroy()
+}
+
+func (s SldSettingsRenderer) Layout(size fyne.Size) {
+	s.layout.Layout(size)
+}
+
+func (s SldSettingsRenderer) MinSize() fyne.Size {
+	return s.obj.MinSize()
+}
+
+func (s SldSettingsRenderer) Objects() []fyne.CanvasObject {
+	return s.layout.Objects()
+}
+
+func (s SldSettingsRenderer) Refresh() {
+	s.layout.Refresh()
+}
+
+func NewSldSettingsRenderer(sldObj *SldSettings) *SldSettingsRenderer {
+	var obj []fyne.CanvasObject
+	for v := range maps.Values(sldObj.Profile.parameter) {
+		if v != nil {
+			obj = append(obj, v)
+		}
+	}
+
+	vScroll := container.NewVBox(sldObj.name, container.NewHScroll(container.NewHBox(obj...)))
+	vScroll.Resize(sldObj.MinSize())
+	return &SldSettingsRenderer{
+		obj:    sldObj,
+		layout: widget.NewSimpleRenderer(vScroll),
 	}
 }
