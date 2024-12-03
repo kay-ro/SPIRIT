@@ -127,7 +127,7 @@ func AddMainWindow() {
 	dummyGraph := NewGraphCanvas(&GraphConfig{
 		Resolution: 100,
 		Title:      "Dummy Graph",
-		Data: data.NewDataFunction([]data.Point{data.Point{
+		Data: data.NewDataFunction([]data.Point{{
 			X:   0,
 			Y:   0,
 			ERR: 0,
