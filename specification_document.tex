@@ -1,0 +1,110 @@
+
+\documentclass[
+	points=true,
+ 	nenglish,
+	colorbacktitle,
+	identbarcolor=2b,
+	accentcolor=2b
+	]{tudaexercise}
+
+\usepackage[english, main=english]{babel}
+\usepackage[autostyle]{csquotes}
+\usepackage{etaremune}
+\usepackage{hyperref}
+
+\usepackage{biblatex}
+\bibliography{DEMO-TUDaBibliography}
+
+%Formatierungen für Beispiele in diesem Dokument. Im Allgemeinen nicht notwendig!
+\let\file\texttt
+\let\code\texttt
+\let\pck\textsf
+\let\cls\textsf
+\let\tbs\textbackslash
+
+\usepackage{booktabs}% Erweiterte möglichkeiten beim Spacing um Linien in Tabellen
+
+\begin{document}
+
+\title[TUDaExercise]{Specification Document v0 TPSE/BP Group 63}
+\author{
+ \\
+Alexander Utterodt\\
+Cedric Walter \\
+Melissa Halbgebauer \\
+Philip Jovanovic \\
+Kian Pasani
+}
+\term{WS 2024/2025}
+\date{\today}
+\maketitle
+
+\section{Project Overview}
+
+The client uses an outdated and self written tool, written in IDL, for analysis of their experimentally determined data. Due to restrictions in performs, maintainability and license costs, the client wishes their software to be updated. The new code should be accessible for extended works and available to the scientific community. \\
+In addition to refactoring, the new tool will also be extended by other desired features and optimization of calculation algorithms. The main goal of this project is to create a robust software in an easily understandable manner that can be maintained and extended by individuals that do not necessarily have deeper knowledge of programming.
+
+\subsection{Current and Desired State}
+The clients desired software visualizes and performs regression on data obtained in experiments by a black box model with parameters of an analytical function. \\ Currently, there is a variety of mainly copied and pasted single-program files for this purpose. Each of these files is individually executable and corresponds to specific use cases. Such a use case usually includes a number of parameters that influence the output of some physical model. \\
+Relevant parts of the model are clustered to a basic arithmetic calculation/function evaluation with these parameters, including a black box calculation around the models characteristics, simulating physical background and a minimization algorithm. The primary objective is to identify parameters that are most probable to yield the experiments data we input. Some parameters are considered fixed, while others are determined based on the existing model. \\
+Currently, the results are visualized in a Graphical User Interface (GUI) that includes all the relevant parameters, such as their labels, current values, and whether they are constant or need to be fitted. All the input data files are converted into graph plots, which can be compared to the curves calculated from the parameters. \\
+The base code base is rewritten in the programming language Go in a highly modular manner. Code sections that require changes to fit other use cases are comprehensively documented so that they can easily be adapted and extended in the future. Particularly, this applies to the number of visualizations, imports of new datasets, as well as the exchange or adaptation of the minimization algorithm used for the regression.
+\subsection{Vision}
+
+According to the client, renewing the existing software has been overdue for a decade. The new tool is not only usable but also robust, extendable, and modernized to support various custom experiments for the next decade. These models can be exchanged and further developed using different minimization algorithms, which may better suit specific scenarios.
+To further elaborate on extensibility, the objective is to document and abstract the source code in a manner that facilitates modification for experiment-specific domains. This should be achieved without requiring a profound understanding of the underlying calculations and/or interface functionalities. \\
+The new tool is greater customizable through a User Interface and configured settings are saved in files for reuse. This enables processing changes to an experiment without re-compiling or changing the development environment. \\ \\
+
+\begin{figure}[h!]
+  \includegraphics[scale=0.73]{Architecure.png}
+  \caption{Architecture graphic}
+  \label{fig:architecture}
+\end{figure}
+
+\section{Deliverables}
+This project can be compiled to a desktop application.\\
+The source code of these applications has exemplary character. It is a good guidance on how reusable code sections can be taken into action. As well as it is an example for the common structure of such applications. In areas that are relevant for those understandings there are very detailed source code comments. \\ \\
+
+All components of the project are delivered as a GitHub repository. The client receives an ownership role of the repository. It will contain the source code files as well as some documentation files. \\
+Each directory will contain a README.md file that provides a description of its contents and usage. If the directory is unlikely to be edited any further, a brief abstract description is sufficient.
+There is no specific environment required for development.
+We recommend the use of Visual Studio Code. If the client wants to continue the project after our contribution, we provide instructions on installing and using the necessary software, specifically Visual Studio Code. \\ \\
+
+To ensure the code's functionality and compatibility, it is only permitted to be merged into the main branch after successful compilation and testing in both Windows and Linux environments. Additionally, merges must be reviewed and approved by a different individual from the authoring developer of the changes. Direct commits to the main branch are prohibited. \\ \\
+
+To avoid errors in our source code and support future development we will use unit tests.
+In the first phase, in which small programs are rewritten, tests mainly consist of comparing output targets of the old and rewritten program. Our team will be granted access to a license for the IDL programs by the client. \\ \\
+
+The old version provides in- and output data to the client. This data includes screenshots of the input parameters, the measurement data used for calculations, and the generated output.
+In the ongoing development process, tests will be conducted for individual software components that can be validated. For instance, proper input file handling and the functionality of self-coded minimization algorithms will be automatically tested. \\ \\
+
+The minimal output that the client expects is a program that only covers a single experimental case and can be used interchangeably with the old version. It also needs to support limited search intervals for the fitted parameters. Additionally, sections that require changes frequently must be marked, written, and commented in a manner that simplify adaptations. \\ \\
+
+This document does not necessarily define the project's final outcome. Either party can request changes to this specification in an agile manner. Fundamentally new requirements will be taken into the project's protocol, if they have been agreed upon, to track changes to specifications. The protocol documents are stored in the GitHub repository, making it easy to track their progress.
+The project's internal management will take place within Atlassian's Jira to track tasks, issues and conflicts. The client has the option to access our board if they wish, but participation is not mandatory.\\ \\
+
+
+\section{Risks}
+There are only a few critical resources that could be lost. If there are issues using the IDL license outside of the university, we will request a team member to physically be present and generate the necessary test data. If, due to unforeseen circumstances, GitHub or Jira fail to track our data, we will, to the best of our abilities, have our local copies to reconstruct the repository, and out memories to recall most of the completed and ongoing work. We do not anticipate any of these issues to become significant problems. \\
+It is uncertain which hardware will be compatible with the software, and we can only conduct tests on our own setups. We will strive to ensure compatibility with most common setups, but this is challenging without concrete test setups. Additionally, the client wants the program's lifespan to be at least 10 years, which is difficult to plan for so far in advance. Thus, we use a GUI library with as few dependencies as possible and ensure that the program runs on Windows 11 and the latest Ubuntu (24.04 LTS), as these operating systems are still receiving support and are expected to be used on a long-term \\ \\
+If one of the group members cannot participate in the project over a significant amount of time, that member needs to inform the rest of the team as early as possible. Afterward, there will be a team intern meeting to review the current state of the project. The project work is divided into two-week iterations. This makes it easier to handle a missing team member because the project's current state is reviewed and remaining tasks are redistributed at the end of each sprint. \\
+If the workload becomes too overwhelming for the smaller team, we will initiate a dialogue with the client to discuss and potentially reduce it to a more manageable size. A critical part would be ensuring that the team possesses knowledge or code material that is unique to a missing member. By doing so, we can prevent the loss of such expertise, thereby safeguarding the team's progress and success for the project. \\
+All tasks that produce readable output will be reviewed and explained to at least one other group member. This ensures that someone else in the group has or gains knowledge in the same domain. Since our project architecture is not overly complex, we aim for all members to at least have a rough understanding of each domain. We will conduct meetings to explain more challenging aspects to the rest of the group to support this concept. Additionally, to prevent the loss of significant sections, every member must commit their changes to an accessible feature branch at least once a week, unless unanimously discussed otherwise. \\ \\
+Conflicts can occur in any form of group work. Since we only partially know each other, are spread across all over the world, and bring together diverse personalities, we are likely to encounter conflicts sooner or later.
+Our strategy includes the following steps: \\
+When a conflict arises, a team member must communicate it. To keep track of it, a conflict-type issue is created in Jira.\\
+Ideas for solutions and good compromises are collected and also logged to that issue.\\
+All those ideas are discussed in a nearby meeting. In the best case scenario, the conflict is resolved and closed afterward. We consider this to be the most probable outcome.\\
+If the team cannot agree on a solution, new iterations of idea collection and discussion are initiated until either the problem is resolved or we acknowledge that we are stuck on that conflict. If we do not find any solution that we don't anticipate, we will seek guidance from our team tutor or the module organizers. \\
+\textit{Our last weapon against unsolvable problems is to still have humor and a meme creating genius as part of the team. \\ If Cedric is absent due to illness or even the best memes do not cure us all hope is lost and we are doomed.}
+
+% eventuell noch angeben von den Risiken, falls der Code nicht verständlich ist und wie wir dagegen vorgehen wollen? ~C
+\newpage
+\section{Legal information}
+%Irgendwer wollte hier noch einfügen, dass wir credits wollen
+The project will be written in the GO language, which is free to use and allows both private and commercial use, as well as modification and sharing under the conditions specified in (\url{https://github.com/golang/go/blob/master/LICENSE}). The Copyright of the used GUI-Library is similar and can be viewed at (\url{https://github.com/fyne-io/fyne/blob/master/LICENSE}). The code written as part of the project does not have to be kept secret. A publication of the code as open source is possible. Furthermore, it is intended to be shared and edited by the client in future. \\
+The developers assume responsibility for the executability of the code provided by them on the systems listed in the 'Deliverables' section and included in the tests. \\
+Communication between the team and the client will be held via mail accounts (melissa.halbgebauer@gmail.com and emanuel.schneck@pkm.tu-darmstadt.de) that are at least daily checked during the working week. Melissa is the main contact person for that purpose and responsible to cover the communication. If there are difficulties in being available she may consensual partly reassign this role to another team member. In important communication parts all team members are added in CC.
+
+\end{document}
+
