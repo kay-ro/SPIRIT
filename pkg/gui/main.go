@@ -104,15 +104,48 @@ func AddMainWindow() {
 		Title:    "Logarithmic",
 		IsLog:    true,
 		MinValue: 0.01,
-		Data:     data.NewFunction(dataset, data.INTERPOLATION_NONE),
+		Data:     data.NewDataFunction(dataset, data.INTERPOLATION_NONE),
 	})
 	graph2 := NewGraphCanvas(&GraphConfig{
 		Title: "Linear",
-		Data:  data.NewFunction(dataset, data.INTERPOLATION_NONE),
+		Data:  data.NewDataFunction(dataset, data.INTERPOLATION_NONE),
 	})
 	graph3 := NewGraphCanvas(&GraphConfig{
 		Title: "50ms Updates (bench)",
-		Data:  data.NewFunction(dataset, data.INTERPOLATION_NONE),
+		Data:  data.NewDataFunction(dataset, data.INTERPOLATION_NONE),
+	})
+
+	//TODO remove Test Display
+	plat1 := func(x float64) float64 { return 2 }
+	grow1 := data.NewLogisticFunction(4, 2, 10, 4).GetF()
+	plat2 := func(x float64) float64 { return 4 }
+	grow2 := data.NewLogisticFunction(10, 4, 5, 1).GetF()
+	graph4 := NewGraphCanvas(&GraphConfig{
+		Resolution: 100,
+		Title:      "SLD-Test",
+		Data: data.NewSegmentedFunction([]data.FunctionSegment{
+			data.NewFunctionSegment(0, 3, &plat1),
+			data.NewFunctionSegment(3, 5, &grow1),
+			data.NewFunctionSegment(5, 8, &plat2),
+			data.NewFunctionSegment(8, 12, &grow2),
+		}),
+	})
+	dummyFunction := data.NewOldSLDFunction(
+		[]float64{0.0, 0.346197, 0.458849, 0.334000},
+		[]float64{14.2657, 10.6906},
+		[]float64{3.39544, 2.15980, 3.90204},
+		150) // from refl_monolayer.pro:780
+	if dummyFunction == nil {
+		dummyFunction = data.NewDataFunction([]data.Point{{
+			X:   0,
+			Y:   0,
+			ERR: 0,
+		}}, data.INTERPOLATION_NONE)
+	}
+	testSLDGraph := NewGraphCanvas(&GraphConfig{
+		Resolution: 100,
+		Title:      "Test SLD",
+		Data:       dummyFunction,
 	})
 	sldGraph := NewGraphCanvas(&GraphConfig{
 		Title: "SLD",
@@ -129,25 +162,25 @@ func AddMainWindow() {
 	// "benchnmark"
 	go func(graph *GraphCanvas) {
 		for {
-			newData := []data.Point{}
+			newData := make([]data.Point, 10)
 			for i := 0; i < 10; i++ {
-				newData = append(newData, data.Point{
+				newData[i] = data.Point{
 					X:   float64(i),
 					Y:   float64(rand.Intn(150)),
 					ERR: rand.Float64() * 20,
-				})
+				}
 			}
 
-			graph.UpdateData(data.NewFunction(newData, data.INTERPOLATION_NONE))
+			graph.UpdateData(data.NewDataFunction(newData, data.INTERPOLATION_NONE))
 			time.Sleep(50 * time.Millisecond)
 		}
 	}(graph3)
 
 	content := container.NewBorder(
 		topContainer, // top
-		nil,          // bottom
-		nil,          // left
-		nil,          // right
+		container.NewHSplit(testSLDGraph, graph4), // bottom
+		nil, // left
+		nil, // right
 
 		container.NewHSplit(
 			container.NewVSplit(
