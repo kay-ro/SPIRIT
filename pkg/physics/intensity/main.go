@@ -10,13 +10,6 @@ type IntensityOptions struct {
 	Scaling    float64
 }
 
-// ? better?
-type Reflection struct {
-	Qzaxis []float64
-	Deltaz float64
-	Sld    []float64
-}
-
 // TODO: add caching for reflectivity values if only opts are changing
 
 // CalculateIntensity calculates the measured intensity from reflectivity
