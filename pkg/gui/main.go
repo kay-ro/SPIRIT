@@ -114,6 +114,12 @@ func AddMainWindow() {
 		Title: "50ms Updates (bench)",
 		Data:  data.NewFunction(dataset, data.INTERPOLATION_NONE),
 	})
+	sldGraph := NewGraphCanvas(&GraphConfig{
+		Title: "SLD",
+		Data:  data.NewFunction(dataset, data.INTERPOLATION_NONE),
+	})
+
+	profilePanel := NewProfilePanel(NewSldDefaultSettings("Settings"))
 
 	graphs := container.NewHSplit(
 		graph1,
@@ -143,9 +149,15 @@ func AddMainWindow() {
 		nil,          // left
 		nil,          // right
 
-		container.NewVSplit(
-			graphs,
-			graph3,
+		container.NewHSplit(
+			container.NewVSplit(
+				sldGraph,
+				profilePanel,
+			),
+			container.NewVSplit(
+				graphs,
+				graph3,
+			),
 		),
 	)
 
