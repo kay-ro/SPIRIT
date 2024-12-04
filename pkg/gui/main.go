@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"errors"
 	"fmt"
 	"image/color"
 	"io"
@@ -106,7 +107,6 @@ func AddMainWindow() {
 			Data:     data.NewDataFunction(dataset, data.INTERPOLATION_NONE),
 		})
 	*/
-
 	dummyFunction := data.NewOldSLDFunction(
 		[]float64{0.0, 0.346197, 0.458849, 0.334000},
 		[]float64{14.2657, 10.6906},
@@ -121,12 +121,13 @@ func AddMainWindow() {
 	}
 	sldGraph := NewGraphCanvas(&GraphConfig{
 		Resolution: 100,
-		Title:      "SLD",
+		Title:      "Electron Density ",
 		Data:       dummyFunction,
 	})
+
 	dummyGraph := NewGraphCanvas(&GraphConfig{
 		Resolution: 100,
-		Title:      "Dummy Graph",
+		Title:      "Dummy Graph to load data later",
 		Data: data.NewDataFunction([]data.Point{{
 			X:   0,
 			Y:   0,
@@ -135,6 +136,35 @@ func AddMainWindow() {
 	})
 
 	profilePanel := NewProfilePanel(NewSldDefaultSettings("Settings"))
+	profilePanel.OnValueChanged = func() {
+		edensity := make([]float64, len(profilePanel.Profiles)+2)
+		sigma := make([]float64, len(profilePanel.Profiles)+1)
+		d := make([]float64, len(profilePanel.Profiles))
+
+		var err error = nil
+		edensity[0], err = profilePanel.base.Parameter[ProfileDefaultEdensityID].GetValue()
+		sigma[0], err = profilePanel.base.Parameter[ProfileDefaultRoughnessID].GetValue()
+		edensity[len(profilePanel.Profiles)+1], err = profilePanel.bulk.Parameter[ProfileDefaultEdensityID].GetValue()
+		for i, profile := range profilePanel.Profiles {
+			edensity[i+1], err = profile.Parameter[ProfileDefaultEdensityID].GetValue()
+			sigma[i+1], err = profile.Parameter[ProfileDefaultRoughnessID].GetValue()
+			d[i], err = profile.Parameter[ProfileDefaultThicknessID].GetValue()
+		}
+		var zNumberF float64 = 100.0
+		zNumberF, err = profilePanel.sldSettings.Parameter[SldDefaultZNumberID].GetValue()
+		zNumber := int(zNumberF)
+
+		if err != nil {
+			println(errors.Join(errors.New("error while reading default parameters"), err).Error())
+		}
+
+		newEdensity := data.NewOldSLDFunction(edensity, d, sigma, zNumber)
+		if newEdensity == nil {
+			println(errors.New("no old getEden function implemented for this parameter count").Error())
+			return
+		}
+		sldGraph.UpdateData(newEdensity)
+	}
 
 	content := container.NewBorder(
 		topContainer, // top
