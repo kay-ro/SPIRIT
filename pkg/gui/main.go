@@ -18,14 +18,16 @@ import (
 )
 
 var (
-	App        fyne.App
-	MainWindow fyne.Window
+	App            fyne.App
+	MainWindow     fyne.Window
+	GraphContainer *fyne.Container
 )
 
 // Start GUI (function is blocking)
 func Start() {
-	App = app.New()
+	App = app.NewWithID("GUI-Physics")
 	MainWindow = App.NewWindow("Physics GUI")
+	GraphContainer = container.NewVBox()
 
 	AddMainWindow()
 }
@@ -55,10 +57,47 @@ func createImportButton(window fyne.Window) *widget.Button {
 			filename := filepath.Base(reader.URI().Path())
 
 			// handle import
-			if err := data.Import(bytes, filename); err != nil {
+			measurements, importErr := data.Import(bytes, filename)
+			if importErr != nil {
 				dialog.ShowError(err, window)
 				return
 			}
+			if len(measurements) == 0 {
+				dialog.ShowError(fmt.Errorf("no data"), window)
+				return
+			}
+
+			// convert to Point format
+			points := make([][]data.Point, measurements[0].Count)
+			for j, m := range measurements {
+				for i := 0; i < measurements[j].Count; i++ {
+					if j == 0 {
+						points[i] = make([]data.Point, len(measurements))
+					}
+					points[i][j] = data.Point{
+						X:   m.Time,
+						Y:   m.Data[i],
+						ERR: m.Error,
+					}
+				}
+			}
+
+			// Clear old plots and add new
+			GraphContainer.RemoveAll()
+			for i := 0; i < len(points); i++ {
+				plotFunc := data.NewDataFunction(points[i], data.INTERPOLATION_NONE)
+				minP, _ := plotFunc.Scope()
+				plot := NewGraphCanvas(&GraphConfig{
+					Title:      fmt.Sprintf("Data track %d", i+1),
+					IsLog:      false,
+					MinValue:   minP.X,
+					Resolution: 200,
+					Data:       plotFunc,
+				})
+
+				GraphContainer.Add(plot)
+			}
+			GraphContainer.Refresh()
 
 			// show success message
 			dialog.ShowInformation("Import successful",
@@ -134,6 +173,7 @@ func AddMainWindow() {
 			ERR: 0,
 		}}, data.INTERPOLATION_NONE),
 	})
+	GraphContainer.Add(dummyGraph)
 
 	profilePanel := NewProfilePanel(NewSldDefaultSettings("Settings"))
 	profilePanel.OnValueChanged = func() {
@@ -177,7 +217,7 @@ func AddMainWindow() {
 				sldGraph,
 				profilePanel,
 			),
-			dummyGraph,
+			container.NewVScroll(GraphContainer),
 		),
 	)
 
