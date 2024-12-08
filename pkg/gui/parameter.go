@@ -3,26 +3,26 @@ package gui
 import (
 	"errors"
 	"fmt"
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/widget"
 	"maps"
-	"physicsGUI/pkg/util/option"
 	"slices"
 	"strconv"
 	"strings"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/widget"
 )
 
 const (
-	ProfileDefaultEdensityID  = iota
-	ProfileDefaultRoughnessID = iota
-	ProfileDefaultThicknessID = iota
+	ProfileDefaultEdensityID = iota
+	ProfileDefaultRoughnessID
+	ProfileDefaultThicknessID
 )
 const (
 	SldDefaultBackgroundID = iota
-	SldDefaultScaleID      = iota
-	SldDefaultDeltaQzID    = iota
-	SldDefaultZNumberID    = iota
+	SldDefaultScaleID
+	SldDefaultDeltaQzID
+	SldDefaultZNumberID
 )
 
 var ProfileReservedIDs = []int{ProfileDefaultEdensityID, ProfileDefaultRoughnessID, ProfileDefaultThicknessID}
@@ -104,38 +104,38 @@ func (p *Parameter) Refresh() {
 	p.BaseWidget.Refresh()
 }
 
-func (this *Parameter) MinSize() fyne.Size {
+func (p *Parameter) MinSize() fyne.Size {
 	var maxXExt float32 = 0
 	var maxYExt float32 = 0
-	if this.minEntry != nil {
-		if this.minEntry.MinSize().Width > maxXExt {
-			maxXExt = this.minEntry.MinSize().Width
+	if p.minEntry != nil {
+		if p.minEntry.MinSize().Width > maxXExt {
+			maxXExt = p.minEntry.MinSize().Width
 		}
-		maxYExt += this.minEntry.MinSize().Height
+		maxYExt += p.minEntry.MinSize().Height
 	}
-	if this.maxEntry != nil {
-		if this.maxEntry.MinSize().Width > maxXExt {
-			maxXExt = this.maxEntry.MinSize().Width
+	if p.maxEntry != nil {
+		if p.maxEntry.MinSize().Width > maxXExt {
+			maxXExt = p.maxEntry.MinSize().Width
 		}
-		maxYExt += this.maxEntry.MinSize().Height
+		maxYExt += p.maxEntry.MinSize().Height
 	}
 	var maxXlock float32 = 0
 	var maxYlock float32 = 0
-	if this.locked != nil {
-		maxXlock = this.locked.MinSize().Width
-		maxYlock = this.locked.MinSize().Height
+	if p.locked != nil {
+		maxXlock = p.locked.MinSize().Width
+		maxYlock = p.locked.MinSize().Height
 	}
 
-	altMinX := max(this.name.MinSize().Width,
-		this.valEntry.MinSize().Width+
+	altMinX := max(p.name.MinSize().Width,
+		p.valEntry.MinSize().Width+
 			maxXlock+
 			maxXExt)
-	lblMin := this.name.MinSize().Height
+	lblMin := p.name.MinSize().Height
 	altMinY := lblMin +
-		max(this.valEntry.MinSize().Height,
+		max(p.valEntry.MinSize().Height,
 			maxYlock,
 			maxYExt)
-	return fyne.NewSize(max(altMinX, this.minSize.Width), max(altMinY, this.minSize.Height))
+	return fyne.NewSize(max(altMinX, p.minSize.Width), max(altMinY, p.minSize.Height))
 }
 
 // Clear removes all content from user input fields and Refreshes
@@ -175,44 +175,42 @@ func (this *Parameter) GetValue() (float64, error) {
 
 // GetMin return the value in the Min field
 //
-// - when input is empty or could not be parsed option.None is returned instead
-// - when input could not be parsed error contains the error to display to user
-// - else returns parsed value of minEntry field wrapped in option.Some
-func (this *Parameter) GetMin() (option.Option[float64], error) {
-	if this.valEntry.Text == "" {
-		return option.None[float64](), nil
+// returns minimum value as float, if min value is set and error
+func (p *Parameter) GetMin() (float64, bool, error) {
+	if p.valEntry.Text == "" {
+		return 0, false, nil
 	}
-	val, err := strconv.ParseFloat(this.valEntry.Text, 64)
+	val, err := strconv.ParseFloat(p.valEntry.Text, 64)
 	if err != nil {
-		return option.None[float64](), errors.New("Float_Parsing_Error: Error while parsing Min input to float please adjust input of all marked fields")
+		return 0, false, fmt.Errorf("getmin error: ", err)
 	}
-	return option.Some[float64](&val), nil // Maybe change for better memory layout
+	return val, true, nil
 }
 
 // GetMax return the value in the Max field
 //
-// - when input is empty or could not be parsed option.None is returned instead
-// - when input could not be parsed error contains the error to display to user
-// - else returns parsed value of maxEntry field wrapped in option.Some
-func (this *Parameter) GetMax() (option.Option[float64], error) {
-	if this.valEntry == nil || this.valEntry.Text == "" {
-		return option.None[float64](), nil
+// returns maximum value as float, if max value is set and error
+func (p *Parameter) GetMax() (float64, bool, error) {
+	if p.valEntry == nil || p.valEntry.Text == "" {
+		return 0, false, nil
 	}
-	val, err := strconv.ParseFloat(this.valEntry.Text, 64)
+	val, err := strconv.ParseFloat(p.valEntry.Text, 64)
 	if err != nil {
-		return option.None[float64](), errors.New("Float_Parsing_Error: Error while parsing Max input to float please adjust input of all marked fields")
+		return 0, false, fmt.Errorf("getmax error: ", err)
 	}
-	return option.Some[float64](&val), nil // Maybe change for better memory layout
-}
-func (this *Parameter) IsFixed() option.Option[bool] {
-	if this.locked != nil {
-		return option.Some[bool](&this.locked.Checked)
-	}
-	return option.None[bool]()
+	return val, true, nil
 }
 
-func (this *Parameter) CreateRenderer() fyne.WidgetRenderer {
-	return NewParameterRenderer(this)
+func (p *Parameter) IsFixed() (bool, bool) {
+	if p.locked != nil {
+		return false, false
+	}
+
+	return p.locked.Checked, true
+}
+
+func (p *Parameter) CreateRenderer() fyne.WidgetRenderer {
+	return NewParameterRenderer(p)
 }
 
 type ParameterRenderer struct {

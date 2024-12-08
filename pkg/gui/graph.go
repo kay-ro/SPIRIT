@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"image/color"
 	"math"
-	"physicsGUI/pkg/data"
+	"physicsGUI/pkg/function"
 	"slices"
 
 	"fyne.io/fyne/v2"
@@ -22,7 +22,7 @@ var (
 
 type GraphCanvas struct {
 	widget.BaseWidget
-	data       data.Function
+	function   *function.Function
 	lines      []*canvas.Line
 	points     []fyne.CanvasObject // i%2==1 -> circle, i%2==0 -> line
 	gridLines  []*canvas.Line
@@ -40,16 +40,16 @@ type GraphConfig struct {
 	IsLog      bool
 	MinValue   float64
 	Resolution int
-	Data       data.Function
+	Function   *function.Function
 }
 
 func NewGraphCanvas(config *GraphConfig) *GraphCanvas {
 	g := &GraphCanvas{
-		data:    config.Data,
-		lines:   make([]*canvas.Line, 0),
-		axes:    make([]*canvas.Line, 2),
-		xLabels: make([]*canvas.Text, 0),
-		yLabels: make([]*canvas.Text, 0),
+		function: config.Function,
+		lines:    make([]*canvas.Line, 0),
+		axes:     make([]*canvas.Line, 2),
+		xLabels:  make([]*canvas.Text, 0),
+		yLabels:  make([]*canvas.Text, 0),
 
 		config: config,
 
@@ -119,7 +119,7 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	margin := float32(50)
 
 	// data
-	dataPoints, modelPoints := r.graph.data.Model(r.graph.config.Resolution)
+	dataPoints, modelPoints := r.graph.function.Model(r.graph.config.Resolution)
 
 	// title position
 	r.graph.title.Move(fyne.NewPos(size.Width/2-float32(len(r.graph.title.Text)*4), 0 /* margin/2 */))
@@ -137,7 +137,7 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	r.graph.axes[1].Position2 = fyne.NewPos(margin, margin)
 
 	// get min/max
-	minDataP, maxDataP := r.graph.data.Scope()
+	minDataP, maxDataP := r.graph.function.Scope()
 	maxData := maxDataP.Y
 	minData := minDataP.Y
 
@@ -272,9 +272,9 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 		if r.graph.config.IsLog {
 			y1 = y
 		} else {
-			y1 = r.graph.transformValue(dataPoints[i].Y - dataPoints[i].ERR)
+			y1 = r.graph.transformValue(dataPoints[i].Y - dataPoints[i].Error)
 		}
-		y2 := r.graph.transformValue(dataPoints[i].Y + dataPoints[i].ERR)
+		y2 := r.graph.transformValue(dataPoints[i].Y + dataPoints[i].Error)
 		x := margin + float32(dataPoints[i].X)*xScale
 		yPos := size.Height - margin - float32(y-minData)*yScale
 		yPos1 := size.Height - margin - float32(y1-minData)*yScale
@@ -326,7 +326,7 @@ func (r *GraphRenderer) Refresh() {
 	canvas.Refresh(r.graph)
 }
 
-func (g *GraphCanvas) UpdateData(newData data.Function) {
-	g.data = newData
+func (g *GraphCanvas) UpdateData(newFunction *function.Function) {
+	g.function = newFunction
 	g.Refresh()
 }

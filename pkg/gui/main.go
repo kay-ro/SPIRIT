@@ -8,6 +8,7 @@ import (
 	"math"
 	"path/filepath"
 	"physicsGUI/pkg/data"
+	"physicsGUI/pkg/function"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -18,6 +19,7 @@ import (
 )
 
 var (
+	// App reference
 	App            fyne.App
 	MainWindow     fyne.Window
 	GraphContainer *fyne.Container
@@ -68,36 +70,36 @@ func createImportButton(window fyne.Window) *widget.Button {
 			}
 
 			// convert to Point format
-			points := make([][]data.Point, measurements[0].Count)
+			points := make([][]function.Point, measurements[0].Count)
 			for j, m := range measurements {
 				for i := 0; i < measurements[j].Count; i++ {
 					if j == 0 {
-						points[i] = make([]data.Point, len(measurements))
+						points[i] = make([]function.Point, len(measurements))
 					}
-					points[i][j] = data.Point{
-						X:   m.Time,
-						Y:   m.Data[i],
-						ERR: m.Error,
+					points[i][j] = function.Point{
+						X:     m.Time,
+						Y:     m.Data[i],
+						Error: m.Error,
 					}
 				}
 			}
 
 			// Clear old plots and add new
-			GraphContainer.RemoveAll()
+			/* GraphContainer.RemoveAll()
 			for i := 0; i < len(points); i++ {
-				plotFunc := data.NewDataFunction(points[i], data.INTERPOLATION_NONE)
+				plotFunc := function.NewDataFunction(points[i], data.INTERPOLATION_NONE)
 				minP, _ := plotFunc.Scope()
 				plot := NewGraphCanvas(&GraphConfig{
 					Title:      fmt.Sprintf("Data track %d", i+1),
 					IsLog:      false,
 					MinValue:   minP.X,
 					Resolution: 200,
-					Data:       plotFunc,
+					Function:   plotFunc,
 				})
 
 				GraphContainer.Add(plot)
 			}
-			GraphContainer.Refresh()
+			GraphContainer.Refresh() */
 
 			// show success message
 			dialog.ShowInformation("Import successful",
@@ -129,12 +131,12 @@ func AddMainWindow() {
 	)
 
 	// create dataset 2^x
-	dataset := make([]data.Point, 10)
+	dataset := make(function.Points, 10)
 	for i := 0; i < 10; i++ {
-		dataset[i] = data.Point{
-			X:   float64(i),
-			Y:   math.Pow(2, float64(i)),
-			ERR: 1,
+		dataset[i] = &function.Point{
+			X:     float64(i),
+			Y:     math.Pow(2, float64(i)),
+			Error: 1,
 		}
 	}
 
@@ -151,27 +153,27 @@ func AddMainWindow() {
 		[]float64{14.2657, 10.6906},
 		[]float64{3.39544, 2.15980, 3.90204},
 		150) // from refl_monolayer.pro:780
-	if dummyFunction == nil {
-		dummyFunction = data.NewDataFunction([]data.Point{{
-			X:   0,
-			Y:   0,
-			ERR: 0,
-		}}, data.INTERPOLATION_NONE)
-	}
+	/* if dummyFunction == nil {
+		dummyFunction = function.NewDataFunction(function.Points{{
+			X:     0,
+			Y:     0,
+			Error: 0,
+		}}, function.INTERPOLATION_NONE)
+	} */
 	sldGraph := NewGraphCanvas(&GraphConfig{
 		Resolution: 100,
 		Title:      "Electron Density ",
-		Data:       dummyFunction,
+		Function:   dummyFunction,
 	})
 
 	dummyGraph := NewGraphCanvas(&GraphConfig{
 		Resolution: 100,
 		Title:      "Dummy Graph to load data later",
-		Data: data.NewDataFunction([]data.Point{{
-			X:   0,
-			Y:   0,
-			ERR: 0,
-		}}, data.INTERPOLATION_NONE),
+		Function: function.NewDataFunction(function.Points{{
+			X:     0,
+			Y:     0,
+			Error: 0,
+		}}, function.INTERPOLATION_NONE),
 	})
 	GraphContainer.Add(dummyGraph)
 

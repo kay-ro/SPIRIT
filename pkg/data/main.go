@@ -21,11 +21,11 @@ func Import(data []byte, filename string) ([]measurement, error) {
 	parser, ok := typeAssociationMap[dataType]
 	if !ok {
 		return nil, errors.New(fmt.Sprintf("Can't import %s: No loader for %s files found", filename, dataType))
-	} else {
-		res, err := parser.tryParse(data)
-		if err != nil {
-			return nil, errors.Join(errors.New(fmt.Sprintf("Import failed (%s)", filename)), err)
-		}
-		return res, nil
 	}
+
+	res, err := parser.tryParse(data)
+	if err != nil {
+		return nil, errors.Join(errors.New(fmt.Sprintf("Import failed (%s)", filename)), err)
+	}
+	return res, nil
 }
