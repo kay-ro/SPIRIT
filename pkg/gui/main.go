@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image/color"
 	"io"
+	"log"
 	"math"
 	"path/filepath"
 	"physicsGUI/pkg/data"
@@ -46,7 +47,11 @@ func createImportButton(window fyne.Window) *widget.Button {
 			if reader == nil {
 				return // user canceled
 			}
-			defer reader.Close()
+			defer func() {
+				if err := reader.Close(); err != nil {
+					log.Println("error while closing dialog:", err)
+				}
+			}()
 
 			// read file
 			bytes, err := io.ReadAll(reader)
@@ -59,18 +64,28 @@ func createImportButton(window fyne.Window) *widget.Button {
 			filename := filepath.Base(reader.URI().Path())
 
 			// handle import
-			measurements, importErr := data.Import(bytes, filename)
-			if importErr != nil {
+			measurements, err := data.Parse(bytes)
+			if err != nil {
 				dialog.ShowError(err, window)
 				return
 			}
+
 			if len(measurements) == 0 {
-				dialog.ShowError(fmt.Errorf("no data"), window)
+				dialog.ShowError(errors.New("no data"), window)
 				return
 			}
 
+			points := make(function.Points, len(measurements))
+			for _, m := range measurements {
+				points = append(points, &function.Point{
+					X:     m.Qz,
+					Y:     m.Data,
+					Error: m.Error,
+				})
+			}
+
 			// convert to Point format
-			points := make([][]function.Point, measurements[0].Count)
+			/* points := make([][]function.Point, measurements[0].Count)
 			for j, m := range measurements {
 				for i := 0; i < measurements[j].Count; i++ {
 					if j == 0 {
@@ -82,12 +97,12 @@ func createImportButton(window fyne.Window) *widget.Button {
 						Error: m.Error,
 					}
 				}
-			}
+			} */
 
 			// Clear old plots and add new
-			/* GraphContainer.RemoveAll()
+			GraphContainer.RemoveAll()
 			for i := 0; i < len(points); i++ {
-				plotFunc := function.NewDataFunction(points[i], data.INTERPOLATION_NONE)
+				plotFunc := function.NewDataFunction(points, function.INTERPOLATION_NONE)
 				minP, _ := plotFunc.Scope()
 				plot := NewGraphCanvas(&GraphConfig{
 					Title:      fmt.Sprintf("Data track %d", i+1),
@@ -99,7 +114,7 @@ func createImportButton(window fyne.Window) *widget.Button {
 
 				GraphContainer.Add(plot)
 			}
-			GraphContainer.Refresh() */
+			GraphContainer.Refresh()
 
 			// show success message
 			dialog.ShowInformation("Import successful",

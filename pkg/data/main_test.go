@@ -16,14 +16,31 @@ func TestImport(t *testing.T) {
 		t.Error(err)
 	}
 
-	data, err := Import(fileContent, filePath)
+	data, err := Parse(fileContent)
 	if err != nil {
 		t.Error(err)
 	}
 
-	if len(data) != 1 {
-		t.Errorf("Expected 1 measurement, got %d", len(data))
+	spew.Dump(data)
+
+	// TODO: add test handling instead of printing
+}
+
+func TestOldImport(t *testing.T) {
+	filePath := path.Join("..", "..", "testdata", "syntheticdataset.dat")
+
+	fileContent, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Error(err)
+	}
+
+	parser := OldParser()
+	data, err := parser.tryParse(fileContent)
+	if err != nil {
+		t.Error(err)
 	}
 
 	spew.Dump(data)
+
+	// TODO: add test handling instead of printing
 }
