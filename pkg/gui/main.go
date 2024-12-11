@@ -76,12 +76,8 @@ func createImportButton(window fyne.Window) *widget.Button {
 			}
 
 			points := make(function.Points, len(measurements))
-			for _, m := range measurements {
-				points = append(points, &function.Point{
-					X:     m.Qz,
-					Y:     m.Data,
-					Error: m.Error,
-				})
+			for i, m := range measurements {
+				points[i] = m.ToPoint()
 			}
 
 			// convert to Point format
@@ -99,8 +95,20 @@ func createImportButton(window fyne.Window) *widget.Button {
 				}
 			} */
 
-			// Clear old plots and add new
 			GraphContainer.RemoveAll()
+			plotFunc := function.NewDataFunction(points, function.INTERPOLATION_NONE)
+			minP, _ := plotFunc.Scope()
+			plot := NewGraphCanvas(&GraphConfig{
+				Title:      fmt.Sprintf("Data track %d", 1),
+				IsLog:      false,
+				MinValue:   minP.X,
+				Resolution: 200,
+				Function:   plotFunc,
+			})
+
+			GraphContainer.Add(plot)
+			// Clear old plots and add new
+			/* GraphContainer.RemoveAll()
 			for i := 0; i < len(points); i++ {
 				plotFunc := function.NewDataFunction(points, function.INTERPOLATION_NONE)
 				minP, _ := plotFunc.Scope()
@@ -114,7 +122,7 @@ func createImportButton(window fyne.Window) *widget.Button {
 
 				GraphContainer.Add(plot)
 			}
-			GraphContainer.Refresh()
+			GraphContainer.Refresh() */
 
 			// show success message
 			dialog.ShowInformation("Import successful",

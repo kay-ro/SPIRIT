@@ -26,6 +26,24 @@ func TestImport(t *testing.T) {
 	// TODO: add test handling instead of printing
 }
 
+func TestImportAlt(t *testing.T) {
+	filePath := path.Join("..", "..", "testdata", "dataset.dat")
+
+	fileContent, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Error(err)
+	}
+
+	data, err := Parse(fileContent)
+	if err != nil {
+		t.Error(err)
+	}
+
+	spew.Dump(data)
+
+	// TODO: add test handling instead of printing
+}
+
 func TestOldImport(t *testing.T) {
 	filePath := path.Join("..", "..", "testdata", "syntheticdataset.dat")
 

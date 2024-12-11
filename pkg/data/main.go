@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 type Measurement struct {
@@ -18,7 +20,7 @@ var (
 	// floatPattern is a regex pattern that matches a float number
 	// it accepts scientific notation and normal floats
 	// f.e. 1.0, 1.0e-10, 1.0e+10
-	floatPattern = `(\d+\.\d+(?:e[+-]\d+)?)`
+	floatPattern = `(\d+\.\d+(?:[eE][+-]\d+)?)`
 
 	// re is a regex pattern that matches a line with 3 floats
 	// separated by whitespace
@@ -50,6 +52,7 @@ func Parse(data []byte) ([]*Measurement, error) {
 
 		matches := re.FindStringSubmatch(v)
 		if len(matches) != 4 {
+			spew.Dump(matches)
 			return nil, fmt.Errorf("parse error: expected '<FLOAT> <FLOAT> <FLOAT>' got '%s'", v)
 		}
 
