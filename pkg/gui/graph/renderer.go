@@ -2,9 +2,9 @@ package graph
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"physicsGUI/pkg/function"
-	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -36,6 +36,7 @@ func (r *GraphRenderer) base(margin float32, size fyne.Size) {
 	r.graph.title.TextSize = 16
 	r.graph.title.TextStyle.Bold = true
 	r.graph.title.Move(fyne.NewPos(size.Width/2-float32(len(r.graph.title.Text)*4), 0))
+	r.AddObject(r.graph.title)
 
 	// background
 	r.graph.background.Resize(size)
@@ -44,14 +45,18 @@ func (r *GraphRenderer) base(margin float32, size fyne.Size) {
 	// x-axis
 	r.graph.axes[0].Position1 = fyne.NewPos(margin, size.Height-margin)
 	r.graph.axes[0].Position2 = fyne.NewPos(size.Width-margin/2, size.Height-margin)
+	r.AddObject(r.graph.axes[0])
 
 	// y-axis
 	r.graph.axes[1].Position1 = fyne.NewPos(margin, size.Height-margin)
 	r.graph.axes[1].Position2 = fyne.NewPos(margin, margin)
+	r.AddObject(r.graph.axes[1])
 }
 
 // draws the whole graph
 func (r *GraphRenderer) Layout(size fyne.Size) {
+	r.objects = make([]fyne.CanvasObject, 0)
+
 	// margin for labels etc.
 	margin := float32(50)
 
@@ -76,11 +81,6 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 		minData = math.Log10(minData)
 	}
 
-	// Grid-Linien und Labels erstellen
-	r.graph.gridLines = make([]*canvas.Line, 0)
-	r.graph.yLabels = make([]*canvas.Text, 0)
-	r.graph.xLabels = make([]*canvas.Text, 0)
-
 	// vertikale grid-lines + x-labels
 	numXLines := 10
 	for i := 0; i <= numXLines; i++ {
@@ -102,7 +102,7 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 			label := canvas.NewText(fmt.Sprintf("%.1f", value), legendColor)
 			label.TextSize = 12
 			label.Move(fyne.NewPos(xPos-15, size.Height-margin+10))
-			r.graph.xLabels = append(r.graph.xLabels, label)
+			r.AddObject(label)
 		}
 	}
 
@@ -156,14 +156,14 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 					false,
 					size.Width-1.5*margin,
 				)
-				r.graph.gridLines = append(r.graph.gridLines, gridLine)
+				r.AddObject(gridLine)
 			}
 
 			// label
 			label := canvas.NewText(fmt.Sprintf("%.2f", value), legendColor)
 			label.TextSize = 12
 			label.Move(fyne.NewPos(margin-45, yPos-10))
-			r.graph.yLabels = append(r.graph.yLabels, label)
+			r.AddObject(label)
 		}
 	}
 
@@ -174,7 +174,6 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	r.DrawGraphLines(maxData, minData, size, margin, modelPoints)
 
 	//draw data points
-	r.graph.points = make([]fyne.CanvasObject, len(dataPoints)*2)
 	for i := 0; i < len(dataPoints)-1; i++ {
 		y := r.graph.transformValue(minDataP.X, dataPoints[i].Y)
 		var y1 float64
@@ -189,25 +188,11 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 		yPos1 := size.Height - margin - float32(y1-minData)*yScale
 		yPos2 := size.Height - margin - float32(y2-minData)*yScale
 
-		r.graph.points[i*2] = r.DrawError(x, yPos1, yPos2)
-		r.graph.points[i*2+1] = r.DrawPoint(x, yPos)
+		r.DrawError(x, yPos1, yPos2)
+		r.DrawPoint(x, yPos)
 	}
 
-	// TODO: clean this up
-	r.objects = append(r.objects, r.graph.axes[0], r.graph.axes[1])
-
-	for _, label := range r.graph.yLabels {
-		r.objects = append(r.objects, label)
-	}
-	r.objects = slices.Concat(r.objects, r.graph.points)
-	for _, label := range r.graph.xLabels {
-		r.objects = append(r.objects, label)
-	}
-
-	for _, line := range r.graph.gridLines {
-		r.objects = append(r.objects, line)
-	}
-	r.objects = append(r.objects, r.graph.title)
+	log.Printf("Render %d objects \n", len(r.objects))
 }
 
 // TODO: needs clean
@@ -242,22 +227,22 @@ func (r *GraphRenderer) DrawGraphLines(maxData, minData float64, size fyne.Size,
 // TODO: -> points are on the bottom of the lines
 
 // draw a grid point
-func (r *GraphRenderer) DrawPoint(x float32, y float32) *canvas.Circle {
-	return &canvas.Circle{
+func (r *GraphRenderer) DrawPoint(x float32, y float32) {
+	r.AddObject(&canvas.Circle{
 		FillColor: pointColor,
 		Position1: fyne.NewPos(x-pointRadius, y-pointRadius),
 		Position2: fyne.NewPos(x+pointRadius, y+pointRadius),
-	}
+	})
 }
 
 // draw error correction lines
-func (r *GraphRenderer) DrawError(x, y1, y2 float32) *canvas.Line {
-	return &canvas.Line{
+func (r *GraphRenderer) DrawError(x, y1, y2 float32) {
+	r.AddObject(&canvas.Line{
 		StrokeColor: errorColor,
 		StrokeWidth: 2,
 		Position1:   fyne.NewPos(x, y1),
 		Position2:   fyne.NewPos(x, y2),
-	}
+	})
 }
 
 // returns the objects of the graph

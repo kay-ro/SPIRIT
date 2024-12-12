@@ -182,7 +182,7 @@ func (p *Parameter) GetMin() (float64, bool, error) {
 	}
 	val, err := strconv.ParseFloat(p.valEntry.Text, 64)
 	if err != nil {
-		return 0, false, fmt.Errorf("getmin error: ", err)
+		return 0, false, fmt.Errorf("getmin error: %v", err)
 	}
 	return val, true, nil
 }
