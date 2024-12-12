@@ -163,13 +163,13 @@ func AddMainWindow() {
 		}
 	}
 
-	/* g1 := graph.NewGraphCanvas(&graph.GraphConfig{
+	g1 := graph.NewGraphCanvas(&graph.GraphConfig{
 		Title:    "Logarithmic",
 		IsLog:    true,
 		Function: function.NewFunction(dataset, function.INTERPOLATION_NONE),
-	}) */
+	})
 
-	//GraphContainer.Add(g1)
+	GraphContainer.Add(g1)
 
 	// from refl_monolayer.pro:780
 	dummyFunction := data.NewOldSLDFunction(

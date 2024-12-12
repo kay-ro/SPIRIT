@@ -6,13 +6,19 @@ import (
 	"math"
 )
 
+// function with interpolation capabilities
 type Function struct {
-	data Points
-	minX float64
-	maxX float64
-	minY float64
-	maxY float64
-	eval InterpolationFunction
+	data  Points
+	Scope *Scope
+	eval  InterpolationFunction
+}
+
+// scope of a function
+type Scope struct {
+	MinX float64
+	MaxX float64
+	MinY float64
+	MaxY float64
 }
 
 // returns a new function with the given data and interpolation mode
@@ -40,10 +46,12 @@ func NewFunction(data Points, interpolationMode InterpolationMode) *Function {
 
 	return &Function{
 		data: data,
-		minX: minX,
-		maxX: maxX,
-		minY: minY,
-		maxY: maxY,
+		Scope: &Scope{
+			minX,
+			maxX,
+			minY,
+			maxY,
+		},
 		eval: inter,
 	}
 }
@@ -54,9 +62,9 @@ func (f *Function) Model(resolution int) (Points, Points) {
 		return f.data, f.data
 	}
 	var interpolatedModel = make(Points, resolution)
-	deltaX := (f.maxX - f.minX) / float64(resolution)
+	deltaX := (f.Scope.MaxX - f.Scope.MinX) / float64(resolution)
 	for i := 0; i < resolution; i++ {
-		x := f.minX + float64(i)*deltaX
+		x := f.Scope.MinX + float64(i)*deltaX
 		y, _ := f.eval(f.data, x)
 
 		interpolatedModel[i] = &Point{
@@ -72,11 +80,6 @@ func (f *Function) Model(resolution int) (Points, Points) {
 // evaluates function value at x
 func (f *Function) Eval(x float64) (float64, error) {
 	return f.eval(f.data, x)
-}
-
-// returns the scope of the function minimum and maximum coordinates
-func (f *Function) Scope() (*Coordinate, *Coordinate) {
-	return &Coordinate{f.minX, f.minY}, &Coordinate{f.maxX, f.maxY}
 }
 
 // TODO: add full explanation

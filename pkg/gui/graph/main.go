@@ -22,7 +22,7 @@ var (
 	pointColor = &color.NRGBA{R: 0, G: 255, B: 0, A: 255}
 
 	// colors for the error
-	errorColor = &color.NRGBA{R: 255, G: 0, B: 0, A: 255}
+	errorColor = &color.NRGBA{R: 255, G: 0, B: 0, A: 128}
 
 	// color for the gridlines
 	gridColor = &color.NRGBA{R: 128, G: 128, B: 128, A: 64}

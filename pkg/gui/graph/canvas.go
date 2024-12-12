@@ -80,6 +80,8 @@ func (g *GraphCanvas) CreateRenderer() fyne.WidgetRenderer {
 	return &GraphRenderer{
 		graph:   g,
 		objects: make([]fyne.CanvasObject, 0),
+		size:    &fyne.Size{},
+		margin:  float32(50),
 	}
 }
 
