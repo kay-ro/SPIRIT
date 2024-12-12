@@ -25,7 +25,7 @@ func NewOldSLDFunction(eden []float64, d []float64, sigma []float64, zNumber int
 	if err != nil {
 		return nil
 	}
-	return function.NewDataFunction(points, function.INTERPOLATION_NONE)
+	return function.NewFunction(points, function.INTERPOLATION_NONE)
 }
 
 var edens map[int]func(eden []float64, d []float64, sigma []float64, zNumber int) function.Points

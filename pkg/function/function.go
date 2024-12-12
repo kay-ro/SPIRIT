@@ -15,7 +15,8 @@ type Function struct {
 	eval InterpolationFunction
 }
 
-func NewDataFunction(data Points, interpolationMode InterpolationMode) *Function {
+// returns a new function with the given data and interpolation mode
+func NewFunction(data Points, interpolationMode InterpolationMode) *Function {
 	// get min, max values of function
 	minX, maxX := data.MinMaxX()
 	minY, maxY := data.MinMaxY()
@@ -47,6 +48,7 @@ func NewDataFunction(data Points, interpolationMode InterpolationMode) *Function
 	}
 }
 
+// TODO: add full explanation
 func (f *Function) Model(resolution int) (Points, Points) {
 	if f.eval == nil {
 		return f.data, f.data
@@ -66,14 +68,18 @@ func (f *Function) Model(resolution int) (Points, Points) {
 
 	return f.data, interpolatedModel
 }
+
+// evaluates function value at x
 func (f *Function) Eval(x float64) (float64, error) {
 	return f.eval(f.data, x)
 }
 
+// returns the scope of the function minimum and maximum coordinates
 func (f *Function) Scope() (*Coordinate, *Coordinate) {
 	return &Coordinate{f.minX, f.minY}, &Coordinate{f.maxX, f.maxY}
 }
 
+// TODO: add full explanation
 type FunctionSegment struct {
 	start float64
 	end   float64

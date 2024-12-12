@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"physicsGUI/pkg/data"
 	"physicsGUI/pkg/function"
+	"physicsGUI/pkg/gui/graph"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -96,14 +97,13 @@ func createImportButton(window fyne.Window) *widget.Button {
 			} */
 
 			GraphContainer.RemoveAll()
-			plotFunc := function.NewDataFunction(points, function.INTERPOLATION_NONE)
-			minP, _ := plotFunc.Scope()
-			plot := NewGraphCanvas(&GraphConfig{
-				Title:      fmt.Sprintf("Data track %d", 1),
-				IsLog:      false,
-				MinValue:   minP.X,
+			//minP, _ := plotFunc.Scope()
+			plot := graph.NewGraphCanvas(&graph.GraphConfig{
+				Title: fmt.Sprintf("Data track %d", 1),
+				IsLog: false,
+				//MinValue:   minP.X,
 				Resolution: 200,
-				Function:   plotFunc,
+				Function:   function.NewFunction(points, function.INTERPOLATION_NONE),
 			})
 
 			GraphContainer.Add(plot)
@@ -157,20 +157,20 @@ func AddMainWindow() {
 	dataset := make(function.Points, 10)
 	for i := 0; i < 10; i++ {
 		dataset[i] = &function.Point{
-			X:     float64(i),
+			X:     float64(i) + 0.5,
 			Y:     math.Pow(2, float64(i)),
 			Error: 1,
 		}
 	}
 
-	/*
-		graph1 := NewGraphCanvas(&GraphConfig{
-			Title:    "Logarithmic",
-			IsLog:    true,
-			MinValue: 0.01,
-			Data:     data.NewDataFunction(dataset, data.INTERPOLATION_NONE),
-		})
-	*/
+	g1 := graph.NewGraphCanvas(&graph.GraphConfig{
+		Title:    "Logarithmic",
+		IsLog:    true,
+		Function: function.NewFunction(dataset, function.INTERPOLATION_NONE),
+	})
+
+	GraphContainer.Add(g1)
+
 	dummyFunction := data.NewOldSLDFunction(
 		[]float64{0.0, 0.346197, 0.458849, 0.334000},
 		[]float64{14.2657, 10.6906},
@@ -183,16 +183,16 @@ func AddMainWindow() {
 			Error: 0,
 		}}, function.INTERPOLATION_NONE)
 	} */
-	sldGraph := NewGraphCanvas(&GraphConfig{
+	sldGraph := graph.NewGraphCanvas(&graph.GraphConfig{
 		Resolution: 100,
 		Title:      "Electron Density ",
 		Function:   dummyFunction,
 	})
 
-	dummyGraph := NewGraphCanvas(&GraphConfig{
+	dummyGraph := graph.NewGraphCanvas(&graph.GraphConfig{
 		Resolution: 100,
 		Title:      "Dummy Graph to load data later",
-		Function: function.NewDataFunction(function.Points{{
+		Function: function.NewFunction(function.Points{{
 			X:     0,
 			Y:     0,
 			Error: 0,
@@ -228,7 +228,7 @@ func AddMainWindow() {
 			println(errors.New("no old getEden function implemented for this parameter count").Error())
 			return
 		}
-		sldGraph.UpdateData(newEdensity)
+		sldGraph.UpdateFunction(newEdensity)
 	}
 
 	content := container.NewBorder(
@@ -242,7 +242,7 @@ func AddMainWindow() {
 				sldGraph,
 				profilePanel,
 			),
-			container.NewVScroll(GraphContainer),
+			container.NewVScroll(g1 /* GraphContainer */),
 		),
 	)
 
