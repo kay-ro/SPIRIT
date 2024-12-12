@@ -18,9 +18,6 @@ type GraphRenderer struct {
 
 	// margin for labels etc.
 	margin float32
-
-	scope struct {
-	}
 }
 
 type GraphScope struct {
@@ -180,14 +177,17 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 
 	// draw model lines
 	//r.DrawGraphLines(maxData, minData, modelPoints)
-	r.DrawGraphLinear(maxData, minData)
-
+	if r.graph.config.IsLog {
+		r.DrawGraphLog(maxData, minData)
+	} else {
+		r.DrawGraphLinear()
+	}
 	// * debug
 	//log.Printf("Render %d objects \n", len(r.objects))
 }
 
-func (r *GraphRenderer) DrawGraphLinear(maxData, minData float64) {
-	points, _ := r.graph.function.Model(r.graph.config.Resolution)
+func (r *GraphRenderer) DrawGraphLinear() {
+	points, iPoints := r.graph.function.Model(r.graph.config.Resolution)
 
 	// calc available space
 	availableWidth := r.size.Width - (1.5 * r.margin)
@@ -199,26 +199,19 @@ func (r *GraphRenderer) DrawGraphLinear(maxData, minData float64) {
 
 	oX, oY := float32(0), float32(0)
 
-	// draw data points
-	for i, point := range points {
+	// draw line based on interpolated (resolution) points
+	for i, point := range iPoints {
 		// scale x value to available width
 		x := float32((point.X-r.graph.function.Scope.MinX)/xRange) * availableWidth
 		y := float32((point.Y-r.graph.function.Scope.MinY)/yRange) * availableHeight
 
-		xt, yt := r.normalize(x, y)
-
-		// error correction
-		yE1 := float32((point.Y+point.Error-r.graph.function.Scope.MinY)/yRange) * availableHeight
-		yE2 := float32((point.Y-point.Error-r.graph.function.Scope.MinY)/yRange) * availableHeight
-
-		_, e1 := r.normalize(x, yE1)
-		_, e2 := r.normalize(x, yE2)
-
 		// first point is the origin
 		if i == 0 {
-			oX, oY = xt, yt
+			oX, oY = r.normalize(x, y)
 			continue
 		}
+
+		xt, yt := r.normalize(x, y)
 
 		// draw line
 		r.AddObject(&canvas.Line{
@@ -229,47 +222,16 @@ func (r *GraphRenderer) DrawGraphLinear(maxData, minData float64) {
 		})
 
 		oX, oY = xt, yt
-
-		r.DrawError(xt, e1, e2)
-		r.DrawPoint(xt, yt)
 	}
-}
-
-func (r *GraphRenderer) DrawGraphPointsLog(maxData, minData float64, points function.Points) {
-	// calc available space
-	availableWidth := r.size.Width - (1.5 * r.margin)
-	availableHeight := r.size.Height - (1.5 * r.margin)
-
-	// complete range
-	xRange := math.Abs(r.graph.function.Scope.MaxX - r.graph.function.Scope.MinX)
-	yRange := math.Abs(r.graph.function.Scope.MaxY - r.graph.function.Scope.MinY)
 
 	// draw data points
 	for _, point := range points {
-		if r.graph.config.IsLog {
-			//fmt.Println("Logarithmic scale not supported for points")
-			continue
-		}
-
-		//y := r.graph.transformValue(minData, points[i].Y)
-		/* var y1 float64
-		if r.graph.config.IsLog {
-			y1 = y
-		} else {
-			y1 = r.graph.transformValue(minData, points[i].Y-points[i].Error)
-		} */
-		//y2 := r.graph.transformValue(minData, points[i].Y+points[i].Error)
-
-		// Position relativ zum Minimum berechnen
-		//x := float32(point.X) * xScale
-
 		// scale x value to available width
 		x := float32((point.X-r.graph.function.Scope.MinX)/xRange) * availableWidth
 		y := float32((point.Y-r.graph.function.Scope.MinY)/yRange) * availableHeight
 
 		xt, yt := r.normalize(x, y)
-		r.DrawPoint(xt, yt)
-
+		// error correction
 		yE1 := float32((point.Y+point.Error-r.graph.function.Scope.MinY)/yRange) * availableHeight
 		yE2 := float32((point.Y-point.Error-r.graph.function.Scope.MinY)/yRange) * availableHeight
 
@@ -277,6 +239,80 @@ func (r *GraphRenderer) DrawGraphPointsLog(maxData, minData float64, points func
 		_, e2 := r.normalize(x, yE2)
 
 		r.DrawError(xt, e1, e2)
+		r.DrawPoint(xt, yt)
+	}
+}
+
+func (r *GraphRenderer) DrawGraphLog(maxData, minData float64) {
+	points, iPoints := r.graph.function.Model(r.graph.config.Resolution)
+
+	// calc available space
+	availableWidth := r.size.Width - (1.5 * r.margin)
+	availableHeight := r.size.Height - (1.5 * r.margin)
+
+	// Calculate shifts if needed for negative values
+	xShift := 0.0
+	if r.graph.function.Scope.MinX <= 0 {
+		xShift = math.Abs(r.graph.function.Scope.MinX) + 1
+	}
+	yShift := 0.0
+	if r.graph.function.Scope.MinY <= 0 {
+		yShift = math.Abs(r.graph.function.Scope.MinY) + 1
+	}
+
+	// Calculate log ranges
+	logMinX := math.Log10(r.graph.function.Scope.MinX + xShift)
+	logMaxX := math.Log10(r.graph.function.Scope.MaxX + xShift)
+	logMinY := math.Log10(r.graph.function.Scope.MinY + yShift)
+	logMaxY := math.Log10(r.graph.function.Scope.MaxY + yShift)
+	xRange := math.Abs(logMaxX - logMinX)
+	yRange := math.Abs(logMaxY - logMinY)
+
+	oX, oY := float32(0), float32(0)
+
+	// draw line based on interpolated (resolution) points
+	for i, point := range iPoints {
+		// scale x and y values logarithmically
+		logX := math.Log10(point.X + xShift)
+		logY := math.Log10(point.Y + yShift)
+
+		x := float32((logX-logMinX)/xRange) * availableWidth
+		y := float32((logY-logMinY)/yRange) * availableHeight
+
+		if i == 0 {
+			oX, oY = r.normalize(x, y)
+			continue
+		}
+
+		xt, yt := r.normalize(x, y)
+		r.AddObject(&canvas.Line{
+			StrokeColor: lineColor,
+			StrokeWidth: 1,
+			Position1:   fyne.NewPos(oX, oY),
+			Position2:   fyne.NewPos(xt, yt),
+		})
+		oX, oY = xt, yt
+	}
+
+	// draw data points
+	for _, point := range points {
+		// scale x and y values logarithmically
+		logX := math.Log10(point.X + xShift)
+		logY := math.Log10(point.Y + yShift)
+
+		x := float32((logX-logMinX)/xRange) * availableWidth
+		y := float32((logY-logMinY)/yRange) * availableHeight
+
+		xt, yt := r.normalize(x, y)
+
+		// error correction (also logarithmic)
+		yE1 := float32((math.Log10(point.Y+point.Error+yShift)-logMinY)/yRange) * availableHeight
+		yE2 := float32((math.Log10(point.Y-point.Error+yShift)-logMinY)/yRange) * availableHeight
+		_, e1 := r.normalize(x, yE1)
+		_, e2 := r.normalize(x, yE2)
+
+		r.DrawError(xt, e1, e2)
+		r.DrawPoint(xt, yt)
 	}
 }
 
@@ -286,7 +322,7 @@ func (r *GraphRenderer) normalize(x float32, y float32) (float32, float32) {
 }
 
 // TODO: needs clean
-func (r *GraphRenderer) DrawGraphLines(maxData, minData float64, points function.Points) {
+func (r *GraphRenderer) DrawGraphLine(maxData, minData float64, points function.Points) {
 	scope := r.graph.function.Scope
 
 	// calculate scales

@@ -177,8 +177,11 @@ func AddMainWindow() {
 		[]float64{14.2657, 10.6906},
 		[]float64{3.39544, 2.15980, 3.90204},
 		150)
+
+	dummyFunction.SetInterpolation(function.INTERPOLATION_LINEAR)
+
 	sldGraph := graph.NewGraphCanvas(&graph.GraphConfig{
-		Resolution: 100,
+		Resolution: 5,
 		Title:      "Electron Density ",
 		Function:   dummyFunction,
 	})

@@ -27,24 +27,8 @@ func NewFunction(data Points, interpolationMode InterpolationMode) *Function {
 	minX, maxX := data.MinMaxX()
 	minY, maxY := data.MinMaxY()
 
-	// set interpolation function
-	var inter InterpolationFunction
-
-	switch interpolationMode {
-	// ? does this still work without a inter func?
-	case INTERPOLATION_NONE:
-		break
-	case INTERPOLATION_LINEAR:
-		inter = linearInterpolation
-		break
-	case INTERPOLATION_SPLINE:
-	case INTERPOLATION_PCHIP:
-		panic("NewDataFunction error: interpolation not implemented yet")
-	default:
-		panic("Function_Error: Unknown interpolationMode. Please use only values provided by related const's in data package")
-	}
-
-	return &Function{
+	// create function
+	f := &Function{
 		data: data,
 		Scope: &Scope{
 			minX,
@@ -52,8 +36,12 @@ func NewFunction(data Points, interpolationMode InterpolationMode) *Function {
 			minY,
 			maxY,
 		},
-		eval: inter,
 	}
+
+	// set interpolation function
+	f.SetInterpolation(interpolationMode)
+
+	return f
 }
 
 // TODO: add full explanation
@@ -61,25 +49,45 @@ func (f *Function) Model(resolution int) (Points, Points) {
 	if f.eval == nil {
 		return f.data, f.data
 	}
-	var interpolatedModel = make(Points, resolution)
+
+	interpolated := make(Points, resolution)
+
 	deltaX := (f.Scope.MaxX - f.Scope.MinX) / float64(resolution)
-	for i := 0; i < resolution; i++ {
+	for i := range interpolated {
 		x := f.Scope.MinX + float64(i)*deltaX
+
+		// TODO: add error handling
 		y, _ := f.eval(f.data, x)
 
-		interpolatedModel[i] = &Point{
+		interpolated[i] = &Point{
 			X:     x,
 			Y:     y,
 			Error: 0,
 		}
 	}
 
-	return f.data, interpolatedModel
+	return f.data, interpolated
 }
 
 // evaluates function value at x
 func (f *Function) Eval(x float64) (float64, error) {
 	return f.eval(f.data, x)
+}
+
+// sets the interpolation function
+func (f *Function) SetInterpolation(interpolationMode InterpolationMode) {
+	switch interpolationMode {
+	case INTERPOLATION_NONE:
+		break
+	case INTERPOLATION_LINEAR:
+		f.eval = linearInterpolation
+		break
+	case INTERPOLATION_SPLINE:
+	case INTERPOLATION_PCHIP:
+		panic("SetInterpolation error: interpolation not implemented yet")
+	default:
+		panic("SetInterpolation error: Unknown interpolationMode. Please use only values provided by related const's in data package")
+	}
 }
 
 // TODO: add full explanation
