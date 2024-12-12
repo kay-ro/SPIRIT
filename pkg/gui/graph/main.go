@@ -27,6 +27,7 @@ var (
 	// color for the gridlines
 	gridColor = &color.NRGBA{R: 128, G: 128, B: 128, A: 64}
 
+	// size of the points
 	pointRadius = float32(0.5)
 )
 

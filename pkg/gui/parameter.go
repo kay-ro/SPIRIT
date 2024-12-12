@@ -196,7 +196,7 @@ func (p *Parameter) GetMax() (float64, bool, error) {
 	}
 	val, err := strconv.ParseFloat(p.valEntry.Text, 64)
 	if err != nil {
-		return 0, false, fmt.Errorf("getmax error: ", err)
+		return 0, false, fmt.Errorf("getmax error: %v", err)
 	}
 	return val, true, nil
 }

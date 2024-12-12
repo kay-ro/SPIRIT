@@ -163,33 +163,27 @@ func AddMainWindow() {
 		}
 	}
 
-	g1 := graph.NewGraphCanvas(&graph.GraphConfig{
+	/* g1 := graph.NewGraphCanvas(&graph.GraphConfig{
 		Title:    "Logarithmic",
 		IsLog:    true,
 		Function: function.NewFunction(dataset, function.INTERPOLATION_NONE),
-	})
+	}) */
 
-	GraphContainer.Add(g1)
+	//GraphContainer.Add(g1)
 
+	// from refl_monolayer.pro:780
 	dummyFunction := data.NewOldSLDFunction(
 		[]float64{0.0, 0.346197, 0.458849, 0.334000},
 		[]float64{14.2657, 10.6906},
 		[]float64{3.39544, 2.15980, 3.90204},
-		150) // from refl_monolayer.pro:780
-	/* if dummyFunction == nil {
-		dummyFunction = function.NewDataFunction(function.Points{{
-			X:     0,
-			Y:     0,
-			Error: 0,
-		}}, function.INTERPOLATION_NONE)
-	} */
+		150)
 	sldGraph := graph.NewGraphCanvas(&graph.GraphConfig{
 		Resolution: 100,
 		Title:      "Electron Density ",
 		Function:   dummyFunction,
 	})
 
-	dummyGraph := graph.NewGraphCanvas(&graph.GraphConfig{
+	/* dummyGraph := graph.NewGraphCanvas(&graph.GraphConfig{
 		Resolution: 100,
 		Title:      "Dummy Graph to load data later",
 		Function: function.NewFunction(function.Points{{
@@ -198,10 +192,10 @@ func AddMainWindow() {
 			Error: 0,
 		}}, function.INTERPOLATION_NONE),
 	})
-	GraphContainer.Add(dummyGraph)
+	GraphContainer.Add(dummyGraph) */
 
 	profilePanel := NewProfilePanel(NewSldDefaultSettings("Settings"))
-	profilePanel.OnValueChanged = func() {
+	/* profilePanel.OnValueChanged = func() {
 		edensity := make([]float64, len(profilePanel.Profiles)+2)
 		sigma := make([]float64, len(profilePanel.Profiles)+1)
 		d := make([]float64, len(profilePanel.Profiles))
@@ -229,7 +223,7 @@ func AddMainWindow() {
 			return
 		}
 		sldGraph.UpdateFunction(newEdensity)
-	}
+	} */
 
 	content := container.NewBorder(
 		topContainer, // top
@@ -242,7 +236,7 @@ func AddMainWindow() {
 				sldGraph,
 				profilePanel,
 			),
-			container.NewVScroll(g1 /* GraphContainer */),
+			container.NewVScroll(GraphContainer),
 		),
 	)
 
