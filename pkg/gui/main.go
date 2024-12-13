@@ -154,17 +154,23 @@ func AddMainWindow() {
 	)
 
 	// create dataset 2^x
-	dataset := make(function.Points, 10)
-	for i := 0; i < 10; i++ {
+	dataset := make(function.Points, 20)
+	for i := 0; i < 20; i++ {
 		dataset[i] = &function.Point{
-			X:     float64(i) + 0.5,
-			Y:     math.Pow(2, float64(i)),
+			X:     float64(i),
+			Y:     math.Pow(float64(i), 2),
 			Error: 1,
 		}
 	}
 
 	g1 := graph.NewGraphCanvas(&graph.GraphConfig{
-		Title:    "Logarithmic",
+		Title:    "Non Logarithmic x^2",
+		IsLog:    false,
+		Function: function.NewFunction(dataset, function.INTERPOLATION_NONE),
+	})
+
+	g2 := graph.NewGraphCanvas(&graph.GraphConfig{
+		Title:    "Logarithmic x^2",
 		IsLog:    true,
 		Function: function.NewFunction(dataset, function.INTERPOLATION_NONE),
 	})
@@ -239,7 +245,11 @@ func AddMainWindow() {
 				sldGraph,
 				profilePanel,
 			),
-			container.NewVScroll(GraphContainer),
+			/* container.NewVScroll( */
+			container.NewVSplit(
+				g1, g2,
+			),
+			/* ), */
 		),
 	)
 

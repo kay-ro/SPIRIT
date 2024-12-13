@@ -2,6 +2,7 @@ package function
 
 import (
 	"cmp"
+	"math"
 	"slices"
 )
 
@@ -47,6 +48,20 @@ func (p Points) MinMaxY() (float64, float64) {
 	}
 
 	return min, max
+}
+
+// ? may be useless, but may simplify some stuff so we will keep it for now
+func (p Points) Log() Points {
+	np := make(Points, len(p))
+	for i, point := range p {
+		np[i] = &Point{
+			X:     point.X,
+			Y:     math.Log10(point.Y),
+			Error: point.Error,
+		}
+	}
+
+	return p
 }
 
 // represents a coordinate with x and y value

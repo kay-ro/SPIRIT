@@ -178,7 +178,7 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	// draw model lines
 	//r.DrawGraphLines(maxData, minData, modelPoints)
 	if r.graph.config.IsLog {
-		r.DrawGraphLog(maxData, minData)
+		r.DrawGraphLog()
 	} else {
 		r.DrawGraphLinear()
 	}
@@ -243,7 +243,7 @@ func (r *GraphRenderer) DrawGraphLinear() {
 	}
 }
 
-func (r *GraphRenderer) DrawGraphLog(maxData, minData float64) {
+func (r *GraphRenderer) DrawGraphLog() {
 	points, iPoints := r.graph.function.Model(r.graph.config.Resolution)
 
 	// calc available space
@@ -316,36 +316,13 @@ func (r *GraphRenderer) DrawGraphLog(maxData, minData float64) {
 	}
 }
 
+func (r *GraphRenderer) DrawHGrid() {
+
+}
+
 // normalizes the coodinates from the bottom left of the canvas
 func (r *GraphRenderer) normalize(x float32, y float32) (float32, float32) {
 	return x + r.margin, r.size.Height - r.margin - y
-}
-
-// TODO: needs clean
-func (r *GraphRenderer) DrawGraphLine(maxData, minData float64, points function.Points) {
-	scope := r.graph.function.Scope
-
-	// calculate scales
-	xScale := (r.size.Width - 1.5*r.margin) / float32(scope.MaxX-scope.MinX)
-	yScale := (r.size.Height - 1.5*r.margin) / float32(maxData)
-
-	for i := 0; i < len(points)-1; i++ {
-		line := canvas.NewLine(lineColor)
-		line.StrokeWidth = 1
-
-		y1 := r.graph.transformValue(minData, points[i].Y)
-		y2 := r.graph.transformValue(minData, points[i+1].Y)
-
-		x1 := r.margin + float32(points[i].X)*xScale
-		yPos1 := r.size.Height - r.margin - float32(y1-minData)*yScale
-		x2 := r.margin + float32(points[i+1].X)*xScale
-		yPos2 := r.size.Height - r.margin - float32(y2-minData)*yScale
-
-		line.Position1 = fyne.NewPos(x1, yPos1)
-		line.Position2 = fyne.NewPos(x2, yPos2)
-
-		r.AddObject(line)
-	}
 }
 
 // TODO: fix the small gap between points and lines

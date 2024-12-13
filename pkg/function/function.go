@@ -38,6 +38,8 @@ func NewFunction(data Points, interpolationMode InterpolationMode) *Function {
 		},
 	}
 
+	f.sanitize()
+
 	// set interpolation function
 	f.SetInterpolation(interpolationMode)
 
@@ -87,6 +89,15 @@ func (f *Function) SetInterpolation(interpolationMode InterpolationMode) {
 		panic("SetInterpolation error: interpolation not implemented yet")
 	default:
 		panic("SetInterpolation error: Unknown interpolationMode. Please use only values provided by related const's in data package")
+	}
+}
+
+// sanitizes the function data and removes all 0 values for potential log scale issues
+func (f *Function) sanitize() {
+	for i, point := range f.data {
+		if point.X == 0 || point.Y == 0 {
+			f.data = append(f.data[:i], f.data[i+1:]...)
+		}
 	}
 }
 
