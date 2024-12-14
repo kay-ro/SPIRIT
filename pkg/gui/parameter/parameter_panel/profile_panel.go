@@ -22,10 +22,11 @@ func NewParameterProfileRenderer(impl *ParameterProfile) *ParameterProfileRender
 
 func (r *ParameterProfileRenderer) Update() {
 	topPanel := container.NewBorder(nil, nil, nil, r.impl.buttonPanel, r.impl.name)
-	var vObjectList = make([]fyne.CanvasObject, len(r.impl.parameter)+1)
+	var vObjectList = make([]fyne.CanvasObject, len(r.impl.parameter)+2)
 	vObjectList[0] = topPanel
-	for i := 1; i < len(vObjectList); i++ {
-		vObjectList[i] = r.impl.parameter[i-1]
+	vObjectList[1] = widget.NewSeparator()
+	for i := 2; i < len(vObjectList); i++ {
+		vObjectList[i] = r.impl.parameter[i-2]
 	}
 	contentPanel := container.NewVScroll(container.NewVBox(vObjectList...))
 	r.WidgetRenderer = widget.NewSimpleRenderer(contentPanel)
@@ -60,7 +61,6 @@ func (p *ParameterProfile) Add(parameter *parameter.Parameter) {
 	if p.renderer != nil {
 		p.renderer.Update()
 	}
-	p.ExtendBaseWidget(parameter)
 }
 func (p *ParameterProfile) Remove(parameter *parameter.Parameter) {
 	parameterIndex := slices.Index(p.parameter, parameter)
@@ -74,6 +74,9 @@ func (p *ParameterProfile) Remove(parameter *parameter.Parameter) {
 }
 func (p *ParameterProfile) SetButtonPanel(pnl fyne.CanvasObject) {
 	p.buttonPanel = pnl
+	if p.renderer != nil {
+		p.renderer.Update()
+	}
 }
 
 type ParameterProfilePanelRenderer struct {
@@ -136,7 +139,6 @@ func (p *ParameterProfilePanel) Add(profile *ParameterProfile) {
 	if p.renderer != nil {
 		p.renderer.Update()
 	}
-	p.ExtendBaseWidget(profile)
 }
 
 func (p *ParameterProfilePanel) Remove(profile *ParameterProfile) {

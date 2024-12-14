@@ -22,7 +22,17 @@ func (p *Parameter) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(container.NewVBox(p.name, container.NewHBox(container.NewCenter(p.check), container.NewCenter(p.val), container.NewVBox(p.max, p.min))))
 }
 func (p *Parameter) MinSize() fyne.Size {
-	return ParameterMinSize
+	var minWidth, minHeight float32 = 20.0, 0.0 // padding offset
+	minWidth += p.check.Size().Width
+	minWidth += p.val.MinSize().Width
+	minWidth += max(p.min.MinSize().Width, p.max.MinSize().Width)
+
+	minHeight += p.name.MinSize().Height
+	minHeight += max(p.check.Size().Height, p.val.MinSize().Height, p.min.MinSize().Height+p.max.MinSize().Height)
+	return fyne.Size{
+		Width:  max(minWidth, p.name.MinSize().Width),
+		Height: minHeight,
+	}
 }
 
 func NewParameter(nameVal binding.String, defaultVal, value, min, max binding.Float, checkVal binding.Bool) *Parameter {
@@ -64,8 +74,7 @@ func NewParameter(nameVal binding.String, defaultVal, value, min, max binding.Fl
 			}
 		}
 	}
-
-	return &Parameter{
+	p := &Parameter{
 		BaseWidget: widget.BaseWidget{},
 		name:       name,
 		check:      check,
@@ -73,4 +82,6 @@ func NewParameter(nameVal binding.String, defaultVal, value, min, max binding.Fl
 		min:        minV,
 		max:        maxV,
 	}
+	p.ExtendBaseWidget(p)
+	return p
 }
