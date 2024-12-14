@@ -56,7 +56,9 @@ func NewParameterProfile(nameVal binding.String) *ParameterProfile {
 }
 func (p *ParameterProfile) Add(parameter *parameter.Parameter) {
 	p.parameter = append(p.parameter, parameter)
-	p.renderer.Update()
+	if p.renderer != nil {
+		p.renderer.Update()
+	}
 }
 func (p *ParameterProfile) Remove(parameter *parameter.Parameter) {
 	parameterIndex := slices.Index(p.parameter, parameter)
@@ -64,7 +66,9 @@ func (p *ParameterProfile) Remove(parameter *parameter.Parameter) {
 		return
 	}
 	p.parameter = append(p.parameter[:parameterIndex], p.parameter[parameterIndex+1:]...)
-	p.renderer.Update()
+	if p.renderer != nil {
+		p.renderer.Update()
+	}
 }
 func (p *ParameterProfile) SetButtonPanel(pnl fyne.CanvasObject) {
 	p.buttonPanel = pnl
@@ -127,7 +131,9 @@ func NewParameterProfilePanel(profiles ...*ParameterProfile) *ParameterProfilePa
 
 func (p *ParameterProfilePanel) Add(profile *ParameterProfile) {
 	p.profiles = append(p.profiles, profile)
-	p.renderer.Update()
+	if p.renderer != nil {
+		p.renderer.Update()
+	}
 }
 
 func (p *ParameterProfilePanel) Remove(profile *ParameterProfile) {
@@ -136,5 +142,7 @@ func (p *ParameterProfilePanel) Remove(profile *ParameterProfile) {
 		return
 	}
 	p.profiles = append(p.profiles[:parameterIndex], p.profiles[parameterIndex+1:]...)
-	p.renderer.Update()
+	if p.renderer != nil {
+		p.renderer.Update()
+	}
 }
