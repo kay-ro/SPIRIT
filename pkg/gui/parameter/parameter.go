@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
+	"physicsGUI/pkg/gui/parameter/custom_bindings"
 )
 
 type Parameter struct {
@@ -32,7 +33,9 @@ func NewParameter(nameVal binding.String, defaultVal, value, min, max binding.Fl
 	// create filtered entry fields, which only accept runes relevant for float inputs
 	val := NewFilteredEntry('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '-', 'e', '.')
 	minV := NewFilteredEntry('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '-', 'e', '.')
+	minV.PlaceHolder = "Min"
 	maxV := NewFilteredEntry('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '-', 'e', '.')
+	maxV.PlaceHolder = "Max"
 
 	// make checkbox for locking data for minimizer
 	check := widget.NewCheck("", func(b bool) {
@@ -40,9 +43,9 @@ func NewParameter(nameVal binding.String, defaultVal, value, min, max binding.Fl
 	})
 
 	// Bind gui representation to the data
-	val.Bind(binding.FloatToString(value))
-	minV.Bind(binding.FloatToString(min))
-	maxV.Bind(binding.FloatToString(max))
+	val.Bind(custom_bindings.NewLazyFloatToString(value, defaultVal))
+	minV.Bind(custom_bindings.NewLazyFloatToString(min, nil))
+	maxV.Bind(custom_bindings.NewLazyFloatToString(max, nil))
 	check.Bind(checkVal)
 
 	// update placeholder text, when default Value changed
@@ -52,6 +55,15 @@ func NewParameter(nameVal binding.String, defaultVal, value, min, max binding.Fl
 			val.PlaceHolder = fmt.Sprint(def)
 		}
 	}))
+
+	// set to default value, if value is submitted empty
+	val.OnSubmitted = func(s string) {
+		if s == "" {
+			if get, err := defaultVal.Get(); err == nil {
+				val.SetText(fmt.Sprint(get))
+			}
+		}
+	}
 
 	return &Parameter{
 		BaseWidget: widget.BaseWidget{},
