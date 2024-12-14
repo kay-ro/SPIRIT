@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"fyne.io/fyne/v2/data/binding"
 	"math"
+	"slices"
 	"strconv"
 )
 
@@ -12,22 +13,21 @@ import (
 type LazyFloatToString struct {
 	refBinding   binding.Float
 	defaultValue binding.Float
+	listener     []binding.DataListener
+	lastSet      float64
 }
 
 func (l *LazyFloatToString) AddListener(listener binding.DataListener) {
-	l.refBinding.AddListener(listener)
+	l.listener = append(l.listener, listener)
 }
 
 func (l *LazyFloatToString) RemoveListener(listener binding.DataListener) {
-	l.refBinding.RemoveListener(listener)
-}
-
-func NewLazyFloatToString(refBinding binding.Float, defaultValue binding.Float) *LazyFloatToString {
-	return &LazyFloatToString{
-		refBinding:   refBinding,
-		defaultValue: defaultValue,
+	listenerIndex := slices.Index(l.listener, listener)
+	if listenerIndex != -1 {
+		l.listener = append(l.listener[:listenerIndex], l.listener[listenerIndex+1:]...)
 	}
 }
+
 func (l *LazyFloatToString) Get() (string, error) {
 	if get, err := l.refBinding.Get(); err != nil {
 		return "", err
@@ -41,15 +41,43 @@ func (l *LazyFloatToString) Get() (string, error) {
 
 func (l *LazyFloatToString) Set(s string) error {
 	if float, err := strconv.ParseFloat(s, 64); err == nil {
+		old, err := l.refBinding.Get()
+		if err == nil && float == old {
+			return nil
+		}
+		l.lastSet = float
 		return l.refBinding.Set(float)
 	} else {
 		if l.defaultValue != nil {
 			if get, err := l.defaultValue.Get(); err == nil {
-				return l.refBinding.Set(get)
+				_ = l.refBinding.Set(get)
+				l.lastSet = get
 			} else {
 				return err
 			}
 		}
-		return nil
+		if s == "" {
+			return nil
+		} else {
+			return err
+		}
 	}
+}
+
+// DataChanged does not use async que like binging.FloatToString implementation
+func (l *LazyFloatToString) DataChanged() {
+	if f, err := l.refBinding.Get(); err == nil && f != l.lastSet {
+		for _, listener := range l.listener {
+			listener.DataChanged()
+		}
+	}
+}
+
+func NewLazyFloatToString(refBinding binding.Float, defaultValue binding.Float) *LazyFloatToString {
+	conv := &LazyFloatToString{
+		refBinding:   refBinding,
+		defaultValue: defaultValue,
+	}
+	refBinding.AddListener(conv)
+	return conv
 }
