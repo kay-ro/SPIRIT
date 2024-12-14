@@ -47,6 +47,7 @@ func (p *ParameterProfile) CreateRenderer() fyne.WidgetRenderer {
 
 func NewParameterProfile(nameVal binding.String) *ParameterProfile {
 	name := widget.NewEntryWithData(nameVal)
+	name.Validator = nil
 	p := &ParameterProfile{
 		name:      name,
 		parameter: []*parameter.Parameter{},
@@ -59,6 +60,7 @@ func (p *ParameterProfile) Add(parameter *parameter.Parameter) {
 	if p.renderer != nil {
 		p.renderer.Update()
 	}
+	p.ExtendBaseWidget(parameter)
 }
 func (p *ParameterProfile) Remove(parameter *parameter.Parameter) {
 	parameterIndex := slices.Index(p.parameter, parameter)
@@ -134,6 +136,7 @@ func (p *ParameterProfilePanel) Add(profile *ParameterProfile) {
 	if p.renderer != nil {
 		p.renderer.Update()
 	}
+	p.ExtendBaseWidget(profile)
 }
 
 func (p *ParameterProfilePanel) Remove(profile *ParameterProfile) {

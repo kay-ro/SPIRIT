@@ -3,6 +3,7 @@ package gui
 import (
 	"errors"
 	"fmt"
+	"fyne.io/fyne/v2/data/binding"
 	"image/color"
 	"io"
 	"log"
@@ -11,6 +12,8 @@ import (
 	"physicsGUI/pkg/data"
 	"physicsGUI/pkg/function"
 	"physicsGUI/pkg/gui/graph"
+	"physicsGUI/pkg/gui/parameter"
+	"physicsGUI/pkg/gui/parameter/parameter_panel"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -202,8 +205,22 @@ func AddMainWindow() {
 		}}, function.INTERPOLATION_NONE),
 	})
 	GraphContainer.Add(dummyGraph) */
+	profileName := binding.NewString()
+	profileName.Set("Temporary Profile")
+	profile1 := parameter_panel.NewParameterProfile(profileName)
 
-	profilePanel := NewProfilePanel(NewSldDefaultSettings("Settings"))
+	parameterName := binding.NewString()
+	parameterName.Set("Temporary Parameter")
+
+	defaultVal := binding.NewFloat()
+	defaultVal.Set(10.04)
+	val := binding.NewFloat()
+	minV := binding.NewFloat()
+	maxV := binding.NewFloat()
+	checkV := binding.NewBool()
+	param := parameter.NewParameter(parameterName, defaultVal, val, minV, maxV, checkV)
+	profile1.Add(param)
+	profilePanel := parameter_panel.NewParameterProfilePanel(profile1)
 	/* profilePanel.OnValueChanged = func() {
 		edensity := make([]float64, len(profilePanel.Profiles)+2)
 		sigma := make([]float64, len(profilePanel.Profiles)+1)

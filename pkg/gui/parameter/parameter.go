@@ -20,11 +20,15 @@ type Parameter struct {
 func (p *Parameter) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(container.NewVBox(p.name, container.NewHBox(container.NewCenter(p.check), container.NewCenter(p.val), container.NewVBox(p.max, p.min))))
 }
+func (p *Parameter) MinSize() fyne.Size {
+	return ParameterMinSize
+}
 
 func NewParameter(nameVal binding.String, defaultVal, value, min, max binding.Float, checkVal binding.Bool) *Parameter {
 
 	// create name text field with linked data
 	name := widget.NewEntryWithData(nameVal)
+	name.Validator = nil
 	// create filtered entry fields, which only accept runes relevant for float inputs
 	val := NewFilteredEntry('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '-', 'e', '.')
 	minV := NewFilteredEntry('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '-', 'e', '.')
