@@ -205,9 +205,6 @@ func AddMainWindow() {
 		}}, function.INTERPOLATION_NONE),
 	})
 	GraphContainer.Add(dummyGraph) */
-	profileName := binding.NewString()
-	profileName.Set("Temporary Profile")
-	profile1 := parameter_panel.NewParameterProfile(profileName)
 
 	parameterName := binding.NewString()
 	parameterName.Set("Temporary Parameter")
@@ -221,8 +218,15 @@ func AddMainWindow() {
 	maxV.Set(math.MaxFloat64)
 	checkV := binding.NewBool()
 	param := parameter.NewParameter(parameterName, defaultVal, val, minV, maxV, checkV)
-	profile1.Add(param)
-	profilePanel := parameter_panel.NewParameterProfilePanel(profile1)
+	param1 := parameter.NewParameter(parameterName, defaultVal, val, minV, maxV, checkV)
+	param2 := parameter.NewParameter(parameterName, defaultVal, val, minV, maxV, checkV)
+	param3 := parameter.NewParameter(parameterName, defaultVal, val, minV, maxV, checkV)
+	profilePanel := parameter_panel.NewParameterGrid(3)
+	profilePanel.Add(param)
+	profilePanel.Add(param1)
+	profilePanel.Add(param2)
+	profilePanel.Add(param3)
+
 	/* profilePanel.OnValueChanged = func() {
 		edensity := make([]float64, len(profilePanel.Profiles)+2)
 		sigma := make([]float64, len(profilePanel.Profiles)+1)
