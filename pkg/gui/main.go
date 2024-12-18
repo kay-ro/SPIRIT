@@ -142,6 +142,8 @@ func createSeparator() *canvas.Line {
 	return line
 }
 
+// AddMainWindow builds and renders the main GUI content, it will show and run the main window,
+// which is a blocking command [fyne.Window.ShowAndRun]
 func AddMainWindow() {
 	importButton := createImportButton(MainWindow)
 
@@ -191,7 +193,7 @@ func AddMainWindow() {
 
 	sldGraph := graph.NewGraphCanvas(&graph.GraphConfig{
 		Resolution: 5,
-		Title:      "Electron Density ",
+		Title:      "Electron Density",
 		Function:   dummyFunction,
 	})
 
@@ -207,15 +209,27 @@ func AddMainWindow() {
 	GraphContainer.Add(dummyGraph) */
 
 	parameterName := binding.NewString()
-	parameterName.Set("Temporary Parameter")
+	err := parameterName.Set("Temporary Parameter")
+	if err != nil {
+		log.Println("error setting parameter name:", err)
+	}
 
 	defaultVal := binding.NewFloat()
-	defaultVal.Set(10.04)
+	err = defaultVal.Set(10.04)
+	if err != nil {
+		log.Println("error setting default value:", err)
+	}
 	val := binding.NewFloat()
 	minV := binding.NewFloat()
-	minV.Set(-math.MaxFloat64)
+	err = minV.Set(-math.MaxFloat64)
+	if err != nil {
+		log.Println("error setting min value:", err)
+	}
 	maxV := binding.NewFloat()
-	maxV.Set(math.MaxFloat64)
+	err = maxV.Set(math.MaxFloat64)
+	if err != nil {
+		log.Println("error setting max value:", err)
+	}
 	checkV := binding.NewBool()
 	param := parameter.NewParameter(parameterName, defaultVal, val, minV, maxV, checkV)
 	param1 := parameter.NewParameter(parameterName, defaultVal, val, minV, maxV, checkV)
