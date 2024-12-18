@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+// GraphCanvas represents the graphical representation of a graph.
 type GraphCanvas struct {
 	widget.BaseWidget
 	function   *function.Function
@@ -25,7 +26,9 @@ type GraphCanvas struct {
 	config *GraphConfig
 }
 
-// creates a new canvas for the graph
+// NewGraphCanvas creates a new canvas instance with a provided config.
+// Specfically, it sets up the underlying structure of a canvas including lines, axes, labels and background.
+// The method also calls 'ExtendBaseWidget' to cross-reference the canvas instance with the underlying fyne.BaseWidget struct.
 func NewGraphCanvas(config *GraphConfig) *GraphCanvas {
 	g := &GraphCanvas{
 		lines:   make([]*canvas.Line, 0),
@@ -75,7 +78,7 @@ func (g *GraphCanvas) transformValue(minValue, value float64) float64 {
 	return value
 }
 
-// returns a renderer for the graph
+// CreateRenderer returns a [GraphRenderer] from a [GraphCanvas]
 func (g *GraphCanvas) CreateRenderer() fyne.WidgetRenderer {
 	return &GraphRenderer{
 		graph:   g,
@@ -85,7 +88,7 @@ func (g *GraphCanvas) CreateRenderer() fyne.WidgetRenderer {
 	}
 }
 
-// update function and refresh the graph
+// UpdateFunction updates the function and refreshes the [GraphCanvas]
 func (g *GraphCanvas) UpdateFunction(newFunction *function.Function) {
 	g.function = newFunction
 	g.Refresh()

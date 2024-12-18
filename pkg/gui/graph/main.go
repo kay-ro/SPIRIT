@@ -31,7 +31,7 @@ var (
 	pointRadius = float32(0.5)
 )
 
-// basic struct to configure the graph
+// GraphConfig configures the basic struct for a graph
 type GraphConfig struct {
 	Title      string
 	IsLog      bool
