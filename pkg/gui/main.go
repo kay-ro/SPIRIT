@@ -169,13 +169,13 @@ func AddMainWindow() {
 	}
 
 	g1 := graph.NewGraphCanvas(&graph.GraphConfig{
-		Title:    "Non Logarithmic x^2",
+		Title:    "Non Logarithmic x²",
 		IsLog:    false,
 		Function: function.NewFunction(dataset, function.INTERPOLATION_NONE),
 	})
 
 	g2 := graph.NewGraphCanvas(&graph.GraphConfig{
-		Title:    "Logarithmic x^2",
+		Title:    "Logarithmic x²",
 		IsLog:    true,
 		Function: function.NewFunction(dataset, function.INTERPOLATION_NONE),
 	})
