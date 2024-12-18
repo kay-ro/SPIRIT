@@ -3,7 +3,6 @@ package gui
 import (
 	"errors"
 	"fmt"
-	"fyne.io/fyne/v2/data/binding"
 	"image/color"
 	"io"
 	"log"
@@ -14,6 +13,8 @@ import (
 	"physicsGUI/pkg/gui/graph"
 	"physicsGUI/pkg/gui/parameter"
 	"physicsGUI/pkg/gui/parameter/parameter_panel"
+
+	"fyne.io/fyne/v2/data/binding"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -159,23 +160,23 @@ func AddMainWindow() {
 	)
 
 	// create dataset 2^x
-	dataset := make(function.Points, 20)
-	for i := 0; i < 20; i++ {
+	dataset := make(function.Points, 21)
+	for i := 0; i < len(dataset); i++ {
 		dataset[i] = &function.Point{
 			X:     float64(i),
-			Y:     math.Pow(float64(i), 2),
+			Y:     math.Pow(float64(i), 3),
 			Error: 1,
 		}
 	}
 
 	g1 := graph.NewGraphCanvas(&graph.GraphConfig{
-		Title:    "Non Logarithmic x²",
+		Title:    "Non Logarithmic x³",
 		IsLog:    false,
 		Function: function.NewFunction(dataset, function.INTERPOLATION_NONE),
 	})
 
 	g2 := graph.NewGraphCanvas(&graph.GraphConfig{
-		Title:    "Logarithmic x²",
+		Title:    "Logarithmic x³",
 		IsLog:    true,
 		Function: function.NewFunction(dataset, function.INTERPOLATION_NONE),
 	})

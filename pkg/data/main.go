@@ -6,8 +6,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 type Measurement struct {
@@ -52,7 +50,6 @@ func Parse(data []byte) ([]*Measurement, error) {
 
 		matches := re.FindStringSubmatch(v)
 		if len(matches) != 4 {
-			spew.Dump(matches)
 			return nil, fmt.Errorf("parse error: expected '<FLOAT> <FLOAT> <FLOAT>' got '%s'", v)
 		}
 

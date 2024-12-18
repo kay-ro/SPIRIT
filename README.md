@@ -35,3 +35,8 @@ go build main.go
 # mac/linux
 ./main
 ```
+
+### TODO / Things we need to keep in mind
+
+- Add log sanitizing dynamically
+  otherwise we will face rendering issues if the min/max values aren't updated accordingly

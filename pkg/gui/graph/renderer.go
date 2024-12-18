@@ -32,35 +32,36 @@ func (r *GraphRenderer) MinSize() fyne.Size {
 
 // initializes the base strcuture for every graph
 func (r *GraphRenderer) base() {
-	// init drawing objects
-	r.AddObject(r.graph.background)
-
-	// axes
-	r.graph.axes[0] = canvas.NewLine(axesColor) // x-axis
-	r.graph.axes[0].StrokeWidth = 1
-	r.graph.axes[1] = canvas.NewLine(axesColor) // y-acis
-	r.graph.axes[1].StrokeWidth = 1
-
-	// title
-	r.graph.title = canvas.NewText(r.graph.config.Title, titleColor)
-	r.graph.title.TextSize = 16
-	r.graph.title.TextStyle.Bold = true
-	r.graph.title.Move(fyne.NewPos(r.size.Width/2-float32(len(r.graph.title.Text)*4), 0))
-	r.AddObject(r.graph.title)
-
 	// background
 	r.graph.background.Resize(*r.size)
 	r.graph.background.Move(fyne.NewPos(0, 0))
+	r.AddObject(r.graph.background)
+
+	// title
+	title := &canvas.Text{
+		Text:      r.graph.config.Title,
+		Color:     titleColor,
+		TextSize:  16,
+		TextStyle: fyne.TextStyle{Bold: true},
+	}
+	title.Move(fyne.NewPos(r.size.Width/2-float32(len(title.Text)*4), 0))
+	r.AddObject(title)
 
 	// x-axis
-	r.graph.axes[0].Position1 = fyne.NewPos(r.margin-2, r.size.Height-r.margin+2)
-	r.graph.axes[0].Position2 = fyne.NewPos(r.size.Width-r.margin/2, r.size.Height-r.margin+2)
-	r.AddObject(r.graph.axes[0])
+	r.AddObject(&canvas.Line{
+		StrokeColor: axesColor,
+		StrokeWidth: 1,
+		Position1:   fyne.NewPos(r.margin-2, r.size.Height-r.margin+2),
+		Position2:   fyne.NewPos(r.size.Width-r.margin/2, r.size.Height-r.margin+2),
+	})
 
 	// y-axis
-	r.graph.axes[1].Position1 = fyne.NewPos(r.margin-2, r.size.Height-r.margin+2)
-	r.graph.axes[1].Position2 = fyne.NewPos(r.margin-2, 0.5*r.margin)
-	r.AddObject(r.graph.axes[1])
+	r.AddObject(&canvas.Line{
+		StrokeColor: axesColor,
+		StrokeWidth: 1,
+		Position1:   fyne.NewPos(r.margin-2, r.size.Height-r.margin+2),
+		Position2:   fyne.NewPos(r.margin-2, 0.5*r.margin),
+	})
 }
 
 // draws the whole graph
@@ -74,120 +75,19 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	// set the base for the canvas
 	r.base()
 
-	// get min/max
-	scope := r.graph.function.Scope
-	maxData := scope.MaxY
-	minData := scope.MinY
-
-	if r.graph.config.IsLog {
-		if minData < scope.MinX {
-			minData = scope.MinX
-		}
-
-		// Transformiere die Werte in Log-Skala
-		maxData = math.Log10(maxData)
-		minData = math.Log10(minData)
-	}
-
-	// vertikale grid-lines + x-labels
-	numXLines := 10
-	for i := 0; i <= numXLines; i++ {
-		xPos := r.margin + float32(i)*float32(r.size.Width-1.5*r.margin)/float32(numXLines)
-
-		// grid-lines
-		if i > 0 && i < numXLines { // no grid line at the edge
-			gridLine := createGridLine(
-				fyne.NewPos(xPos, r.margin/2),
-				true,
-				r.size.Height-1.5*r.margin,
-			)
-			r.graph.gridLines = append(r.graph.gridLines, gridLine)
-		}
-
-		// label
-		if i%2 == 0 {
-			value := float64(i) * scope.MaxX / float64(numXLines)
-			label := canvas.NewText(fmt.Sprintf("%.1f", value), legendColor)
-			label.TextSize = 12
-			label.Move(fyne.NewPos(xPos-15, r.size.Height-r.margin+10))
-			r.AddObject(label)
-		}
-	}
-
-	// horizonzal grid-lines + y-labels
-	numYLines := 10
-	if r.graph.config.IsLog {
-		// calc start/end values for log scale
-		startExp := math.Floor(math.Log10(scope.MinX))
-		endExp := math.Ceil(math.Log10(math.Pow(10, maxData)))
-
-		// calculate intermediate steps for each scale
-		for exp := startExp; exp <= endExp; exp++ {
-			base := math.Pow(10, exp)
-
-			// Füge mehr Zwischenschritte innerhalb jeder Größenordnung hinzu
-			for i := 1; i < 10; i++ {
-				value := base * float64(i)
-				if value >= scope.MinX && value <= math.Pow(10, maxData) {
-					logValue := math.Log10(value)
-					yPos := r.size.Height - r.margin - float32(logValue-minData)*float32(r.size.Height-1.5*r.margin)/float32(maxData-minData)
-
-					if yPos > r.margin/2 && yPos < r.size.Height-r.margin {
-						// grid-line
-						gridLine := createGridLine(
-							fyne.NewPos(r.margin, yPos),
-							false,
-							r.size.Width-1.5*r.margin,
-						)
-						r.graph.gridLines = append(r.graph.gridLines, gridLine)
-
-						// label (only for "label line")
-						if i == 1 {
-							label := canvas.NewText(fmt.Sprintf("%.1e", value), legendColor)
-							label.TextSize = 12
-							label.Move(fyne.NewPos(r.margin-45, yPos-10))
-							r.graph.yLabels = append(r.graph.yLabels, label)
-						}
-					}
-				}
-			}
-		}
-	} else {
-		for i := 0; i <= numYLines; i++ {
-			value := minData + (maxData-minData)*float64(i)/float64(numYLines)
-			yPos := r.size.Height - r.margin - float32(i)*float32(r.size.Height-1.5*r.margin)/float32(numYLines)
-
-			// grid-lines
-			if i > 0 && i < numYLines { // no grid line at the edge
-				gridLine := createGridLine(
-					fyne.NewPos(r.margin, yPos),
-					false,
-					r.size.Width-1.5*r.margin,
-				)
-				r.AddObject(gridLine)
-			}
-
-			// label
-			label := canvas.NewText(fmt.Sprintf("%.2f", value), legendColor)
-			label.TextSize = 12
-			label.Move(fyne.NewPos(r.margin-45, yPos-10))
-			r.AddObject(label)
-		}
-	}
-
 	// draw model lines
-	//r.DrawGraphLines(maxData, minData, modelPoints)
 	if r.graph.config.IsLog {
 		r.DrawGraphLog()
+		r.DrawGridLog()
 	} else {
 		r.DrawGraphLinear()
+		r.DrawGridLinear()
 	}
-	// * debug
-	//log.Printf("Render %d objects \n", len(r.objects))
 }
 
+// draw a linear graph
 func (r *GraphRenderer) DrawGraphLinear() {
-	points, iPoints := r.graph.function.Model(r.graph.config.Resolution)
+	points, iPoints := r.graph.function.Model(r.graph.config.Resolution, false)
 
 	// calc available space
 	availableWidth := r.size.Width - (1.5 * r.margin)
@@ -231,6 +131,7 @@ func (r *GraphRenderer) DrawGraphLinear() {
 		y := float32((point.Y-r.graph.function.Scope.MinY)/yRange) * availableHeight
 
 		xt, yt := r.normalize(x, y)
+
 		// error correction
 		yE1 := float32((point.Y+point.Error-r.graph.function.Scope.MinY)/yRange) * availableHeight
 		yE2 := float32((point.Y-point.Error-r.graph.function.Scope.MinY)/yRange) * availableHeight
@@ -243,8 +144,9 @@ func (r *GraphRenderer) DrawGraphLinear() {
 	}
 }
 
+// draw the graph in logarithmic scale
 func (r *GraphRenderer) DrawGraphLog() {
-	points, iPoints := r.graph.function.Model(r.graph.config.Resolution)
+	points, iPoints := r.graph.function.Model(r.graph.config.Resolution, true)
 
 	// calc available space
 	availableWidth := r.size.Width - (1.5 * r.margin)
@@ -316,8 +218,146 @@ func (r *GraphRenderer) DrawGraphLog() {
 	}
 }
 
-func (r *GraphRenderer) DrawHGrid() {
+// draw grid lines and labels for linear scale
+func (r *GraphRenderer) DrawGridLinear() {
+	scope := r.graph.function.Scope
 
+	// horizontal grid-lines + y-labels
+	yGridCount := int(r.size.Height / 25)
+	yStep := (scope.MaxY - scope.MinY) / float64(yGridCount)
+
+	for i := 0; i <= yGridCount; i++ {
+		value := scope.MinY + yStep*float64(i)
+		yPos := r.size.Height - r.margin - float32(i)*float32(r.size.Height-1.5*r.margin)/float32(yGridCount)
+
+		if i > 0 {
+			r.DrawGridLine(fyne.NewPos(r.margin, yPos), false, false)
+		}
+
+		// label
+		label := &canvas.Text{
+			Text:     fmt.Sprintf("%.2f", value),
+			Color:    legendColor,
+			TextSize: 12,
+		}
+		label.Move(fyne.NewPos(r.margin-45, yPos-10))
+		r.AddObject(label)
+	}
+
+	// vertical grid-lines + x-labels
+	xGridCount := int(r.size.Width / 25)
+	xStep := math.Abs(scope.MaxX-scope.MinX) / float64(xGridCount)
+
+	for i := 0; i <= xGridCount; i++ {
+		xPos := r.margin + float32(i)*float32(r.size.Width-1.5*r.margin)/float32(xGridCount)
+
+		if i > 0 {
+			r.DrawGridLine(fyne.NewPos(xPos, r.margin/2), true, false)
+		}
+
+		// only draw every second label to prevent overlapping
+		if i%2 == 0 {
+			// label
+			label := &canvas.Text{
+				Text:     fmt.Sprintf("%.1f", scope.MinX+xStep*float64(i)),
+				Color:    legendColor,
+				TextSize: 12,
+			}
+
+			label.Move(fyne.NewPos(xPos-15, r.size.Height-r.margin+10))
+			r.AddObject(label)
+		}
+	}
+}
+
+// TODO: draw grid lines and labels for logarithmic scale
+func (r *GraphRenderer) DrawGridLog() {
+	scope := r.graph.function.Scope
+
+	// Horizontal grid-lines + y-labels (logarithmic)
+	minLogY := math.Log10(math.Max(scope.MinY, 1e-10))
+	maxLogY := math.Log10(scope.MaxY)
+	yGridCount := int(maxLogY - minLogY)
+
+	for i := 0; i <= yGridCount; i++ {
+		// Calculate logarithmic value
+		value := math.Pow(10, minLogY+float64(i))
+
+		// Convert log space to screen space
+		logVal := math.Log10(value)
+		yPos := r.size.Height - r.margin -
+			float32((logVal-minLogY)/(maxLogY-minLogY))*
+				float32(r.size.Height-1.5*r.margin)
+
+		if i > 0 {
+			r.DrawGridLine(fyne.NewPos(r.margin, yPos), false, false)
+
+			// Add minor grid lines between major decades
+			for j := 2; j < 10; j++ {
+				minorValue := value * float64(j)
+				if minorValue < math.Pow(10, maxLogY) {
+					minorLogVal := math.Log10(minorValue)
+					minorYPos := r.size.Height - r.margin -
+						float32((minorLogVal-minLogY)/(maxLogY-minLogY))*
+							float32(r.size.Height-1.5*r.margin)
+
+					r.DrawGridLine(fyne.NewPos(r.margin, minorYPos), false, true)
+				}
+			}
+		}
+
+		// Label for major grid lines
+		label := &canvas.Text{
+			Text:     fmt.Sprintf("%.0e", value),
+			Color:    legendColor,
+			TextSize: 12,
+		}
+		label.Move(fyne.NewPos(r.margin-45, yPos-10))
+		r.AddObject(label)
+	}
+
+	// Vertical grid-lines + x-labels (logarithmic)
+	minLogX := math.Log10(math.Max(scope.MinX, 1e-10))
+	maxLogX := math.Log10(scope.MaxX)
+	xGridCount := int(maxLogX-minLogX) + 1
+
+	for i := 0; i <= xGridCount; i++ {
+		// Calculate logarithmic value
+		value := math.Pow(10, minLogX+float64(i))
+
+		// Convert log space to screen space
+		logVal := math.Log10(value)
+		xPos := r.margin +
+			float32((logVal-minLogX)/(maxLogX-minLogX))*
+				float32(r.size.Width-1.5*r.margin)
+
+		if i > 0 {
+			r.DrawGridLine(fyne.NewPos(xPos, r.margin/2), true, false)
+
+			// Add minor grid lines between major decades
+			for j := 2; j < 10; j++ {
+				minorValue := value * float64(j)
+				if minorValue < math.Pow(10, maxLogX) {
+					minorLogVal := math.Log10(minorValue)
+					minorXPos := r.margin +
+						float32((minorLogVal-minLogX)/(maxLogX-minLogX))*
+							float32(r.size.Width-1.5*r.margin)
+					r.DrawGridLine(fyne.NewPos(minorXPos, r.margin/2), true, true)
+				}
+			}
+		}
+
+		// Label for major grid lines
+		//if i%2 == 0 {
+		label := &canvas.Text{
+			Text:     fmt.Sprintf("%.0e", value),
+			Color:    legendColor,
+			TextSize: 12,
+		}
+		label.Move(fyne.NewPos(xPos-25, r.size.Height-r.margin+10))
+		r.AddObject(label)
+		//}
+	}
 }
 
 // normalizes the coodinates from the bottom left of the canvas
@@ -348,12 +388,34 @@ func (r *GraphRenderer) DrawError(x, y1, y2 float32) {
 	})
 }
 
+// helper function for the grid lines
+func (r *GraphRenderer) DrawGridLine(pos fyne.Position, isVertical, isMinor bool) {
+	line := &canvas.Line{
+		StrokeColor: gridColor,
+		StrokeWidth: 1,
+		Position1:   pos,
+	}
+
+	if isVertical {
+		line.Position2 = fyne.NewPos(pos.X, pos.Y+r.size.Height-1.5*r.margin)
+	} else {
+		line.Position2 = fyne.NewPos(pos.X+r.size.Width-1.5*r.margin, pos.Y)
+	}
+
+	if isMinor {
+		line.StrokeColor = gridMinorColor
+		line.StrokeWidth = 0.5
+	}
+
+	r.AddObject(line)
+}
+
 // returns the objects of the graph
 func (r *GraphRenderer) Objects() []fyne.CanvasObject {
 	return r.objects
 }
 
-// ? destroy object (is performance impacted if func is empty?)
+// destroy function (needs to be here to satisfy the interface)
 func (r *GraphRenderer) Destroy() {}
 
 // refresh the graph by recalculating the layout and refreshing the canvas
