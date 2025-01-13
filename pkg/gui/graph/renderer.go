@@ -418,11 +418,8 @@ func (r *GraphRenderer) Objects() []fyne.CanvasObject {
 // destroy function (needs to be here to satisfy the interface)
 func (r *GraphRenderer) Destroy() {}
 
-// refresh the graph by recalculating the layout and refreshing the canvas
-func (r *GraphRenderer) Refresh() {
-	r.Layout(r.graph.Size())
-	canvas.Refresh(r.graph)
-}
+// refresh function (needs to be here to satisfy the interface)
+func (r *GraphRenderer) Refresh() {}
 
 // add an object to the graph renderer
 func (r *GraphRenderer) AddObject(object fyne.CanvasObject) {
