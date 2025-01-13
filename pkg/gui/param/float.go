@@ -40,6 +40,10 @@ func FloatParameter(defaultValue float64) *Parameter[float64] {
 // create a new float input canvas object with a label
 // returns the canvas object and the parameter
 func Float(group, label string, defaultValue float64) (fyne.CanvasObject, *Parameter[float64]) {
+	if fParams[group] == nil {
+		fParams[group] = make(map[string]*Parameter[float64])
+	}
+
 	if fParams[group][label] != nil {
 		log.Fatal(errors.New("parameter key '" + label + "' already exists in group '" + group + "'"))
 	}
@@ -58,6 +62,10 @@ func Float(group, label string, defaultValue float64) (fyne.CanvasObject, *Param
 // create a new float input canvas object with a label and two min max input fields
 // returns the canvas object and the parameter
 func FloatMinMax(group, label string, defaultValue float64) (fyne.CanvasObject, *Parameter[float64]) {
+	if fParams[group] == nil {
+		fParams[group] = make(map[string]*Parameter[float64])
+	}
+
 	if fParams[group][label] != nil {
 		log.Fatal(errors.New("parameter key '" + label + "' already exists in group '" + group + "'"))
 	}
@@ -89,12 +97,14 @@ func FloatMinMax(group, label string, defaultValue float64) (fyne.CanvasObject, 
 	})
 
 	param := New(&Config[float64]{
-		InitialValue: 2,
+		InitialValue: defaultValue,
 		Validator: func(s string) error {
 			value, err := strconv.ParseFloat(s, 64)
 			if err != nil {
 				return errors.New("keine gültige Zahl")
 			}
+
+			// TODO: handle min/max not set (empty)
 
 			gin, err := min.Get()
 			if err != nil {
