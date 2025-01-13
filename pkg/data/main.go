@@ -8,12 +8,6 @@ import (
 	"strings"
 )
 
-type Measurement struct {
-	Qz    float64
-	Data  float64
-	Error float64
-}
-
 var (
 	// floatPattern is a regex pattern that matches a float number
 	// it accepts scientific notation and normal floats
@@ -26,10 +20,10 @@ var (
 	re = regexp.MustCompile(floatPattern + `\s+` + floatPattern + `\s+` + floatPattern)
 )
 
-func Parse(data []byte) ([]*Measurement, error) {
+func Parse(data []byte) ([]*function.Point, error) {
 	lines := strings.Split(string(data), "\n")
 
-	measurements := make([]*Measurement, 0)
+	measurements := make([]*function.Point, 0)
 	expectedLength := -1
 
 	for i, v := range lines {
@@ -72,9 +66,9 @@ func Parse(data []byte) ([]*Measurement, error) {
 		}
 
 		// ? maybe change whole measurement to point already?
-		measurements = append(measurements, &Measurement{
-			Qz:    qz,
-			Data:  data,
+		measurements = append(measurements, &function.Point{
+			X:     qz,
+			Y:     data,
 			Error: ev,
 		})
 	}
@@ -84,13 +78,4 @@ func Parse(data []byte) ([]*Measurement, error) {
 	}
 
 	return measurements, nil
-}
-
-// converts measurement to point
-func (m *Measurement) ToPoint() *function.Point {
-	return &function.Point{
-		X:     m.Qz,
-		Y:     m.Data,
-		Error: m.Error,
-	}
 }

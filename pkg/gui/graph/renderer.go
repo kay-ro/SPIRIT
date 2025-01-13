@@ -66,6 +66,8 @@ func (r *GraphRenderer) base() {
 
 // draws the whole graph
 func (r *GraphRenderer) Layout(size fyne.Size) {
+	//fmt.Printf("%v\n", time.Now())
+
 	// clear objects
 	r.objects = make([]fyne.CanvasObject, 0)
 
@@ -75,35 +77,46 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	// set the base for the canvas
 	r.base()
 
+	// calculate the maximum scope
+	scope := function.GetMaximumScope(r.graph.functions...)
+	if scope == nil {
+		// TODO: display error
+	}
+
 	// draw model lines
 	if r.graph.config.IsLog {
-		r.DrawGraphLog()
-		r.DrawGridLog()
-	} else {
-		r.DrawGraphLinear()
-		r.DrawGridLinear()
+		for _, f := range r.graph.functions {
+			points, iPoints := f.Model(r.graph.config.Resolution, true)
+			r.DrawGraphLog(scope, points, iPoints)
+		}
+		r.DrawGridLog(scope)
+		return
 	}
+
+	for _, f := range r.graph.functions {
+		points, iPoints := f.Model(r.graph.config.Resolution, false)
+		r.DrawGraphLinear(scope, points, iPoints)
+	}
+	r.DrawGridLinear(scope)
 }
 
 // draw a linear graph
-func (r *GraphRenderer) DrawGraphLinear() {
-	points, iPoints := r.graph.function.Model(r.graph.config.Resolution, false)
-
+func (r *GraphRenderer) DrawGraphLinear(scope *function.Scope, points, iPoints function.Points) {
 	// calc available space
 	availableWidth := r.size.Width - (1.5 * r.margin)
 	availableHeight := r.size.Height - (1.5 * r.margin)
 
 	// complete range
-	xRange := math.Abs(r.graph.function.Scope.MaxX - r.graph.function.Scope.MinX)
-	yRange := math.Abs(r.graph.function.Scope.MaxY - r.graph.function.Scope.MinY)
+	xRange := math.Abs(scope.MaxX - scope.MinX)
+	yRange := math.Abs(scope.MaxY - scope.MinY)
 
 	oX, oY := float32(0), float32(0)
 
 	// draw line based on interpolated (resolution) points
 	for i, point := range iPoints {
 		// scale x value to available width
-		x := float32((point.X-r.graph.function.Scope.MinX)/xRange) * availableWidth
-		y := float32((point.Y-r.graph.function.Scope.MinY)/yRange) * availableHeight
+		x := float32((point.X-scope.MinX)/xRange) * availableWidth
+		y := float32((point.Y-scope.MinY)/yRange) * availableHeight
 
 		// first point is the origin
 		if i == 0 {
@@ -127,14 +140,14 @@ func (r *GraphRenderer) DrawGraphLinear() {
 	// draw data points
 	for _, point := range points {
 		// scale x value to available width
-		x := float32((point.X-r.graph.function.Scope.MinX)/xRange) * availableWidth
-		y := float32((point.Y-r.graph.function.Scope.MinY)/yRange) * availableHeight
+		x := float32((point.X-scope.MinX)/xRange) * availableWidth
+		y := float32((point.Y-scope.MinY)/yRange) * availableHeight
 
 		xt, yt := r.normalize(x, y)
 
 		// error correction
-		yE1 := float32((point.Y+point.Error-r.graph.function.Scope.MinY)/yRange) * availableHeight
-		yE2 := float32((point.Y-point.Error-r.graph.function.Scope.MinY)/yRange) * availableHeight
+		yE1 := float32((point.Y+point.Error-scope.MinY)/yRange) * availableHeight
+		yE2 := float32((point.Y-point.Error-scope.MinY)/yRange) * availableHeight
 
 		_, e1 := r.normalize(x, yE1)
 		_, e2 := r.normalize(x, yE2)
@@ -145,28 +158,26 @@ func (r *GraphRenderer) DrawGraphLinear() {
 }
 
 // draw the graph in logarithmic scale
-func (r *GraphRenderer) DrawGraphLog() {
-	points, iPoints := r.graph.function.Model(r.graph.config.Resolution, true)
-
+func (r *GraphRenderer) DrawGraphLog(scope *function.Scope, points, iPoints function.Points) {
 	// calc available space
 	availableWidth := r.size.Width - (1.5 * r.margin)
 	availableHeight := r.size.Height - (1.5 * r.margin)
 
 	// Calculate shifts if needed for negative values
 	xShift := 0.0
-	if r.graph.function.Scope.MinX <= 0 {
-		xShift = math.Abs(r.graph.function.Scope.MinX) + 1
+	if scope.MinX <= 0 {
+		xShift = math.Abs(scope.MinX) + 1
 	}
 	yShift := 0.0
-	if r.graph.function.Scope.MinY <= 0 {
-		yShift = math.Abs(r.graph.function.Scope.MinY) + 1
+	if scope.MinY <= 0 {
+		yShift = math.Abs(scope.MinY) + 1
 	}
 
 	// Calculate log ranges
-	logMinX := math.Log10(r.graph.function.Scope.MinX + xShift)
-	logMaxX := math.Log10(r.graph.function.Scope.MaxX + xShift)
-	logMinY := math.Log10(r.graph.function.Scope.MinY + yShift)
-	logMaxY := math.Log10(r.graph.function.Scope.MaxY + yShift)
+	logMinX := math.Log10(scope.MinX + xShift)
+	logMaxX := math.Log10(scope.MaxX + xShift)
+	logMinY := math.Log10(scope.MinY + yShift)
+	logMaxY := math.Log10(scope.MaxY + yShift)
 	xRange := math.Abs(logMaxX - logMinX)
 	yRange := math.Abs(logMaxY - logMinY)
 
@@ -219,9 +230,7 @@ func (r *GraphRenderer) DrawGraphLog() {
 }
 
 // draw grid lines and labels for linear scale
-func (r *GraphRenderer) DrawGridLinear() {
-	scope := r.graph.function.Scope
-
+func (r *GraphRenderer) DrawGridLinear(scope *function.Scope) {
 	// horizontal grid-lines + y-labels
 	yGridCount := int(r.size.Height / 25)
 	yStep := (scope.MaxY - scope.MinY) / float64(yGridCount)
@@ -271,13 +280,14 @@ func (r *GraphRenderer) DrawGridLinear() {
 }
 
 // TODO: draw grid lines and labels for logarithmic scale
-func (r *GraphRenderer) DrawGridLog() {
-	scope := r.graph.function.Scope
+func (r *GraphRenderer) DrawGridLog(scope *function.Scope) {
+
+	fmt.Println("DrawGridLog", scope)
 
 	// Horizontal grid-lines + y-labels (logarithmic)
 	minLogY := math.Log10(math.Max(scope.MinY, 1e-10))
 	maxLogY := math.Log10(scope.MaxY)
-	yGridCount := int(maxLogY - minLogY)
+	yGridCount := int(maxLogY-minLogY) + 1
 
 	for i := 0; i <= yGridCount; i++ {
 		// Calculate logarithmic value
@@ -308,7 +318,7 @@ func (r *GraphRenderer) DrawGridLog() {
 
 		// Label for major grid lines
 		label := &canvas.Text{
-			Text:     fmt.Sprintf("%.0e", value),
+			Text:     fmt.Sprintf("%f", value), //fmt.Sprintf("%.0e", value),
 			Color:    legendColor,
 			TextSize: 12,
 		}
@@ -329,7 +339,9 @@ func (r *GraphRenderer) DrawGridLog() {
 		logVal := math.Log10(value)
 		xPos := r.margin +
 			float32((logVal-minLogX)/(maxLogX-minLogX))*
-				float32(r.size.Width-1.5*r.margin)
+				float32(r.size.Width-1.5*r.margin)/float32(xGridCount)
+
+		// TODO: HILFE
 
 		if i > 0 {
 			r.DrawGridLine(fyne.NewPos(xPos, r.margin/2), true, false)
@@ -350,7 +362,7 @@ func (r *GraphRenderer) DrawGridLog() {
 		// Label for major grid lines
 		//if i%2 == 0 {
 		label := &canvas.Text{
-			Text:     fmt.Sprintf("%.0e", value),
+			Text:     fmt.Sprintf("%f", value), //fmt.Sprintf("%.0e", value),
 			Color:    legendColor,
 			TextSize: 12,
 		}

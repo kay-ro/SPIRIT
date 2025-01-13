@@ -13,6 +13,8 @@ type Function struct {
 	eval  InterpolationFunction
 }
 
+type Functions []*Function
+
 // scope of a function
 type Scope struct {
 	MinX float64
@@ -23,23 +25,24 @@ type Scope struct {
 
 // returns a new function with the given data and interpolation mode
 func NewFunction(data Points, interpolationMode InterpolationMode) *Function {
-	// get min, max values of function
-	minX, maxX := data.MinMaxX()
-	minY, maxY := data.MinMaxY()
-
 	// create function
 	f := &Function{
 		data: data,
-		Scope: &Scope{
-			minX,
-			maxX,
-			minY,
-			maxY,
-		},
 	}
 
 	// sanitize data
 	f.Sanitize()
+
+	// get min, max values of function
+	minX, maxX := data.MinMaxX()
+	minY, maxY := data.MinMaxY()
+
+	f.Scope = &Scope{
+		minX,
+		maxX,
+		minY,
+		maxY,
+	}
 
 	// set interpolation function
 	f.SetInterpolation(interpolationMode)
@@ -77,12 +80,32 @@ func (f *Function) Eval(x float64) (float64, error) {
 	return f.eval(f.data, x)
 }
 
+// returns the maximum scope of all of the function scopes
+func GetMaximumScope(functions ...*Function) *Scope {
+	if len(functions) == 0 {
+		return nil
+	}
+
+	c := *functions[0].Scope
+	maxS := &c
+
+	for _, f := range functions[1:] {
+		maxS.MinX = min(maxS.MinX, f.Scope.MinX)
+		maxS.MinY = min(maxS.MinY, f.Scope.MinY)
+		maxS.MaxX = max(maxS.MaxX, f.Scope.MaxX)
+		maxS.MaxY = max(maxS.MaxY, f.Scope.MaxY)
+	}
+
+	return maxS
+}
+
 // sanitizes the function data and removes all 0 values for potential log scale issues
 // TODO: add point y handling back, but for now we only need x value handling
 func (f *Function) Sanitize() {
 	for i, point := range f.data {
 		if point.X == 0 /* || point.Y == 0  */ {
 			f.data = append(f.data[:i], f.data[i+1:]...)
+			//f.data[i].X = math.SmallestNonzeroFloat64
 		}
 	}
 }

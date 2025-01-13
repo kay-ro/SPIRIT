@@ -18,6 +18,10 @@ type Points []*Point
 // sorts all points by X value
 func (p Points) Sort() {
 	slices.SortFunc(p, func(a, b *Point) int {
+		if a == nil || b == nil {
+			panic("points can't be nil")
+		}
+
 		return cmp.Compare(a.X, b.X)
 	})
 }
