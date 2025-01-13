@@ -11,8 +11,10 @@ import (
 	"physicsGUI/pkg/data"
 	"physicsGUI/pkg/function"
 	"physicsGUI/pkg/gui/graph"
+	"physicsGUI/pkg/gui/param"
 	"physicsGUI/pkg/gui/parameter"
 	"physicsGUI/pkg/gui/parameter/parameter_panel"
+	"time"
 
 	"fyne.io/fyne/v2/data/binding"
 
@@ -232,15 +234,12 @@ func AddMainWindow() {
 		log.Println("error setting max value:", err)
 	}
 	checkV := binding.NewBool()
-	param := parameter.NewParameter(parameterName, defaultVal, val, minV, maxV, checkV)
-	param1 := parameter.NewParameter(parameterName, defaultVal, val, minV, maxV, checkV)
-	param2 := parameter.NewParameter(parameterName, defaultVal, val, minV, maxV, checkV)
-	param3 := parameter.NewParameter(parameterName, defaultVal, val, minV, maxV, checkV)
+	pparam := parameter.NewParameter(parameterName, defaultVal, val, minV, maxV, checkV)
 	profilePanel := parameter_panel.NewParameterGrid(3)
-	profilePanel.Add(param)
-	profilePanel.Add(param1)
-	profilePanel.Add(param2)
-	profilePanel.Add(param3)
+	profilePanel.Add(pparam)
+
+	/* p1 := param.NewString("placeholder")
+	fmt.Println(p1) */
 
 	/* profilePanel.OnValueChanged = func() {
 		edensity := make([]float64, len(profilePanel.Profiles)+2)
@@ -272,6 +271,38 @@ func AddMainWindow() {
 		sldGraph.UpdateFunction(newEdensity)
 	} */
 
+	/* str := param.AddString("tv", "testvar", "Hi!")
+	str2 := param.AddString("tv", "testvar2", "Hi!")
+
+	str2.Set("okay")
+
+	testvar := param.String("tv", "testvar3", "Hi!")
+	testvar2 := param.String("tv", "testvar4", "Hi!")
+	testvar3 := param.Float("tv", "testvar5", 1.25)
+	testvar4 := param.Int("tv", "testvar6", 1) */
+
+	/* testV1 := param.New(&param.Config[float64]{
+		InitialValue: 1.110,
+		Validator: func(s string) error {
+			if _, err := strconv.ParseFloat(s, 64); err != nil {
+				return fmt.Errorf("keine gültige Zahl")
+			}
+
+			return nil
+		},
+		Format: func(f float64) string {
+			return fmt.Sprintf("%f", f)
+		},
+		Parser: func(f string) (float64, error) {
+			return strconv.ParseFloat(f, 64)
+		},
+	})
+
+	testV1.Set(1.123) */
+
+	obj, p1 := param.Float("g1", "test", 1.123)
+	obj2, _ := param.FloatMinMax("g1", "test2", 1.123)
+
 	content := container.NewBorder(
 		topContainer, // top
 		nil,          // bottom
@@ -281,7 +312,16 @@ func AddMainWindow() {
 		container.NewHSplit(
 			container.NewVSplit(
 				sldGraph,
-				profilePanel,
+				container.NewVBox(
+					/* widget.NewLabelWithData(str),
+					widget.NewEntryWithData(str),
+					testvar,
+					testvar2,
+					testvar3,
+					testvar4, */
+					obj,
+					obj2,
+				), /* profilePanel */
 			),
 			/* container.NewVScroll( */
 			container.NewVSplit(
@@ -290,6 +330,19 @@ func AddMainWindow() {
 			/* ), */
 		),
 	)
+
+	go func() {
+		for {
+			v, err := p1.Get()
+			if err != nil {
+				log.Println("error getting value:", err)
+			} else {
+				p1.Set(v + 0.01)
+			}
+
+			time.Sleep(1 * time.Second)
+		}
+	}()
 
 	MainWindow.Resize(fyne.NewSize(1000, 500))
 	MainWindow.SetContent(content)
