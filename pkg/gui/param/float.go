@@ -96,6 +96,8 @@ func FloatMinMax(group, label string, defaultValue float64) (fyne.CanvasObject, 
 		Parser: StdFloatParser,
 	})
 
+	// TODO: add validator update for min/max changes
+
 	param := New(&Config[float64]{
 		InitialValue: defaultValue,
 		Validator: func(s string) error {

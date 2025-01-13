@@ -14,7 +14,6 @@ import (
 	"physicsGUI/pkg/gui/param"
 	"physicsGUI/pkg/gui/parameter"
 	"physicsGUI/pkg/gui/parameter/parameter_panel"
-	"time"
 
 	"fyne.io/fyne/v2/data/binding"
 
@@ -300,7 +299,7 @@ func AddMainWindow() {
 
 	testV1.Set(1.123) */
 
-	obj, p1 := param.Float("g1", "test", 1.123)
+	//obj, p1 := param.Float("g1", "test", 1.123)
 	obj2, _ := param.FloatMinMax("g1", "test2", 1.123)
 
 	content := container.NewBorder(
@@ -319,7 +318,7 @@ func AddMainWindow() {
 					testvar2,
 					testvar3,
 					testvar4, */
-					obj,
+					//obj,
 					obj2,
 				), /* profilePanel */
 			),
@@ -331,7 +330,7 @@ func AddMainWindow() {
 		),
 	)
 
-	go func() {
+	/* go func() {
 		for {
 			v, err := p1.Get()
 			if err != nil {
@@ -342,7 +341,7 @@ func AddMainWindow() {
 
 			time.Sleep(1 * time.Second)
 		}
-	}()
+	}() */
 
 	MainWindow.Resize(fyne.NewSize(1000, 500))
 	MainWindow.SetContent(content)
