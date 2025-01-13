@@ -176,6 +176,7 @@ func (r *GraphRenderer) DrawGraphLog(scope *function.Scope, points, iPoints func
 	// Calculate log ranges
 	logMinX := math.Log10(scope.MinX + xShift)
 	logMaxX := math.Log10(scope.MaxX + xShift)
+	logMaxX = float64(int(logMaxX) + 1)
 	logMinY := math.Log10(scope.MinY + yShift)
 	logMaxY := math.Log10(scope.MaxY + yShift)
 	xRange := math.Abs(logMaxX - logMinX)
@@ -328,8 +329,8 @@ func (r *GraphRenderer) DrawGridLog(scope *function.Scope) {
 
 	// Vertical grid-lines + x-labels (logarithmic)
 	minLogX := math.Log10(math.Max(scope.MinX, 1e-10))
-	maxLogX := math.Log10(scope.MaxX)
-	xGridCount := int(maxLogX-minLogX) + 1
+	xGridCount := int(math.Log10(scope.MaxX)-minLogX) + 1
+	maxLogX := math.Log10(math.Pow(10, minLogX+float64(xGridCount)))
 
 	for i := 0; i <= xGridCount; i++ {
 		// Calculate logarithmic value
@@ -339,9 +340,7 @@ func (r *GraphRenderer) DrawGridLog(scope *function.Scope) {
 		logVal := math.Log10(value)
 		xPos := r.margin +
 			float32((logVal-minLogX)/(maxLogX-minLogX))*
-				float32(r.size.Width-1.5*r.margin)/float32(xGridCount)
-
-		// TODO: HILFE
+				float32(r.size.Width-1.5*r.margin)
 
 		if i > 0 {
 			r.DrawGridLine(fyne.NewPos(xPos, r.margin/2), true, false)
