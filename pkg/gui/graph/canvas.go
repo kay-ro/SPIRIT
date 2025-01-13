@@ -45,8 +45,13 @@ func (g *GraphCanvas) CreateRenderer() fyne.WidgetRenderer {
 	}
 }
 
-// UpdateFunction updates the function and refreshes the [GraphCanvas]
-func (g *GraphCanvas) UpdateFunction(newFunctions function.Functions) {
+// UpdateFunctions updates the function and refreshes the [GraphCanvas]
+func (g *GraphCanvas) UpdateFunctions(newFunctions function.Functions) {
 	g.functions = newFunctions
+	g.Refresh()
+}
+
+func (g *GraphCanvas) AddFunction(newFunction *function.Function) {
+	g.functions = append(g.functions, newFunction)
 	g.Refresh()
 }

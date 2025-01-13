@@ -109,16 +109,8 @@ func createSeparator() *canvas.Line {
 // which is a blocking command [fyne.Window.ShowAndRun]
 func AddMainWindow() {
 	importButton := createImportButton(MainWindow)
-
 	toolbar := container.NewHBox(
 		importButton,
-	)
-
-	separator := createSeparator()
-
-	topContainer := container.NewVBox(
-		toolbar,
-		separator,
 	)
 
 	// create dataset 2^x
@@ -140,12 +132,13 @@ func AddMainWindow() {
 		}
 	}
 
+	fct := function.NewEmptyFunction(function.INTERPOLATION_NONE)
+
 	g1 := graph.NewGraphCanvas(&graph.GraphConfig{
 		Title: "Non Logarithmic x³ + x²",
 		IsLog: false,
 		Functions: []*function.Function{
-			function.NewFunction(dataset, function.INTERPOLATION_NONE),
-			function.NewFunction(dataset2, function.INTERPOLATION_NONE),
+			fct,
 		},
 	})
 
@@ -157,8 +150,6 @@ func AddMainWindow() {
 			function.NewFunction(dataset2, function.INTERPOLATION_NONE),
 		},
 	})
-
-	GraphContainer.Add(g1)
 
 	// from refl_monolayer.pro:780
 	dummyFunction := data.NewOldSLDFunction(
@@ -191,15 +182,17 @@ func AddMainWindow() {
 	obj2, _ := param.FloatMinMax("g1", "test2", 1.123)
 
 	content := container.NewBorder(
-		topContainer, // top
-		nil,          // bottom
-		nil,          // left
-		nil,          // right
+		container.NewVBox(
+			toolbar,
+			createSeparator(),
+		), // top
+		nil, // bottom
+		nil, // left
+		nil, // right
 
 		container.NewVBox(
-			container.NewGridWithColumns(2, sldGraph, g1 /* , dummyGraph */),
+			container.NewGridWithColumns(2, sldGraph, g1, g2 /* , dummyGraph */),
 			container.NewVBox(obj2),
-			g2,
 		),
 	)
 

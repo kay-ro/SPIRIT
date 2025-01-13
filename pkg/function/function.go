@@ -27,21 +27,38 @@ type Scope struct {
 func NewFunction(data Points, interpolationMode InterpolationMode) *Function {
 	// create function
 	f := &Function{
-		data: data,
+		data:  data,
+		Scope: &Scope{},
 	}
 
 	// sanitize data
 	f.Sanitize()
 
-	// get min, max values of function
-	minX, maxX := data.MinMaxX()
-	minY, maxY := data.MinMaxY()
+	if len(data) != 0 {
+		// get min, max values of function
+		minX, maxX := data.MinMaxX()
+		minY, maxY := data.MinMaxY()
 
-	f.Scope = &Scope{
-		minX,
-		maxX,
-		minY,
-		maxY,
+		f.Scope = &Scope{
+			minX,
+			maxX,
+			minY,
+			maxY,
+		}
+	}
+
+	// set interpolation function
+	f.SetInterpolation(interpolationMode)
+
+	return f
+}
+
+// returns a new empty function with the given data and interpolation mode
+func NewEmptyFunction(interpolationMode InterpolationMode) *Function {
+	// create function
+	f := &Function{
+		data:  nil,
+		Scope: &Scope{},
 	}
 
 	// set interpolation function

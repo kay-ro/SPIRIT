@@ -20,10 +20,10 @@ var (
 	re = regexp.MustCompile(floatPattern + `\s+` + floatPattern + `\s+` + floatPattern)
 )
 
-func Parse(data []byte) ([]*function.Point, error) {
+func Parse(data []byte) (function.Points, error) {
 	lines := strings.Split(string(data), "\n")
 
-	measurements := make([]*function.Point, 0)
+	measurements := make(function.Points, 0)
 	expectedLength := -1
 
 	for i, v := range lines {
