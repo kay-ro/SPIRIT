@@ -1,6 +1,8 @@
 package param
 
 import (
+	"physicsGUI/pkg/trigger"
+
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 )
@@ -31,6 +33,9 @@ func New[T any](config *Config[T]) *Parameter[T] {
 	// creates the widget with the binding
 	f.widget = widget.NewEntryWithData(f.binding)
 	f.widget.Validator = config.Validator
+	f.widget.OnChanged = func(s string) {
+		trigger.Recalc()
+	}
 
 	f.Set(config.InitialValue)
 

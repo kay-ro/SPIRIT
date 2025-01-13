@@ -282,9 +282,6 @@ func (r *GraphRenderer) DrawGridLinear(scope *function.Scope) {
 
 // TODO: draw grid lines and labels for logarithmic scale
 func (r *GraphRenderer) DrawGridLog(scope *function.Scope) {
-
-	fmt.Println("DrawGridLog", scope)
-
 	// Horizontal grid-lines + y-labels (logarithmic)
 	minLogY := math.Log10(math.Max(scope.MinY, 1e-10))
 	maxLogY := math.Log10(scope.MaxY)

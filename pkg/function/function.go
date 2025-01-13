@@ -26,29 +26,10 @@ type Scope struct {
 // returns a new function with the given data and interpolation mode
 func NewFunction(data Points, interpolationMode InterpolationMode) *Function {
 	// create function
-	f := &Function{
-		data:  data,
-		Scope: &Scope{},
-	}
+	f := NewEmptyFunction(interpolationMode)
 
-	// sanitize data
-	f.Sanitize()
-
-	if len(data) != 0 {
-		// get min, max values of function
-		minX, maxX := data.MinMaxX()
-		minY, maxY := data.MinMaxY()
-
-		f.Scope = &Scope{
-			minX,
-			maxX,
-			minY,
-			maxY,
-		}
-	}
-
-	// set interpolation function
-	f.SetInterpolation(interpolationMode)
+	// set data
+	f.SetData(data)
 
 	return f
 }
@@ -97,25 +78,6 @@ func (f *Function) Eval(x float64) (float64, error) {
 	return f.eval(f.data, x)
 }
 
-// returns the maximum scope of all of the function scopes
-func GetMaximumScope(functions ...*Function) *Scope {
-	if len(functions) == 0 {
-		return nil
-	}
-
-	c := *functions[0].Scope
-	maxS := &c
-
-	for _, f := range functions[1:] {
-		maxS.MinX = min(maxS.MinX, f.Scope.MinX)
-		maxS.MinY = min(maxS.MinY, f.Scope.MinY)
-		maxS.MaxX = max(maxS.MaxX, f.Scope.MaxX)
-		maxS.MaxY = max(maxS.MaxY, f.Scope.MaxY)
-	}
-
-	return maxS
-}
-
 // sanitizes the function data and removes all 0 values for potential log scale issues
 // TODO: add point y handling back, but for now we only need x value handling
 func (f *Function) Sanitize() {
@@ -140,6 +102,27 @@ func (f *Function) SetInterpolation(interpolationMode InterpolationMode) {
 		panic("SetInterpolation error: interpolation not implemented yet")
 	default:
 		panic("SetInterpolation error: Unknown interpolationMode. Please use only values provided by related const's in data package")
+	}
+}
+
+// sets the data of the function
+func (f *Function) SetData(data Points) {
+	f.data = data
+
+	// sanitize data
+	f.Sanitize()
+
+	if len(data) != 0 {
+		// get min, max values of function
+		minX, maxX := data.MinMaxX()
+		minY, maxY := data.MinMaxY()
+
+		f.Scope = &Scope{
+			minX,
+			maxX,
+			minY,
+			maxY,
+		}
 	}
 }
 

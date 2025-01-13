@@ -30,6 +30,10 @@ func IntParameter(defaultValue int) *Parameter[int] {
 // create a new int input canvas object with a label
 // returns the canvas object and the parameter
 func Int(group, label string, defaultValue int) (fyne.CanvasObject, *Parameter[int]) {
+	if iParams[group] == nil {
+		iParams[group] = make(map[string]*Parameter[int])
+	}
+
 	if iParams[group][label] != nil {
 		log.Fatal(errors.New("parameter key '" + label + "' already exists in group '" + group + "'"))
 	}

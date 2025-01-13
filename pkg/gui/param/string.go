@@ -33,6 +33,10 @@ func StringParameter(defaultValue string) *Parameter[string] {
 
 // created a new string input field with a label
 func String(group, label, defaultValue string) (fyne.CanvasObject, *Parameter[string]) {
+	if sParams[group] == nil {
+		sParams[group] = make(map[string]*Parameter[string])
+	}
+
 	if sParams[group][label] != nil {
 		log.Fatal(errors.New("parameter key '" + label + "' already exists in group '" + group + "'"))
 	}

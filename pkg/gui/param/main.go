@@ -1,6 +1,7 @@
 package param
 
 import (
+	"errors"
 	"image/color"
 )
 
@@ -25,4 +26,7 @@ var (
 	// label configs
 	labelColor  = color.NRGBA{R: 255, G: 255, B: 255, A: 255}
 	minMaxColor = color.NRGBA{R: 120, G: 120, B: 120, A: 255}
+
+	// ErrParameterNotFound is returned when a parameter is not found
+	ErrParameterNotFound = errors.New("parameter not found")
 )

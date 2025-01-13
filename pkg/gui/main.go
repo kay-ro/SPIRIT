@@ -3,7 +3,6 @@ package gui
 import (
 	"errors"
 	"fmt"
-	"image/color"
 	"io"
 	"log"
 	"math"
@@ -11,11 +10,12 @@ import (
 	"physicsGUI/pkg/data"
 	"physicsGUI/pkg/function"
 	"physicsGUI/pkg/gui/graph"
+	"physicsGUI/pkg/gui/helper"
 	"physicsGUI/pkg/gui/param"
+	"physicsGUI/pkg/trigger"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
@@ -26,6 +26,8 @@ var (
 	App            fyne.App
 	MainWindow     fyne.Window
 	GraphContainer *fyne.Container
+
+	functionMap = make(map[string]*function.Function)
 )
 
 // Start GUI (function is blocking)
@@ -98,24 +100,11 @@ func createImportButton(window fyne.Window) *widget.Button {
 	})
 }
 
-// separator
-func createSeparator() *canvas.Line {
-	line := canvas.NewLine(color.Gray{Y: 100})
-	line.StrokeWidth = 1
-	return line
-}
-
 // AddMainWindow builds and renders the main GUI content, it will show and run the main window,
 // which is a blocking command [fyne.Window.ShowAndRun]
 func AddMainWindow() {
-	importButton := createImportButton(MainWindow)
-	toolbar := container.NewHBox(
-		importButton,
-	)
-
 	// create dataset 2^x
 	dataset := make(function.Points, 21)
-	dataset2 := make(function.Points, 9)
 
 	for i := 0; i < len(dataset); i++ {
 		dataset[i] = &function.Point{
@@ -124,30 +113,20 @@ func AddMainWindow() {
 			Error: 1,
 		}
 	}
-	for i := 0; i < len(dataset2); i++ {
-		dataset2[i] = &function.Point{
-			X:     float64(i),
-			Y:     math.Pow(float64(i), 2),
-			Error: 1,
-		}
-	}
 
-	fct := function.NewEmptyFunction(function.INTERPOLATION_NONE)
+	functionMap["test"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
 
 	g1 := graph.NewGraphCanvas(&graph.GraphConfig{
-		Title: "Non Logarithmic x³ + x²",
-		IsLog: false,
-		Functions: []*function.Function{
-			fct,
-		},
+		Title:     "Non Logarithmic x³ + x²",
+		IsLog:     false,
+		Functions: function.Functions{functionMap["test"]},
 	})
 
 	g2 := graph.NewGraphCanvas(&graph.GraphConfig{
 		Title: "Logarithmic x³",
 		IsLog: true,
-		Functions: []*function.Function{
+		Functions: function.Functions{
 			function.NewFunction(dataset, function.INTERPOLATION_NONE),
-			function.NewFunction(dataset2, function.INTERPOLATION_NONE),
 		},
 	})
 
@@ -166,25 +145,14 @@ func AddMainWindow() {
 		Functions:  function.Functions{dummyFunction},
 	})
 
-	/* dummyGraph := graph.NewGraphCanvas(&graph.GraphConfig{
-		Resolution: 100,
-		Title:      "Dummy Graph to load data later",
-		Functions: function.Functions{
-			function.NewFunction(function.Points{{
-				X:     0,
-				Y:     0,
-				Error: 0,
-			}}, function.INTERPOLATION_NONE),
-		},
-	}) */
-
-	//obj, p1 := param.Float("g1", "test", 1.123)
-	obj2, _ := param.FloatMinMax("g1", "test2", 1.123)
+	obj2, _ := param.Int("g1", "TEST_VAR", 1)
 
 	content := container.NewBorder(
 		container.NewVBox(
-			toolbar,
-			createSeparator(),
+			container.NewHBox(
+				createImportButton(MainWindow),
+			),
+			helper.CreateSeparator(),
 		), // top
 		nil, // bottom
 		nil, // left
@@ -196,8 +164,31 @@ func AddMainWindow() {
 		),
 	)
 
+	// set onchange function for recalculating data
+	trigger.SetOnChange(RecalculateData)
+
 	MainWindow.Resize(fyne.NewSize(1000, 500))
 	MainWindow.SetContent(content)
 
 	MainWindow.ShowAndRun()
+}
+
+func RecalculateData() {
+	counter, err := param.GetInt("g1", "TEST_VAR")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	d := make(function.Points, counter)
+
+	for i := 0; i < counter; i++ {
+		d[i] = &function.Point{
+			X:     float64(i),
+			Y:     math.Pow(float64(i), 2),
+			Error: 1,
+		}
+	}
+
+	functionMap["test"].SetData(d)
 }
