@@ -100,9 +100,7 @@ func createImportButton(window fyne.Window) *widget.Button {
 func registerFunctions() {
 	functionMap["sld"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
 	functionMap["eden"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
-	functionMap["test"] = function.NewFunction(function.Points{
-		{X: 0.01, Y: 1.0000, Error: 0.2},
-	}, function.INTERPOLATION_NONE)
+	functionMap["test"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
 }
 
 // creates the graph containers for the different graphs
@@ -121,7 +119,7 @@ func registerGraphs() *fyne.Container {
 
 	graphMap["test"] = graph.NewGraphCanvas(&graph.GraphConfig{
 		Title:     "Test Graph",
-		IsLog:     false,
+		IsLog:     true,
 		Functions: function.Functions{functionMap["test"]},
 	})
 
@@ -166,7 +164,18 @@ func onDrop(position fyne.Position, uri []fyne.URI) {
 				}
 
 				if points := addDataset(rc, v, nil); points != nil {
-					newFunction := function.NewFunction(points, function.INTERPOLATION_NONE)
+					clamped := make(function.Points, 0)
+
+					for _, point := range points {
+						point.Y = math.Pow(point.X, 4) * point.Y
+						point.Error = 0.0
+						fmt.Println(point)
+						if point.X >= 0.01 && point.X <= 1.0 {
+							clamped = append(clamped, point)
+						}
+					}
+
+					newFunction := function.NewFunction(clamped, function.INTERPOLATION_NONE)
 					graphMap[mapIdentifier].AddDataTrack(newFunction)
 				}
 			}

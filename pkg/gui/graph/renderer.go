@@ -85,7 +85,7 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 		return
 	}
 
-	if len(r.graph.functions) == 0 || r.graph.functions[0].GetDataCount() < 1 {
+	if len(r.graph.functions) == 0 || r.graph.functions[0].GetDataCount() < 1 && len(r.graph.loadedData) == 0 {
 		r.DrawErrorMessage("No data available")
 		return
 	}
@@ -182,9 +182,6 @@ func (r *GraphRenderer) DrawGraphLinear(scope *function.Scope, points, iPoints f
 			Position2:   fyne.NewPos(xt, yt),
 		})
 
-		if xt > r.size.Width || yt > r.size.Height {
-			fmt.Println("huh??")
-		}
 		oX, oY = xt, yt
 	}
 
@@ -347,7 +344,7 @@ func (r *GraphRenderer) DrawGridLog(scope *function.Scope) {
 	// Horizontal grid-lines + y-labels (logarithmic)
 	minLogY := math.Log10(math.Max(scope.MinY, 1e-10))
 	maxLogY := math.Log10(scope.MaxY)
-	yGridCount := int(maxLogY-minLogY) + 1
+	yGridCount := int(maxLogY - minLogY)
 
 	for i := 0; i <= yGridCount; i++ {
 		// Calculate logarithmic value

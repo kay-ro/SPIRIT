@@ -57,18 +57,19 @@ func GetEdensities(eden []float64, d []float64, sigma []float64, zNumber int) (f
 // TODO: needs a comment
 func GetZAxis(d []float64, zNumber int) []float64 {
 	z0 := -20.0
-	var z1 = 0.0
+	var z1 = 30.0
 	if len(d) > 3 {
 		z1 += d[1]
 	}
 	for _, f := range d {
 		z1 += f
 	}
-	z1 -= z0
+
 	zStep := (z1 - z0) / float64(zNumber)
 	zAxis := make([]float64, zNumber)
 	for i := 0; i < zNumber; i++ {
 		zAxis[i] = z0 + float64(i)*zStep
 	}
+
 	return zAxis
 }
