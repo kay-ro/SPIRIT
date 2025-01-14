@@ -116,7 +116,7 @@ func registerGraphs() *fyne.Container {
 	})
 
 	eden := graph.NewGraphCanvas(&graph.GraphConfig{
-		Title:     "Logarithmic x³",
+		Title:     "Edensity Graph",
 		IsLog:     true,
 		Functions: function.Functions{functionMap["eden"]},
 	})

@@ -365,10 +365,8 @@ func (r *GraphRenderer) DrawGridLog(scope *function.Scope) {
 	xGridCount := int(math.Log10(scope.MaxX)-minLogX) + 1
 	maxLogX := math.Log10(math.Pow(10, minLogX+float64(xGridCount)))
 
-	labelSkip := 1
-	if xGridCount > 0 {
-		labelSkip = xGridCount / int(r.size.Width) / 25
-	}
+	// TODO: make this more dynamic
+	labelSkip := (xGridCount / (int(r.size.Width) / 50)) + 1
 
 	for i := 0; i <= xGridCount; i++ {
 		// Calculate logarithmic value
