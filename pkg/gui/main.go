@@ -3,11 +3,6 @@ package gui
 import (
 	"errors"
 	"fmt"
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/widget"
 	"io"
 	"log"
 	"math"
@@ -19,6 +14,12 @@ import (
 	"physicsGUI/pkg/gui/param"
 	"physicsGUI/pkg/physics"
 	"physicsGUI/pkg/trigger"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/widget"
 )
 
 var (
@@ -236,6 +237,7 @@ func RecalculateData() {
 	edenPoints, err := physics.GetEdensities(eden, d, sigma, ZNUMBER)
 	if err != nil {
 		fmt.Println("Error while calculating edensities:", err)
+		return
 	} else {
 		functionMap["eden"].SetData(edenPoints)
 	}
