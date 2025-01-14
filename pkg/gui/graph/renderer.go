@@ -127,9 +127,8 @@ func (r *GraphRenderer) DrawRemoveButtons() {
 	startX := r.size.Width - r.margin
 	for _, d := range r.graph.dataRemoveButtons {
 		offsetY += d.Size().Height + RemoveButtonTopPadding
-		d.Move(fyne.NewPos(startX, startY+offsetY))
-
 		for _, o := range d.Objects {
+			o.Move(fyne.NewPos(startX, startY+offsetY))
 			r.AddObject(o)
 		}
 	}
