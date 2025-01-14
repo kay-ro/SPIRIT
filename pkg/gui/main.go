@@ -205,14 +205,32 @@ func testFunc() {
 // RecalculateData recalculates the data for the sld and eden graphs
 func RecalculateData() {
 	// Get current parameter groups
-	eden, _ := param.GetFloats("eden")
-	d, _ := param.GetFloats("thick")
-	sigma, _ := param.GetFloats("rough")
+	eden, err := param.GetFloats("eden")
+	if err != nil {
+		return
+	}
+	d, err := param.GetFloats("thick")
+	if err != nil {
+		return
+	}
+	sigma, err := param.GetFloats("rough")
+	if err != nil {
+		return
+	}
 
 	// get general parameters
-	delta, _ := param.GetFloat("general", "deltaq")
-	background, _ := param.GetFloat("general", "background")
-	scaling, _ := param.GetFloat("general", "scaling")
+	delta, err := param.GetFloat("general", "deltaq")
+	if err != nil {
+		return
+	}
+	background, err := param.GetFloat("general", "background")
+	if err != nil {
+		return
+	}
+	scaling, err := param.GetFloat("general", "scaling")
+	if err != nil {
+		return
+	}
 
 	// calculate edensity
 	edenPoints, err := physics.GetEdensities(eden, d, sigma, ZNUMBER)
