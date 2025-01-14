@@ -2,6 +2,7 @@ package graph
 
 import (
 	"fmt"
+	"image/color"
 	"math"
 	"physicsGUI/pkg/function"
 
@@ -78,7 +79,7 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	r.base()
 
 	// calculate the maximum scope
-	scope := function.GetMaximumScope(r.graph.functions...)
+	scope := function.GetMaximumScope(append(r.graph.functions, r.graph.loadedData...)...)
 	if scope == nil {
 		r.DrawErrorMessage("Scope error")
 		return
@@ -89,11 +90,19 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 		return
 	}
 
+	// Add Remove Buttons
+	r.DrawRemoveButtons()
+
 	// draw model lines
 	if r.graph.config.IsLog {
 		for _, f := range r.graph.functions {
 			points, iPoints := f.Model(r.graph.config.Resolution, true)
-			r.DrawGraphLog(scope, points, iPoints)
+			r.DrawGraphLog(scope, points, iPoints, pointColor, errorColor)
+		}
+		for i, d := range r.graph.loadedData {
+			points, iPoints := d.Model(r.graph.config.Resolution, true)
+			dataColor := DataTrackColors[i%len(DataTrackColors)]
+			r.DrawGraphLog(scope, points, iPoints, dataColor, errorColor)
 		}
 		r.DrawGridLog(scope)
 		return
@@ -101,9 +110,29 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 
 	for _, f := range r.graph.functions {
 		points, iPoints := f.Model(r.graph.config.Resolution, false)
-		r.DrawGraphLinear(scope, points, iPoints)
+		r.DrawGraphLinear(scope, points, iPoints, pointColor, errorColor)
+	}
+	for i, d := range r.graph.loadedData {
+		points, iPoints := d.Model(r.graph.config.Resolution, false)
+		dataColor := DataTrackColors[i%len(DataTrackColors)]
+		r.DrawGraphLinear(scope, points, iPoints, dataColor, errorColor)
 	}
 	r.DrawGridLinear(scope)
+}
+
+// display remove buttons at the right border
+func (r *GraphRenderer) DrawRemoveButtons() {
+	offsetY := float32(0)
+	startY := float32(0)
+	startX := r.size.Width - r.margin
+	for _, d := range r.graph.dataRemoveButtons {
+		offsetY += d.Size().Height + RemoveButtonTopPadding
+		d.Move(fyne.NewPos(startX, startY+offsetY))
+
+		for _, o := range d.Objects {
+			r.AddObject(o)
+		}
+	}
 }
 
 // draw an error message onto the graph
@@ -121,7 +150,7 @@ func (r *GraphRenderer) DrawErrorMessage(message string) {
 }
 
 // draw a linear graph
-func (r *GraphRenderer) DrawGraphLinear(scope *function.Scope, points, iPoints function.Points) {
+func (r *GraphRenderer) DrawGraphLinear(scope *function.Scope, points, iPoints function.Points, pointColor, errorColor color.Color) {
 	// calc available space
 	availableWidth := r.size.Width - (1.5 * r.margin)
 	availableHeight := r.size.Height - (1.5 * r.margin)
@@ -148,7 +177,7 @@ func (r *GraphRenderer) DrawGraphLinear(scope *function.Scope, points, iPoints f
 
 		// draw line
 		r.AddObject(&canvas.Line{
-			StrokeColor: lineColor,
+			StrokeColor: pointColor,
 			StrokeWidth: 1,
 			Position1:   fyne.NewPos(oX, oY),
 			Position2:   fyne.NewPos(xt, yt),
@@ -172,13 +201,13 @@ func (r *GraphRenderer) DrawGraphLinear(scope *function.Scope, points, iPoints f
 		_, e1 := r.normalize(x, yE1)
 		_, e2 := r.normalize(x, yE2)
 
-		r.DrawError(xt, e1, e2)
-		r.DrawPoint(xt, yt)
+		r.DrawError(xt, e1, e2, errorColor)
+		r.DrawPoint(xt, yt, pointColor)
 	}
 }
 
 // draw the graph in logarithmic scale
-func (r *GraphRenderer) DrawGraphLog(scope *function.Scope, points, iPoints function.Points) {
+func (r *GraphRenderer) DrawGraphLog(scope *function.Scope, points, iPoints function.Points, pointColor, errorColor color.Color) {
 	// calc available space
 	availableWidth := r.size.Width - (1.5 * r.margin)
 	availableHeight := r.size.Height - (1.5 * r.margin)
@@ -220,7 +249,7 @@ func (r *GraphRenderer) DrawGraphLog(scope *function.Scope, points, iPoints func
 
 		xt, yt := r.normalize(x, y)
 		r.AddObject(&canvas.Line{
-			StrokeColor: lineColor,
+			StrokeColor: pointColor,
 			StrokeWidth: 1,
 			Position1:   fyne.NewPos(oX, oY),
 			Position2:   fyne.NewPos(xt, yt),
@@ -245,8 +274,8 @@ func (r *GraphRenderer) DrawGraphLog(scope *function.Scope, points, iPoints func
 		_, e1 := r.normalize(x, yE1)
 		_, e2 := r.normalize(x, yE2)
 
-		r.DrawError(xt, e1, e2)
-		r.DrawPoint(xt, yt)
+		r.DrawError(xt, e1, e2, pointColor)
+		r.DrawPoint(xt, yt, errorColor)
 	}
 }
 
@@ -421,7 +450,7 @@ func (r *GraphRenderer) normalize(x float32, y float32) (float32, float32) {
 // TODO: -> points are on the bottom of the lines
 
 // draw a grid point
-func (r *GraphRenderer) DrawPoint(x float32, y float32) {
+func (r *GraphRenderer) DrawPoint(x float32, y float32, pointColor color.Color) {
 	r.AddObject(&canvas.Circle{
 		FillColor: pointColor,
 		Position1: fyne.NewPos(x-pointRadius, y-pointRadius),
@@ -430,7 +459,7 @@ func (r *GraphRenderer) DrawPoint(x float32, y float32) {
 }
 
 // draw error correction lines
-func (r *GraphRenderer) DrawError(x, y1, y2 float32) {
+func (r *GraphRenderer) DrawError(x, y1, y2 float32, errorColor color.Color) {
 	r.AddObject(&canvas.Line{
 		StrokeColor: errorColor,
 		StrokeWidth: 1,

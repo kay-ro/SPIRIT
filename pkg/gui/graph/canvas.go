@@ -1,8 +1,10 @@
 package graph
 
 import (
+	"fyne.io/fyne/v2/container"
 	"image/color"
 	"physicsGUI/pkg/function"
+	"slices"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -15,7 +17,9 @@ type GraphCanvas struct {
 	config     *GraphConfig
 	background *canvas.Rectangle
 
-	functions function.Functions
+	functions         function.Functions
+	loadedData        function.Functions
+	dataRemoveButtons []*fyne.Container
 }
 
 // NewGraphCanvas creates a new canvas instance with a provided config.
@@ -26,7 +30,8 @@ func NewGraphCanvas(config *GraphConfig) *GraphCanvas {
 		config:     config,
 		background: canvas.NewRectangle(color.Black),
 
-		functions: config.Functions,
+		functions:  config.Functions,
+		loadedData: make(function.Functions, 0),
 	}
 
 	for _, f := range g.functions {
@@ -55,6 +60,29 @@ func (g *GraphCanvas) CreateRenderer() fyne.WidgetRenderer {
 func (g *GraphCanvas) UpdateFunctions(newFunctions function.Functions) {
 	g.functions = newFunctions
 	g.Refresh()
+}
+
+func (g *GraphCanvas) AddDataTrack(dataTrack *function.Function) {
+	i := len(g.loadedData)
+	g.loadedData = append(g.loadedData, dataTrack)
+
+	// create remove button
+	btnRemove := widget.NewButton("🗑", func() {
+		g.RemoveDataTrack(dataTrack)
+	})
+	btnRemove.Resize(fyne.NewSize(20, 20))
+	btnColor := DataTrackColors[i%len(DataTrackColors)]
+	g.dataRemoveButtons = append(g.dataRemoveButtons, container.NewStack(canvas.NewRectangle(btnColor), btnRemove))
+
+	g.Refresh()
+}
+func (g *GraphCanvas) RemoveDataTrack(dataTrack *function.Function) {
+	i := slices.Index(g.loadedData, dataTrack)
+	if i != -1 {
+		g.loadedData = append(g.loadedData[:i], g.loadedData[i+1:]...)
+		g.dataRemoveButtons = append(g.dataRemoveButtons[:i], g.dataRemoveButtons[i+1:]...)
+		g.Refresh()
+	}
 }
 
 func (g *GraphCanvas) AddFunction(newFunction *function.Function) {
