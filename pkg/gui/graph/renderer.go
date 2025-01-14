@@ -264,9 +264,14 @@ func (r *GraphRenderer) DrawGridLinear(scope *function.Scope) {
 			r.DrawGridLine(fyne.NewPos(r.margin, yPos), false, false)
 		}
 
+		text := fmt.Sprintf("%.3f", value)
+		if value < 0.01 {
+			text = fmt.Sprintf("%.1e", value)
+		}
+
 		// label
 		label := &canvas.Text{
-			Text:     fmt.Sprintf("%.2f", value),
+			Text:     text,
 			Color:    legendColor,
 			TextSize: 12,
 		}
@@ -286,10 +291,16 @@ func (r *GraphRenderer) DrawGridLinear(scope *function.Scope) {
 		}
 
 		// only draw every second label to prevent overlapping
-		if i%2 == 0 {
+		if i%4 == 0 {
+			v := scope.MinX + xStep*float64(i)
+			text := fmt.Sprintf("%.3f", v)
+			if v < 0.01 {
+				text = fmt.Sprintf("%.1e", v)
+			}
+
 			// label
 			label := &canvas.Text{
-				Text:     fmt.Sprintf("%.1f", scope.MinX+xStep*float64(i)),
+				Text:     text,
 				Color:    legendColor,
 				TextSize: 12,
 			}
@@ -334,9 +345,14 @@ func (r *GraphRenderer) DrawGridLog(scope *function.Scope) {
 			}
 		}
 
+		text := fmt.Sprintf("%.3f", value)
+		if value < 0.01 {
+			text = fmt.Sprintf("%.0e", value)
+		}
+
 		// Label for major grid lines
 		label := &canvas.Text{
-			Text:     fmt.Sprintf("%f", value), //fmt.Sprintf("%.0e", value),
+			Text:     text,
 			Color:    legendColor,
 			TextSize: 12,
 		}
@@ -348,6 +364,11 @@ func (r *GraphRenderer) DrawGridLog(scope *function.Scope) {
 	minLogX := math.Log10(math.Max(scope.MinX, 1e-10))
 	xGridCount := int(math.Log10(scope.MaxX)-minLogX) + 1
 	maxLogX := math.Log10(math.Pow(10, minLogX+float64(xGridCount)))
+
+	labelSkip := 1
+	if xGridCount > 0 {
+		labelSkip = xGridCount / int(r.size.Width) / 25
+	}
 
 	for i := 0; i <= xGridCount; i++ {
 		// Calculate logarithmic value
@@ -376,15 +397,19 @@ func (r *GraphRenderer) DrawGridLog(scope *function.Scope) {
 		}
 
 		// Label for major grid lines
-		//if i%2 == 0 {
-		label := &canvas.Text{
-			Text:     fmt.Sprintf("%f", value), //fmt.Sprintf("%.0e", value),
-			Color:    legendColor,
-			TextSize: 12,
+		if i%labelSkip == 0 {
+			text := fmt.Sprintf("%.3f", value)
+			if value < 0.01 {
+				text = fmt.Sprintf("%.0e", value)
+			}
+			label := &canvas.Text{
+				Text:     text,
+				Color:    legendColor,
+				TextSize: 12,
+			}
+			label.Move(fyne.NewPos(xPos-25, r.size.Height-r.margin+10))
+			r.AddObject(label)
 		}
-		label.Move(fyne.NewPos(xPos-25, r.size.Height-r.margin+10))
-		r.AddObject(label)
-		//}
 	}
 }
 

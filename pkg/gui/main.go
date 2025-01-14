@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"path/filepath"
 	"physicsGUI/pkg/data"
 	"physicsGUI/pkg/function"
@@ -165,7 +166,7 @@ func mainWindow() {
 		nil, // left
 		nil, // right
 
-		container.NewVBox(
+		container.NewVSplit(
 			registerGraphs(),
 			registerParams(),
 		),
@@ -182,8 +183,25 @@ func mainWindow() {
 
 const (
 	ELECTRON_RADIUS = 2.81e-5 // classical electron radius in angstrom
-	zNumber         = 150
+	ZNUMBER         = 150
 )
+
+func testFunc() {
+	counter := 11
+
+	d := make(function.Points, counter)
+
+	for i := 0; i < counter; i++ {
+		d[i] = &function.Point{
+			X:     float64(i),
+			Y:     math.Pow(float64(i), 2),
+			Error: 1,
+		}
+	}
+
+	functionMap["sld"].SetData(d)
+	functionMap["eden"].SetData(d)
+}
 
 // RecalculateData recalculates the data for the sld and eden graphs
 func RecalculateData() {
@@ -198,13 +216,15 @@ func RecalculateData() {
 	scaling, _ := param.GetFloat("general", "scaling")
 
 	// calculate edensity
-	edenPoints, err := physics.GetEdensities(eden, d, sigma, zNumber)
-	if err == nil {
+	edenPoints, err := physics.GetEdensities(eden, d, sigma, ZNUMBER)
+	if err != nil {
+		fmt.Println("Error while calculating edensities:", err)
+	} else {
 		functionMap["eden"].SetData(edenPoints)
 	}
 
 	// calculate zaxis
-	zaxis := physics.GetZAxis(d, zNumber)
+	zaxis := physics.GetZAxis(d, ZNUMBER)
 
 	// transform points into sld floats
 	sld := make([]float64, len(edenPoints))
@@ -212,6 +232,7 @@ func RecalculateData() {
 		sld[i] = e.Y * ELECTRON_RADIUS
 	}
 
+	// calculate intensity
 	intensity := physics.CalculateIntensity(zaxis, delta, sld, &physics.IntensityOptions{
 		Background: background,
 		Scaling:    scaling,
