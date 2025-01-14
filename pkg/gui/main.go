@@ -110,18 +110,18 @@ func registerFunctions() {
 // creates the graph containers for the different graphs
 func registerGraphs() *fyne.Container {
 	sld := graph.NewGraphCanvas(&graph.GraphConfig{
-		Title:     "SLD Graph",
-		IsLog:     false,
+		Title:     "Intensity Graph",
+		IsLog:     true,
 		Functions: function.Functions{functionMap["sld"]},
 	})
 
 	eden := graph.NewGraphCanvas(&graph.GraphConfig{
 		Title:     "Edensity Graph",
-		IsLog:     true,
+		IsLog:     false,
 		Functions: function.Functions{functionMap["eden"]},
 	})
 
-	return container.NewGridWithColumns(2, sld, eden)
+	return container.NewGridWithColumns(2, eden, sld)
 }
 
 // creates and registers the parameter and adds them to the parameter repository
