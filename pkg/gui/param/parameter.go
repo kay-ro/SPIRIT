@@ -55,6 +55,9 @@ func (f *Parameter[T]) Get() (T, error) {
 	if err != nil {
 		return null, err
 	}
+	if len(s) == 0 {
+		return f.config.InitialValue, nil
+	}
 
 	return f.config.Parser(s)
 }
