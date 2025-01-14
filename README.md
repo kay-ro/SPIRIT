@@ -40,3 +40,8 @@ go build main.go
 
 - Add log sanitizing dynamically
   otherwise we will face rendering issues if the min/max values aren't updated accordingly
+
+- fix weird graph behaviour
+- fix empty input crashes
+- add checkbox stuff
+- add back-reference for minmax inputs (revalidate main input)
