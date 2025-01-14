@@ -1,9 +1,12 @@
 package minimizer
 
 import (
+	"fmt"
 	"math"
 	"slices"
+	"sync"
 	"testing"
+	"time"
 )
 
 func testFunc(in []float64) float64 {
@@ -26,4 +29,51 @@ func TestHillClimb2DMinimizer(t *testing.T) {
 	}) {
 		t.Errorf("Minimizer failed to minimize value expected {0,0} but got {%f,%f}", res[0], res[1])
 	}
+}
+
+func TestHillClimb2DMinimizerA(t *testing.T) {
+	x0 := []float64{2, -2}
+	minima := []float64{-4, -4}
+	maxima := []float64{+4, +4}
+	problem := NewProblem(x0, minima, maxima, testFunc, NewParallelConfig(1e7))
+
+	var wg sync.WaitGroup
+
+	done := make(chan bool)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		FloatMinimizerHC.Minimize(problem)
+
+		done <- true
+	}()
+
+	wg.Add(1)
+	go func() {
+		for {
+			select {
+			case <-done:
+				wg.Done()
+
+				res, err := problem.GetCurrentParameters()
+				if err != nil {
+					t.Errorf("Failed to get parameters from problem after minimizer should have finished: %s", err.Error())
+				}
+
+				fmt.Println(res)
+				return
+			default:
+				res, err := problem.GetCurrentParameters()
+				if err != nil {
+					t.Errorf("Failed to get parameters from problem after minimizer should have finished: %s", err.Error())
+				}
+
+				fmt.Println(res)
+				time.Sleep(1 * time.Second)
+			}
+		}
+	}()
+
+	wg.Wait()
 }

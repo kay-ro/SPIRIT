@@ -45,3 +45,4 @@ go build main.go
 - add checkbox stuff
 - add back-reference for minmax inputs (revalidate main input)
 - add input lock
+- fix (re-implement) import data functionality
