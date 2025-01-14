@@ -97,12 +97,12 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	if r.graph.config.IsLog {
 		for _, f := range r.graph.functions {
 			points, iPoints := f.Model(r.graph.config.Resolution, true)
-			r.DrawGraphLog(scope, points, iPoints, pointColor, errorColor)
+			r.DrawGraphLog(scope, points, iPoints, pointColor)
 		}
 		for i, d := range r.graph.loadedData {
 			points, iPoints := d.Model(r.graph.config.Resolution, true)
 			dataColor := DataTrackColors[i%len(DataTrackColors)]
-			r.DrawGraphLog(scope, points, iPoints, dataColor, errorColor)
+			r.DrawGraphLog(scope, points, iPoints, dataColor)
 		}
 		r.DrawGridLog(scope)
 		return
@@ -110,12 +110,12 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 
 	for _, f := range r.graph.functions {
 		points, iPoints := f.Model(r.graph.config.Resolution, false)
-		r.DrawGraphLinear(scope, points, iPoints, pointColor, errorColor)
+		r.DrawGraphLinear(scope, points, iPoints, pointColor)
 	}
 	for i, d := range r.graph.loadedData {
 		points, iPoints := d.Model(r.graph.config.Resolution, false)
 		dataColor := DataTrackColors[i%len(DataTrackColors)]
-		r.DrawGraphLinear(scope, points, iPoints, dataColor, errorColor)
+		r.DrawGraphLinear(scope, points, iPoints, dataColor)
 	}
 	r.DrawGridLinear(scope)
 }
@@ -149,7 +149,7 @@ func (r *GraphRenderer) DrawErrorMessage(message string) {
 }
 
 // draw a linear graph
-func (r *GraphRenderer) DrawGraphLinear(scope *function.Scope, points, iPoints function.Points, pointColor, errorColor color.Color) {
+func (r *GraphRenderer) DrawGraphLinear(scope *function.Scope, points, iPoints function.Points, pointColor color.Color) {
 	// calc available space
 	availableWidth := r.size.Width - (1.5 * r.margin)
 	availableHeight := r.size.Height - (1.5 * r.margin)
@@ -182,6 +182,9 @@ func (r *GraphRenderer) DrawGraphLinear(scope *function.Scope, points, iPoints f
 			Position2:   fyne.NewPos(xt, yt),
 		})
 
+		if xt > r.size.Width || yt > r.size.Height {
+			fmt.Println("huh??")
+		}
 		oX, oY = xt, yt
 	}
 
@@ -206,7 +209,7 @@ func (r *GraphRenderer) DrawGraphLinear(scope *function.Scope, points, iPoints f
 }
 
 // draw the graph in logarithmic scale
-func (r *GraphRenderer) DrawGraphLog(scope *function.Scope, points, iPoints function.Points, pointColor, errorColor color.Color) {
+func (r *GraphRenderer) DrawGraphLog(scope *function.Scope, points, iPoints function.Points, pointColor color.Color) {
 	// calc available space
 	availableWidth := r.size.Width - (1.5 * r.margin)
 	availableHeight := r.size.Height - (1.5 * r.margin)

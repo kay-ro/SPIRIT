@@ -100,6 +100,9 @@ func createImportButton(window fyne.Window) *widget.Button {
 func registerFunctions() {
 	functionMap["sld"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
 	functionMap["eden"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
+	functionMap["test"] = function.NewFunction(function.Points{
+		{X: 0.01, Y: 1.0000, Error: 0.2},
+	}, function.INTERPOLATION_NONE)
 }
 
 // creates the graph containers for the different graphs
@@ -116,7 +119,13 @@ func registerGraphs() *fyne.Container {
 		Functions: function.Functions{functionMap["eden"]},
 	})
 
-	return container.NewGridWithColumns(2, graphMap["eden"], graphMap["sld"])
+	graphMap["test"] = graph.NewGraphCanvas(&graph.GraphConfig{
+		Title:     "Test Graph",
+		IsLog:     false,
+		Functions: function.Functions{functionMap["test"]},
+	})
+
+	return container.NewGridWithColumns(2, graphMap["eden"], graphMap["sld"], graphMap["test"])
 }
 
 // creates and registers the parameter and adds them to the parameter repository
@@ -148,6 +157,7 @@ func registerParams() *fyne.Container {
 func onDrop(position fyne.Position, uri []fyne.URI) {
 	for mapIdentifier, u := range graphMap {
 		if u.MouseInCanvas(position) {
+			fmt.Println("Dropped on graph:", mapIdentifier)
 			for _, v := range uri {
 				rc, err := os.OpenFile(v.Path(), os.O_RDONLY, 0666)
 				if err != nil {
