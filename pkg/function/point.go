@@ -68,6 +68,44 @@ func (p Points) Log() Points {
 	return p
 }
 
+// applies magic to all points
+func (p Points) Magie() {
+	for _, point := range p {
+		point.Y = math.Pow(point.X, 4) * point.Y
+		point.Error = math.Pow(point.X, 4) * point.Error
+	}
+}
+
+// copies the points
+func (p Points) Copy() Points {
+	np := make(Points, len(p))
+	for i, point := range p {
+		np[i] = &Point{
+			X:     point.X,
+			Y:     point.Y,
+			Error: point.Error,
+		}
+	}
+
+	return np
+}
+
+// filters the points by min and max x value
+func (p Points) Filter(min, max float64) Points {
+	np := make(Points, len(p))
+	for i, point := range p {
+		if point.X >= min && point.X <= max {
+			np[i] = &Point{
+				X:     point.X,
+				Y:     point.Y,
+				Error: point.Error,
+			}
+		}
+	}
+
+	return np
+}
+
 // represents a coordinate with x and y value
 type Coordinate struct {
 	X float64

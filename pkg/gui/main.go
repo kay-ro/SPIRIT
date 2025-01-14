@@ -100,7 +100,12 @@ func createImportButton(window fyne.Window) *widget.Button {
 func registerFunctions() {
 	functionMap["sld"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
 	functionMap["eden"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
-	functionMap["test"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
+	functionMap["test"] = function.NewFunction(function.Points{
+		/* &function.Point{X: 0.0, Y: 0.0, Error: 0.0},
+		&function.Point{X: 1.0, Y: 1.0, Error: 0.0},
+		&function.Point{X: 10.0, Y: 10.0, Error: 0.0},
+		&function.Point{X: 100.0, Y: 100.0, Error: 0.0}, */
+	}, function.INTERPOLATION_NONE)
 }
 
 // creates the graph containers for the different graphs
@@ -156,6 +161,7 @@ func onDrop(position fyne.Position, uri []fyne.URI) {
 	for mapIdentifier, u := range graphMap {
 		if u.MouseInCanvas(position) {
 			fmt.Println("Dropped on graph:", mapIdentifier)
+
 			for _, v := range uri {
 				rc, err := os.OpenFile(v.Path(), os.O_RDONLY, 0666)
 				if err != nil {
@@ -164,18 +170,9 @@ func onDrop(position fyne.Position, uri []fyne.URI) {
 				}
 
 				if points := addDataset(rc, v, nil); points != nil {
-					clamped := make(function.Points, 0)
+					points.Magie()
 
-					for _, point := range points {
-						point.Y = math.Pow(point.X, 4) * point.Y
-						point.Error = math.Pow(point.X, 4) * point.Error
-						fmt.Println(point)
-						if point.X >= 0.01 && point.X <= 1.0 {
-							clamped = append(clamped, point)
-						}
-					}
-
-					newFunction := function.NewFunction(clamped, function.INTERPOLATION_NONE)
+					newFunction := function.NewFunction(points, function.INTERPOLATION_NONE)
 					graphMap[mapIdentifier].AddDataTrack(newFunction)
 				}
 			}
@@ -218,7 +215,7 @@ func mainWindow() {
 
 const (
 	ELECTRON_RADIUS = 2.81e-5 // classical electron radius in angstrom
-	ZNUMBER         = 150
+	ZNUMBER         = 1500
 )
 
 func testFunc() {
@@ -277,11 +274,16 @@ func RecalculateData() {
 		functionMap["eden"].SetData(edenPoints)
 	}
 
+	//eP := edenPoints.Copy()
+
+	eP := edenPoints.Copy()
+	eP.Magie()
+
 	// calculate zaxis
 	zaxis := physics.GetZAxis(d, ZNUMBER)
 	// transform points into sld floats
-	sld := make([]float64, len(edenPoints))
-	for i, e := range edenPoints {
+	sld := make([]float64, len(eP))
+	for i, e := range eP {
 		sld[i] = e.Y * ELECTRON_RADIUS
 	}
 
@@ -300,6 +302,17 @@ func RecalculateData() {
 			Error: edenPoints[i].Error,
 		}
 	}
+
+	/* intensityPoints := make(function.Points, 0)
+	for i := range intensity {
+		if edenPoints[i].X >= 0.01 && edenPoints[i].X <= 1.0 {
+			intensityPoints = append(intensityPoints, &function.Point{
+				X:     edenPoints[i].X,
+				Y:     intensity[i] * math.Pow(edenPoints[i].X, 4),
+				Error: edenPoints[i].Error * math.Pow(edenPoints[i].X, 4),
+			})
+		}
+	} */
 
 	functionMap["sld"].SetData(intensityPoints)
 }

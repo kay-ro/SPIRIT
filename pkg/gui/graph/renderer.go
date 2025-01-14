@@ -224,6 +224,7 @@ func (r *GraphRenderer) DrawGraphLog(scope *function.Scope, points, iPoints func
 	// Calculate log ranges
 	logMinX := math.Log10(scope.MinX + xShift)
 	logMaxX := math.Log10(scope.MaxX + xShift)
+	logMaxX = float64(int(logMaxX) + 1)
 	logMinY := math.Log10(scope.MinY + yShift)
 	logMaxY := math.Log10(scope.MaxY + yShift)
 	xRange := math.Abs(logMaxX - logMinX)
