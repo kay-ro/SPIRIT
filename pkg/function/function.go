@@ -126,6 +126,10 @@ func (f *Function) SetData(data Points) {
 	}
 }
 
+func (f *Function) GetDataCount() int {
+	return len(f.data)
+}
+
 // TODO: add full explanation
 type FunctionSegment struct {
 	start float64

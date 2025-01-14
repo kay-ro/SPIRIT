@@ -1,4 +1,4 @@
-package eden
+package physics
 
 import (
 	"errors"
@@ -77,7 +77,7 @@ func NewSLDFunction(eden []*data.Parameter, d []*data.Parameter, sigma []*data.P
 // - d array with the d values {d_1,d_2,...,d_n} (Thickness)
 //
 // - sigma array with sigma values {sigma_a1,sigma_12,sigma_23,...,sigma_(n-1)(n),sigma_nb} (Roughness)
-func getEdensities(eden []float64, d []float64, sigma []float64, zNumber int) (function.Points, error) {
+func GetEdensities(eden []float64, d []float64, sigma []float64, zNumber int) (function.Points, error) {
 
 	step_n := len(d) + 1
 	//throw error if the param number does not match the scheme
@@ -96,7 +96,7 @@ func getEdensities(eden []float64, d []float64, sigma []float64, zNumber int) (f
 	}
 
 	edensities := make(function.Points, zNumber)
-	zaxis := get_zaxis(d, zNumber)
+	zaxis := GetZAxis(d, zNumber)
 
 	for i := 0; i < zNumber; i++ {
 		z_i := zaxis[i]
@@ -116,7 +116,7 @@ func getEdensities(eden []float64, d []float64, sigma []float64, zNumber int) (f
 	return edensities, nil
 }
 
-func get_zaxis(d []float64, zNumber int) []float64 {
+func GetZAxis(d []float64, zNumber int) []float64 {
 	z0 := -20.0
 	var z1 = 0.0
 	if len(d) > 3 {

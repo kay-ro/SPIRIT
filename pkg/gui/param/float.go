@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand/v2"
 	"strconv"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -71,7 +73,7 @@ func FloatMinMax(group, label string, defaultValue float64) (fyne.CanvasObject, 
 	}
 
 	min := New(&Config[float64]{
-		InitialValue: 1,
+		InitialValue: 0,
 		Validator: func(s string) error {
 			if _, err := strconv.ParseFloat(s, 64); err != nil {
 				return errors.New("keine gültige Zahl")
@@ -84,7 +86,7 @@ func FloatMinMax(group, label string, defaultValue float64) (fyne.CanvasObject, 
 	})
 
 	max := New(&Config[float64]{
-		InitialValue: 3,
+		InitialValue: 100,
 		Validator: func(s string) error {
 			if _, err := strconv.ParseFloat(s, 64); err != nil {
 				return errors.New("keine gültige Zahl")
@@ -134,6 +136,8 @@ func FloatMinMax(group, label string, defaultValue float64) (fyne.CanvasObject, 
 	lbl := &canvas.Text{Text: label, Color: labelColor, TextSize: 14}
 	minL := &canvas.Text{Text: "Minimum", Color: minMaxColor, TextSize: 11}
 	maxL := &canvas.Text{Text: "Maximum", Color: minMaxColor, TextSize: 11}
+
+	time.Sleep(time.Duration(rand.Float64()) * time.Second)
 
 	return container.NewVBox(
 		lbl,

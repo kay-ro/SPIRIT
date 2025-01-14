@@ -80,7 +80,13 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	// calculate the maximum scope
 	scope := function.GetMaximumScope(r.graph.functions...)
 	if scope == nil {
-		// TODO: display error
+		r.DrawErrorMessage("Scope error")
+		return
+	}
+
+	if len(r.graph.functions) == 0 || r.graph.functions[0].GetDataCount() < 1 {
+		r.DrawErrorMessage("No data available")
+		return
 	}
 
 	// draw model lines
@@ -98,6 +104,20 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 		r.DrawGraphLinear(scope, points, iPoints)
 	}
 	r.DrawGridLinear(scope)
+}
+
+// draw an error message onto the graph
+func (r *GraphRenderer) DrawErrorMessage(message string) {
+	errorMsg := &canvas.Text{
+		Text:     message,
+		Color:    titleColor,
+		TextSize: 16,
+	}
+	errorMsg.Move(fyne.NewPos(
+		r.size.Width/2-float32(len(errorMsg.Text)*4),
+		r.size.Height/2-errorMsg.Size().Height/2-r.margin/2))
+
+	r.AddObject(errorMsg)
 }
 
 // draw a linear graph

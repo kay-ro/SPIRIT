@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math"
 	"path/filepath"
 	"physicsGUI/pkg/data"
 	"physicsGUI/pkg/function"
 	"physicsGUI/pkg/gui/graph"
 	"physicsGUI/pkg/gui/helper"
 	"physicsGUI/pkg/gui/param"
+	"physicsGUI/pkg/physics"
 	"physicsGUI/pkg/trigger"
 
 	"fyne.io/fyne/v2"
@@ -36,7 +36,7 @@ func Start() {
 	MainWindow = App.NewWindow("Physics GUI")
 	GraphContainer = container.NewVBox()
 
-	AddMainWindow()
+	mainWindow()
 }
 
 func createImportButton(window fyne.Window) *widget.Button {
@@ -100,52 +100,59 @@ func createImportButton(window fyne.Window) *widget.Button {
 	})
 }
 
-// AddMainWindow builds and renders the main GUI content, it will show and run the main window,
-// which is a blocking command [fyne.Window.ShowAndRun]
-func AddMainWindow() {
-	// create dataset 2^x
-	dataset := make(function.Points, 21)
+// register functions which can be used for graph plotting
+func registerFunctions() {
+	functionMap["sld"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
+	functionMap["eden"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
+}
 
-	for i := 0; i < len(dataset); i++ {
-		dataset[i] = &function.Point{
-			X:     float64(i),
-			Y:     math.Pow(float64(i), 3),
-			Error: 1,
-		}
-	}
-
-	functionMap["test"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
-
-	g1 := graph.NewGraphCanvas(&graph.GraphConfig{
-		Title:     "Non Logarithmic x³ + x²",
+// creates the graph containers for the different graphs
+func registerGraphs() *fyne.Container {
+	sld := graph.NewGraphCanvas(&graph.GraphConfig{
+		Title:     "SLD Graph",
 		IsLog:     false,
-		Functions: function.Functions{functionMap["test"]},
+		Functions: function.Functions{functionMap["sld"]},
 	})
 
-	g2 := graph.NewGraphCanvas(&graph.GraphConfig{
-		Title: "Logarithmic x³",
-		IsLog: true,
-		Functions: function.Functions{
-			function.NewFunction(dataset, function.INTERPOLATION_NONE),
-		},
+	eden := graph.NewGraphCanvas(&graph.GraphConfig{
+		Title:     "Logarithmic x³",
+		IsLog:     true,
+		Functions: function.Functions{functionMap["eden"]},
 	})
 
-	// from refl_monolayer.pro:780
-	dummyFunction := data.NewOldSLDFunction(
-		[]float64{0.0, 0.346197, 0.458849, 0.334000},
-		[]float64{14.2657, 10.6906},
-		[]float64{3.39544, 2.15980, 3.90204},
-		150)
+	return container.NewGridWithColumns(2, sld, eden)
+}
 
-	dummyFunction.SetInterpolation(function.INTERPOLATION_LINEAR)
+// creates and registers the parameter and adds them to the parameter repository
+func registerParams() *fyne.Container {
+	edenA, _ := param.FloatMinMax("eden", "Eden a", 0.0)
+	eden1, _ := param.FloatMinMax("eden", "Eden 1", 0.346197)
+	eden2, _ := param.FloatMinMax("eden", "Eden 2", 0.458849)
+	edenB, _ := param.FloatMinMax("eden", "Eden b", 0.334000)
 
-	sldGraph := graph.NewGraphCanvas(&graph.GraphConfig{
-		Resolution: 5,
-		Title:      "Electron Density",
-		Functions:  function.Functions{dummyFunction},
-	})
+	roughnessA1, _ := param.FloatMinMax("rough", "Roughness a/1", 3.39544)
+	roughness12, _ := param.FloatMinMax("rough", "Roughness 1/2", 2.15980)
+	roughness2B, _ := param.FloatMinMax("rough", "Roughness 2/b", 3.90204)
 
-	obj2, _ := param.Int("g1", "TEST_VAR", 1)
+	thickness1, _ := param.FloatMinMax("thick", "Thickness 1", 14.2657)
+	thickness2, _ := param.FloatMinMax("thick", "Thickness 2", 10.6906)
+
+	deltaQ, _ := param.Float("general", "deltaq", 0.0)
+	background, _ := param.Float("general", "background", 10e-9)
+	scaling, _ := param.Float("general", "scaling", 1.0)
+
+	return container.NewVBox(
+		container.NewGridWithColumns(4, edenA, eden1, eden2, edenB),
+		container.NewGridWithColumns(4, roughnessA1, roughness12, roughness2B),
+		container.NewGridWithColumns(4, thickness1, thickness2),
+		container.NewGridWithColumns(4, deltaQ, background, scaling),
+	)
+}
+
+// mainWindow builds and renders the main GUI content, it will show and run the main window,
+// which is a blocking command [fyne.Window.ShowAndRun]
+func mainWindow() {
+	registerFunctions()
 
 	content := container.NewBorder(
 		container.NewVBox(
@@ -159,8 +166,8 @@ func AddMainWindow() {
 		nil, // right
 
 		container.NewVBox(
-			container.NewGridWithColumns(2, sldGraph, g1, g2 /* , dummyGraph */),
-			container.NewVBox(obj2),
+			registerGraphs(),
+			registerParams(),
 		),
 	)
 
@@ -173,22 +180,47 @@ func AddMainWindow() {
 	MainWindow.ShowAndRun()
 }
 
+const (
+	ELECTRON_RADIUS = 2.81e-5 // classical electron radius in angstrom
+	zNumber         = 150
+)
+
+// RecalculateData recalculates the data for the sld and eden graphs
 func RecalculateData() {
-	counter, err := param.GetInt("g1", "TEST_VAR")
-	if err != nil {
-		log.Println(err)
-		return
+	// Get current parameter groups
+	eden, _ := param.GetFloats("eden")
+	d, _ := param.GetFloats("thick")
+	sigma, _ := param.GetFloats("rough")
+
+	// get general parameters
+	delta, _ := param.GetFloat("general", "deltaq")
+	background, _ := param.GetFloat("general", "background")
+	scaling, _ := param.GetFloat("general", "scaling")
+
+	// calculate edensity
+	edenPoints, err := physics.GetEdensities(eden, d, sigma, zNumber)
+	if err == nil {
+		functionMap["eden"].SetData(edenPoints)
 	}
 
-	d := make(function.Points, counter)
+	// calculate zaxis
+	zaxis := physics.GetZAxis(d, zNumber)
 
-	for i := 0; i < counter; i++ {
-		d[i] = &function.Point{
-			X:     float64(i),
-			Y:     math.Pow(float64(i), 2),
-			Error: 1,
-		}
+	// transform points into sld floats
+	sld := make([]float64, len(edenPoints))
+	for i, e := range edenPoints {
+		sld[i] = e.Y * ELECTRON_RADIUS
 	}
 
-	functionMap["test"].SetData(d)
+	intensity := physics.CalculateIntensity(zaxis, delta, sld, &physics.IntensityOptions{
+		Background: background,
+		Scaling:    scaling,
+	})
+
+	// reusing the edenPoints struct and updating the Y values
+	for i := range intensity {
+		edenPoints[i].Y = intensity[i]
+	}
+
+	functionMap["sld"].SetData(edenPoints)
 }

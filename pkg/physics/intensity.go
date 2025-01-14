@@ -1,4 +1,4 @@
-package intensity
+package physics
 
 import (
 	"math"

@@ -29,6 +29,12 @@ func NewGraphCanvas(config *GraphConfig) *GraphCanvas {
 		functions: config.Functions,
 	}
 
+	for _, f := range g.functions {
+		if f == nil {
+			panic("function cannot be nil. Make sure to provide a function (even an empty one)")
+		}
+	}
+
 	// needs to be to cross reference with the underlying struct
 	g.ExtendBaseWidget(g)
 
