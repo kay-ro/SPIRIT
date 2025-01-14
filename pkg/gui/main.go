@@ -3,6 +3,11 @@ package gui
 import (
 	"errors"
 	"fmt"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/widget"
 	"io"
 	"log"
 	"math"
@@ -14,12 +19,6 @@ import (
 	"physicsGUI/pkg/gui/param"
 	"physicsGUI/pkg/physics"
 	"physicsGUI/pkg/trigger"
-
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/widget"
 )
 
 var (
@@ -225,7 +224,6 @@ func RecalculateData() {
 
 	// calculate zaxis
 	zaxis := physics.GetZAxis(d, ZNUMBER)
-
 	// transform points into sld floats
 	sld := make([]float64, len(edenPoints))
 	for i, e := range edenPoints {
@@ -238,10 +236,15 @@ func RecalculateData() {
 		Scaling:    scaling,
 	})
 
-	// reusing the edenPoints struct and updating the Y values
+	// creates list with intensity points based on edenPoints x and error and calculated intensity as y
+	intensityPoints := make(function.Points, len(edenPoints))
 	for i := range intensity {
-		edenPoints[i].Y = intensity[i]
+		intensityPoints[i] = &function.Point{
+			X:     edenPoints[i].X,
+			Y:     intensity[i],
+			Error: edenPoints[i].Error,
+		}
 	}
 
-	functionMap["sld"].SetData(edenPoints)
+	functionMap["sld"].SetData(intensityPoints)
 }
