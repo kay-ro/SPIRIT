@@ -31,6 +31,8 @@ func IntParameter(defaultValue int) *Parameter[int] {
 // returns the canvas object and the parameter
 func Int(group, label string, defaultValue int) (fyne.CanvasObject, *Parameter[int]) {
 	if iParams[group] == nil {
+		iNextFreeID[group] = 0
+		iParamsID[group] = make(map[string]int)
 		iParams[group] = make(map[string]*Parameter[int])
 	}
 
@@ -40,6 +42,8 @@ func Int(group, label string, defaultValue int) (fyne.CanvasObject, *Parameter[i
 
 	intParameter := IntParameter(defaultValue)
 	iParams[group][label] = intParameter
+	iParamsID[group][label] = iNextFreeID[group]
+	iNextFreeID[group] += 1
 
 	lbl := &canvas.Text{Text: label, Color: labelColor, TextSize: 14}
 

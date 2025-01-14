@@ -34,6 +34,8 @@ func StringParameter(defaultValue string) *Parameter[string] {
 // created a new string input field with a label
 func String(group, label, defaultValue string) (fyne.CanvasObject, *Parameter[string]) {
 	if sParams[group] == nil {
+		sNextFreeID[group] = 0
+		sParamsID[group] = make(map[string]int)
 		sParams[group] = make(map[string]*Parameter[string])
 	}
 
@@ -43,6 +45,8 @@ func String(group, label, defaultValue string) (fyne.CanvasObject, *Parameter[st
 
 	stringParameter := StringParameter(defaultValue)
 	sParams[group][label] = stringParameter
+	sParamsID[group][label] = sNextFreeID[group]
+	sNextFreeID[group] += 1
 
 	lbl := &canvas.Text{Text: label, Color: labelColor, TextSize: 14}
 

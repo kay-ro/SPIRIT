@@ -17,9 +17,9 @@ func GetStrings(group string) ([]string, error) {
 
 	values := make([]string, len(sParams[group]))
 	i := 0
-	for _, param := range sParams[group] {
+	for label, param := range sParams[group] {
 		if value, err := param.Get(); err == nil {
-			values[i] = value
+			values[sParamsID[group][label]] = value
 			i++
 		} else {
 			return nil, err
@@ -46,9 +46,10 @@ func GetFloats(group string) ([]float64, error) {
 
 	values := make([]float64, len(fParams[group]))
 	i := 0
-	for _, param := range fParams[group] {
+	for label, param := range fParams[group] {
 		if value, err := param.Get(); err == nil {
-			values[i] = value
+			id := fParamsID[group][label]
+			values[id] = value
 			i++
 		} else {
 			return nil, err
@@ -75,9 +76,9 @@ func GetInts(group string) ([]int, error) {
 
 	values := make([]int, len(iParams[group]))
 	i := 0
-	for _, param := range iParams[group] {
+	for label, param := range iParams[group] {
 		if value, err := param.Get(); err == nil {
-			values[i] = value
+			values[iParamsID[group][label]] = value
 			i++
 		} else {
 			return nil, err
