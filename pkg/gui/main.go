@@ -114,11 +114,22 @@ func registerGraphs() *fyne.Container {
 		Functions: function.Functions{functionMap["sld"]},
 	})
 
+	counter := 11
+	d := make(function.Points, counter)
+	for i := 0; i < counter; i++ {
+		d[i] = &function.Point{
+			X:     float64(i),
+			Y:     math.Pow(float64(i), 2),
+			Error: 0,
+		}
+	}
+
 	eden := graph.NewGraphCanvas(&graph.GraphConfig{
 		Title:     "Edensity Graph",
 		IsLog:     false,
 		Functions: function.Functions{functionMap["eden"]},
 	})
+	eden.AddDataTrack(function.NewFunction(d, function.INTERPOLATION_NONE))
 
 	return container.NewGridWithColumns(2, eden, sld)
 }

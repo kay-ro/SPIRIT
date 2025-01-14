@@ -1,8 +1,20 @@
 package graph
 
 import (
+	"golang.org/x/image/colornames"
 	"image/color"
 	"physicsGUI/pkg/function"
+)
+
+var (
+	DataTrackColors = []color.Color{
+		colornames.Red,
+		colornames.Orange,
+		colornames.Brown,
+		colornames.Purple,
+		colornames.Blue,
+	}
+	RemoveButtonTopPadding float32 = 5
 )
 
 var (
