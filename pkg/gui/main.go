@@ -168,7 +168,7 @@ func onDrop(position fyne.Position, uri []fyne.URI) {
 
 					for _, point := range points {
 						point.Y = math.Pow(point.X, 4) * point.Y
-						point.Error = 0.0
+						point.Error = math.Pow(point.X, 4) * point.Error
 						fmt.Println(point)
 						if point.X >= 0.01 && point.X <= 1.0 {
 							clamped = append(clamped, point)

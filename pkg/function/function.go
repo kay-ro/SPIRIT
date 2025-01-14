@@ -38,8 +38,13 @@ func NewFunction(data Points, interpolationMode InterpolationMode) *Function {
 func NewEmptyFunction(interpolationMode InterpolationMode) *Function {
 	// create function
 	f := &Function{
-		data:  nil,
-		Scope: &Scope{},
+		data: nil,
+		Scope: &Scope{
+			MinX: math.MaxFloat64,
+			MaxX: -math.MaxFloat64,
+			MinY: math.MaxFloat64,
+			MaxY: -math.MaxFloat64,
+		},
 	}
 
 	// set interpolation function
