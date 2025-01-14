@@ -41,8 +41,11 @@ go build main.go
 - Add log sanitizing dynamically
   otherwise we will face rendering issues if the min/max values aren't updated accordingly
 
-- add validation check before recalc
 - add checkbox stuff
-- add back-reference for minmax inputs (revalidate main input)
-- add input lock
 - fix (re-implement) import data functionality
+- implement basic minimizer
+
+### Später
+
+- add input lock
+- add back-reference for minmax inputs (revalidate main input)

@@ -1,10 +1,11 @@
 package graph
 
 import (
-	"fyne.io/fyne/v2/container"
 	"image/color"
 	"physicsGUI/pkg/function"
 	"slices"
+
+	"fyne.io/fyne/v2/container"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -44,6 +45,12 @@ func NewGraphCanvas(config *GraphConfig) *GraphCanvas {
 	g.ExtendBaseWidget(g)
 
 	return g
+}
+
+func (g *GraphCanvas) MouseInCanvas(position fyne.Position) bool {
+	pos := g.BaseWidget.Position()
+
+	return position.X >= pos.X && position.X <= pos.X+g.Size().Width && position.Y >= pos.Y && position.Y <= pos.Y+g.Size().Height
 }
 
 // CreateRenderer returns a [GraphRenderer] from a [GraphCanvas]

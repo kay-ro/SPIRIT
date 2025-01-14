@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"math"
+	"os"
 	"path/filepath"
 	"physicsGUI/pkg/data"
 	"physicsGUI/pkg/function"
@@ -29,6 +30,7 @@ var (
 	GraphContainer *fyne.Container
 
 	functionMap = make(map[string]*function.Function)
+	graphMap    = make(map[string]*graph.GraphCanvas)
 )
 
 // Start GUI (function is blocking)
@@ -40,63 +42,56 @@ func Start() {
 	mainWindow()
 }
 
+func addDataset(reader io.ReadCloser, uri fyne.URI, err error) function.Points {
+	if err != nil {
+		dialog.ShowError(err, MainWindow)
+		return nil
+	}
+	if reader == nil {
+		return nil // user canceled
+	}
+	defer func() {
+		if err := reader.Close(); err != nil {
+			log.Println("error while closing dialog:", err)
+		}
+	}()
+
+	// read file
+	bytes, err := io.ReadAll(reader)
+	if err != nil {
+		dialog.ShowError(err, MainWindow)
+		return nil
+	}
+
+	// get filename
+	filename := filepath.Base(uri.Name())
+
+	// handle import
+	points, err := data.Parse(bytes)
+	if err != nil {
+		dialog.ShowError(err, MainWindow)
+		return nil
+	}
+
+	if len(points) == 0 {
+		dialog.ShowError(errors.New("no data"), MainWindow)
+		return nil
+	}
+
+	// show success message
+	dialog.ShowInformation("Import successful",
+		fmt.Sprintf("File '%s' imported", filename),
+		MainWindow)
+
+	return points
+}
+
 func createImportButton(window fyne.Window) *widget.Button {
 	return widget.NewButton("Import Data", func() {
-
 		// open dialog
 		dialog.ShowFileOpen(func(reader fyne.URIReadCloser, err error) {
-			if err != nil {
-				dialog.ShowError(err, window)
-				return
-			}
-			if reader == nil {
-				return // user canceled
-			}
-			defer func() {
-				if err := reader.Close(); err != nil {
-					log.Println("error while closing dialog:", err)
-				}
-			}()
-
-			// read file
-			bytes, err := io.ReadAll(reader)
-			if err != nil {
-				dialog.ShowError(err, window)
-				return
-			}
-
-			// get filename
-			filename := filepath.Base(reader.URI().Path())
-
-			// handle import
-			points, err := data.Parse(bytes)
-			if err != nil {
-				dialog.ShowError(err, window)
-				return
-			}
-
-			if len(points) == 0 {
-				dialog.ShowError(errors.New("no data"), window)
-				return
-			}
-
-			GraphContainer.RemoveAll()
-
-			plot := graph.NewGraphCanvas(&graph.GraphConfig{
-				Title:      fmt.Sprintf("Data track %d", 1),
-				IsLog:      false,
-				Resolution: 200,
-				Functions: function.Functions{
-					function.NewFunction(points, function.INTERPOLATION_NONE),
-				},
-			})
-
-			GraphContainer.Add(plot)
-
-			// show success message
-			dialog.ShowInformation("Import successful",
-				fmt.Sprintf("File '%s' imported", filename),
-				window)
+			addDataset(reader, reader.URI(), err)
+			// TODO: HELP
 		}, window)
 	})
 }
@@ -109,19 +104,19 @@ func registerFunctions() {
 
 // creates the graph containers for the different graphs
 func registerGraphs() *fyne.Container {
-	sld := graph.NewGraphCanvas(&graph.GraphConfig{
+	graphMap["sld"] = graph.NewGraphCanvas(&graph.GraphConfig{
 		Title:     "Intensity Graph",
 		IsLog:     true,
 		Functions: function.Functions{functionMap["sld"]},
 	})
 
-	eden := graph.NewGraphCanvas(&graph.GraphConfig{
+	graphMap["eden"] = graph.NewGraphCanvas(&graph.GraphConfig{
 		Title:     "Edensity Graph",
 		IsLog:     false,
 		Functions: function.Functions{functionMap["eden"]},
 	})
 
-	return container.NewGridWithColumns(2, eden, sld)
+	return container.NewGridWithColumns(2, graphMap["eden"], graphMap["sld"])
 }
 
 // creates and registers the parameter and adds them to the parameter repository
@@ -148,6 +143,26 @@ func registerParams() *fyne.Container {
 		container.NewGridWithColumns(4, thickness1, thickness2),
 		container.NewGridWithColumns(4, deltaQ, background, scaling),
 	)
+}
+
+func onDrop(position fyne.Position, uri []fyne.URI) {
+	for mapIdentifier, u := range graphMap {
+		if u.MouseInCanvas(position) {
+			for _, v := range uri {
+				rc, err := os.OpenFile(v.Path(), os.O_RDONLY, 0666)
+				if err != nil {
+					dialog.ShowError(err, MainWindow)
+					return
+				}
+
+				if points := addDataset(rc, v, nil); points != nil {
+					newFunction := function.NewFunction(points, function.INTERPOLATION_NONE)
+					graphMap[mapIdentifier].AddDataTrack(newFunction)
+				}
+			}
+			return
+		}
+	}
 }
 
 // mainWindow builds and renders the main GUI content, it will show and run the main window,
@@ -177,6 +192,7 @@ func mainWindow() {
 
 	MainWindow.Resize(fyne.NewSize(1000, 500))
 	MainWindow.SetContent(content)
+	MainWindow.SetOnDropped(onDrop)
 
 	MainWindow.ShowAndRun()
 }
