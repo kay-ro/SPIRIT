@@ -218,15 +218,18 @@ func (r *GraphRenderer) DrawGraphLog(scope *function.Scope, points, iPoints func
 	}
 	yShift := 0.0
 	if scope.MinY <= 0 {
-		yShift = math.Abs(scope.MinY) + 1
+		yShift = math.Abs(scope.MinY) + 2
 	}
 
 	// Calculate log ranges
 	logMinX := math.Log10(scope.MinX + xShift)
+	logMinX = float64(int(logMinX) - 1)
 	logMaxX := math.Log10(scope.MaxX + xShift)
-	logMaxX = float64(int(logMaxX) + 1)
+	logMaxX = float64(int(logMaxX))
 	logMinY := math.Log10(scope.MinY + yShift)
+	logMinY = float64(int(logMinY) - 1)
 	logMaxY := math.Log10(scope.MaxY + yShift)
+	logMaxY = float64(int(logMaxY))
 	xRange := math.Abs(logMaxX - logMinX)
 	yRange := math.Abs(logMaxY - logMinY)
 
@@ -343,7 +346,9 @@ func (r *GraphRenderer) DrawGridLinear(scope *function.Scope) {
 func (r *GraphRenderer) DrawGridLog(scope *function.Scope) {
 	// Horizontal grid-lines + y-labels (logarithmic)
 	minLogY := math.Log10(math.Max(scope.MinY, 1e-10))
+	minLogY = float64(int(minLogY) - 1)
 	maxLogY := math.Log10(scope.MaxY)
+	maxLogY = float64(int(maxLogY))
 	yGridCount := int(maxLogY - minLogY)
 
 	for i := 0; i <= yGridCount; i++ {
@@ -390,8 +395,10 @@ func (r *GraphRenderer) DrawGridLog(scope *function.Scope) {
 
 	// Vertical grid-lines + x-labels (logarithmic)
 	minLogX := math.Log10(math.Max(scope.MinX, 1e-10))
-	xGridCount := int(math.Log10(scope.MaxX)-minLogX) + 1
-	maxLogX := math.Log10(math.Pow(10, minLogX+float64(xGridCount)))
+	minLogX = float64(int(minLogX) - 1)
+	maxLogX := math.Log10(scope.MaxX)
+	maxLogX = float64(int(maxLogX))
+	xGridCount := int(maxLogX - minLogX)
 
 	// TODO: make this more dynamic
 	labelSkip := (xGridCount / (int(r.size.Width) / 50)) + 1

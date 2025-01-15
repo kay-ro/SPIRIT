@@ -92,14 +92,14 @@ func (p Points) Copy() Points {
 
 // filters the points by min and max x value
 func (p Points) Filter(min, max float64) Points {
-	np := make(Points, len(p))
-	for i, point := range p {
+	np := make(Points, 0)
+	for _, point := range p {
 		if point.X >= min && point.X <= max {
-			np[i] = &Point{
+			np = append(np, &Point{
 				X:     point.X,
 				Y:     point.Y,
 				Error: point.Error,
-			}
+			})
 		}
 	}
 
