@@ -25,6 +25,10 @@ type GraphScope struct {
 	Min function.Coordinate
 	Max function.Coordinate
 }
+type GraphRange struct {
+	Min float64
+	Max float64
+}
 
 // returns the minimum size needed for the graph
 func (r *GraphRenderer) MinSize() fyne.Size {
@@ -96,10 +100,12 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	// draw model lines
 	if r.graph.config.IsLog {
 		for _, f := range r.graph.functions {
+			f.Range(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max)
 			points, iPoints := f.Model(r.graph.config.Resolution, true)
 			r.DrawGraphLog(scope, points, iPoints, pointColor)
 		}
 		for i, d := range r.graph.loadedData {
+			d.Range(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max)
 			points, iPoints := d.Model(r.graph.config.Resolution, true)
 			dataColor := DataTrackColors[i%len(DataTrackColors)]
 			r.DrawGraphLog(scope, points, iPoints, dataColor)
@@ -110,12 +116,18 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 
 	for _, f := range r.graph.functions {
 		points, iPoints := f.Model(r.graph.config.Resolution, false)
-		r.DrawGraphLinear(scope, points, iPoints, pointColor)
+		r.DrawGraphLinear(scope,
+			points.Filter(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max),
+			iPoints.Filter(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max),
+			pointColor)
 	}
 	for i, d := range r.graph.loadedData {
 		points, iPoints := d.Model(r.graph.config.Resolution, false)
 		dataColor := DataTrackColors[i%len(DataTrackColors)]
-		r.DrawGraphLinear(scope, points, iPoints, dataColor)
+		r.DrawGraphLinear(scope,
+			points.Filter(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max),
+			iPoints.Filter(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max),
+			dataColor)
 	}
 	r.DrawGridLinear(scope)
 }

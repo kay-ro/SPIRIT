@@ -264,8 +264,12 @@ func registerFunctions() {
 func registerGraphs() *fyne.Container {
 	graphMap["sld"] = graph.NewGraphCanvas(&graph.GraphConfig{
 		Title:     "Intensity Graph",
-		IsLog:     false,
+		IsLog:     true,
 		Functions: function.Functions{functionMap["sld"]},
+		DisplayRange: &graph.GraphRange{
+			Min: 0.01,
+			Max: math.MaxFloat64,
+		},
 	})
 
 	graphMap["eden"] = graph.NewGraphCanvas(&graph.GraphConfig{

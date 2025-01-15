@@ -2,6 +2,7 @@ package graph
 
 import (
 	"image/color"
+	"math"
 	"physicsGUI/pkg/function"
 	"slices"
 
@@ -27,6 +28,12 @@ type GraphCanvas struct {
 // Specfically, it sets up the underlying structure of a canvas including lines, axes, labels and background.
 // The method also calls 'ExtendBaseWidget' to cross-reference the canvas instance with the underlying fyne.BaseWidget struct.
 func NewGraphCanvas(config *GraphConfig) *GraphCanvas {
+	if config.DisplayRange == nil {
+		config.DisplayRange = &GraphRange{
+			Min: -math.MaxFloat64,
+			Max: math.MaxFloat64,
+		}
+	}
 	g := &GraphCanvas{
 		config:     config,
 		background: canvas.NewRectangle(color.Black),

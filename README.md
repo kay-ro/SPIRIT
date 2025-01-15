@@ -47,5 +47,6 @@ go build main.go
 
 ### Später
 
+- make graph display range dynamic
 - add input lock
 - add back-reference for minmax inputs (revalidate main input)
