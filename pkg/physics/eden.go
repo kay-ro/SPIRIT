@@ -73,3 +73,11 @@ func GetZAxis(d []float64, zNumber int) []float64 {
 
 	return zAxis
 }
+
+func GetDefaultQZAxis(qzNumber int) []float64 {
+	qzAxis := make([]float64, qzNumber)
+	for i := 0; i < qzNumber; i++ {
+		qzAxis[i] = -0.02 + float64(i)*0.001
+	}
+	return qzAxis
+}

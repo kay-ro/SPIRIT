@@ -100,19 +100,14 @@ func createImportButton(window fyne.Window) *widget.Button {
 func registerFunctions() {
 	functionMap["sld"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
 	functionMap["eden"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
-	functionMap["test"] = function.NewFunction(function.Points{
-		/* &function.Point{X: 0.0, Y: 0.0, Error: 0.0},
-		&function.Point{X: 1.0, Y: 1.0, Error: 0.0},
-		&function.Point{X: 10.0, Y: 10.0, Error: 0.0},
-		&function.Point{X: 100.0, Y: 100.0, Error: 0.0}, */
-	}, function.INTERPOLATION_NONE)
+	functionMap["test"] = function.NewFunction(function.Points{}, function.INTERPOLATION_NONE)
 }
 
 // creates the graph containers for the different graphs
 func registerGraphs() *fyne.Container {
 	graphMap["sld"] = graph.NewGraphCanvas(&graph.GraphConfig{
 		Title:     "Intensity Graph",
-		IsLog:     true,
+		IsLog:     false,
 		Functions: function.Functions{functionMap["sld"]},
 	})
 
@@ -171,7 +166,6 @@ func onDrop(position fyne.Position, uri []fyne.URI) {
 
 				if points := addDataset(rc, v, nil); points != nil {
 					points.Magie()
-
 					newFunction := function.NewFunction(points, function.INTERPOLATION_NONE)
 					graphMap[mapIdentifier].AddDataTrack(newFunction)
 				}
@@ -215,8 +209,11 @@ func mainWindow() {
 
 const (
 	ELECTRON_RADIUS = 2.81e-5 // classical electron radius in angstrom
-	ZNUMBER         = 1500
+	ZNUMBER         = 150
+	QZNUMBER        = 500
 )
+
+var qzAxis = physics.GetDefaultQZAxis(QZNUMBER)
 
 func testFunc() {
 	counter := 11
@@ -274,45 +271,38 @@ func RecalculateData() {
 		functionMap["eden"].SetData(edenPoints)
 	}
 
-	//eP := edenPoints.Copy()
-
-	eP := edenPoints.Copy()
-	eP.Magie()
-
-	// calculate zaxis
-	zaxis := physics.GetZAxis(d, ZNUMBER)
 	// transform points into sld floats
-	sld := make([]float64, len(eP))
-	for i, e := range eP {
+	sld := make([]float64, len(edenPoints))
+	for i, e := range edenPoints {
 		sld[i] = e.Y * ELECTRON_RADIUS
 	}
 
+	deltaz := 0.0
+	if edenPoints != nil && len(edenPoints) > 1 {
+		deltaz = edenPoints[1].X - edenPoints[0].X
+	}
+
 	// calculate intensity
-	intensity := physics.CalculateIntensity(zaxis, delta, sld, &physics.IntensityOptions{
+	modifiedQzAxis := make([]float64, len(qzAxis))
+	copy(modifiedQzAxis, qzAxis)
+	helper.Map(modifiedQzAxis, func(xPoint float64) float64 { return xPoint + delta })
+	intensity := physics.CalculateIntensity(qzAxis, deltaz, sld, &physics.IntensityOptions{
 		Background: background,
 		Scaling:    scaling,
 	})
 
 	// creates list with intensity points based on edenPoints x and error and calculated intensity as y
-	intensityPoints := make(function.Points, len(edenPoints))
+	intensityPoints := make(function.Points, QZNUMBER)
 	for i := range intensity {
 		intensityPoints[i] = &function.Point{
-			X:     edenPoints[i].X,
+			X:     qzAxis[i],
 			Y:     intensity[i],
-			Error: edenPoints[i].Error,
+			Error: 0.0,
 		}
-	}
+		function.Magie(intensityPoints[i])
+		//fmt.Println(*intensityPoints[i])
 
-	/* intensityPoints := make(function.Points, 0)
-	for i := range intensity {
-		if edenPoints[i].X >= 0.01 && edenPoints[i].X <= 1.0 {
-			intensityPoints = append(intensityPoints, &function.Point{
-				X:     edenPoints[i].X,
-				Y:     intensity[i] * math.Pow(edenPoints[i].X, 4),
-				Error: edenPoints[i].Error * math.Pow(edenPoints[i].X, 4),
-			})
-		}
-	} */
+	}
 
 	functionMap["sld"].SetData(intensityPoints)
 }
