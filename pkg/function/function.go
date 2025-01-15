@@ -39,7 +39,7 @@ func NewEmptyFunction(interpolationMode InterpolationMode) *Function {
 	// create function
 	f := &Function{
 		data:  nil,
-		Scope: &Scope{},
+		Scope: nil,
 	}
 
 	// set interpolation function
@@ -128,6 +128,15 @@ func (f *Function) SetData(data Points) {
 
 func (f *Function) GetDataCount() int {
 	return len(f.data)
+}
+
+// range cuts off the function data to the given range
+func (f *Function) Range(minX, maxX float64) {
+	// create new data slice
+	filtered := f.data.Filter(minX, maxX)
+
+	// set new data
+	f.SetData(filtered)
 }
 
 // TODO: add full explanation

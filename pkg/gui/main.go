@@ -100,14 +100,14 @@ func createImportButton(window fyne.Window) *widget.Button {
 func registerFunctions() {
 	functionMap["sld"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
 	functionMap["eden"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
-	functionMap["test"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
+	functionMap["test"] = function.NewFunction(function.Points{}, function.INTERPOLATION_NONE)
 }
 
 // creates the graph containers for the different graphs
 func registerGraphs() *fyne.Container {
 	graphMap["sld"] = graph.NewGraphCanvas(&graph.GraphConfig{
 		Title:     "Intensity Graph",
-		IsLog:     true,
+		IsLog:     false,
 		Functions: function.Functions{functionMap["sld"]},
 	})
 
@@ -156,6 +156,7 @@ func onDrop(position fyne.Position, uri []fyne.URI) {
 	for mapIdentifier, u := range graphMap {
 		if u.MouseInCanvas(position) {
 			fmt.Println("Dropped on graph:", mapIdentifier)
+
 			for _, v := range uri {
 				rc, err := os.OpenFile(v.Path(), os.O_RDONLY, 0666)
 				if err != nil {
@@ -164,18 +165,8 @@ func onDrop(position fyne.Position, uri []fyne.URI) {
 				}
 
 				if points := addDataset(rc, v, nil); points != nil {
-					clamped := make(function.Points, 0)
-
-					for _, point := range points {
-						point.Y = math.Pow(point.X, 4) * point.Y
-						point.Error = math.Pow(point.X, 4) * point.Error
-						fmt.Println(point)
-						/* 						if point.X >= 0.01 && point.X <= 1.0 {
-							clamped = append(clamped, point)
-						} */
-					}
-
-					newFunction := function.NewFunction(clamped, function.INTERPOLATION_NONE)
+					points.Magie()
+					newFunction := function.NewFunction(points, function.INTERPOLATION_NONE)
 					graphMap[mapIdentifier].AddDataTrack(newFunction)
 				}
 			}
@@ -286,8 +277,16 @@ func RecalculateData() {
 		sld[i] = e.Y * ELECTRON_RADIUS
 	}
 
+	deltaz := 0.0
+	if edenPoints != nil && len(edenPoints) > 1 {
+		deltaz = edenPoints[1].X - edenPoints[0].X
+	}
+
 	// calculate intensity
-	intensity := physics.CalculateIntensity(qzAxis, delta, sld, &physics.IntensityOptions{
+	modifiedQzAxis := make([]float64, len(qzAxis))
+	copy(modifiedQzAxis, qzAxis)
+	helper.Map(modifiedQzAxis, func(xPoint float64) float64 { return xPoint + delta })
+	intensity := physics.CalculateIntensity(qzAxis, deltaz, sld, &physics.IntensityOptions{
 		Background: background,
 		Scaling:    scaling,
 	})
@@ -300,6 +299,9 @@ func RecalculateData() {
 			Y:     intensity[i],
 			Error: 0.0,
 		}
+		function.Magie(intensityPoints[i])
+		//fmt.Println(*intensityPoints[i])
+
 	}
 
 	functionMap["sld"].SetData(intensityPoints)
