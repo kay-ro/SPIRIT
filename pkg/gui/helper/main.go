@@ -1,9 +1,8 @@
 package helper
 
 import (
-	"image/color"
-
 	"fyne.io/fyne/v2/canvas"
+	"image/color"
 )
 
 // separator

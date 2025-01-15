@@ -16,7 +16,10 @@ func TestHillClimb2DMinimizer(t *testing.T) {
 	x0 := []float64{2, -2}
 	minima := []float64{-4, -4}
 	maxima := []float64{+4, +4}
-	problem := NewProblem(x0, minima, maxima, testFunc, NewAsyncConfig(1e7))
+	problem := NewProblem(x0, minima, maxima, testFunc, &MinimiserConfig{
+		LoopCount:     1e7,
+		ParallelReads: false,
+	})
 
 	FloatMinimizerHC.Minimize(problem)
 
@@ -35,8 +38,10 @@ func TestHillClimb2DMinimizerA(t *testing.T) {
 	x0 := []float64{2, -2}
 	minima := []float64{-4, -4}
 	maxima := []float64{+4, +4}
-	problem := NewProblem(x0, minima, maxima, testFunc, NewParallelConfig(1e7))
-
+	problem := NewProblem(x0, minima, maxima, testFunc, &MinimiserConfig{
+		LoopCount:     1e7,
+		ParallelReads: true,
+	})
 	var wg sync.WaitGroup
 
 	done := make(chan bool)

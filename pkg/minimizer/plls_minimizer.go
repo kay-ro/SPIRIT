@@ -29,16 +29,16 @@ func (p *parallelLinearLocalSearch[T]) Minimize(problem *AsyncMinimiserProblem[T
 
 	// mark minimization as done
 	problem.lock.Lock()
-	problem.config.loopCount = 0
+	problem.config.LoopCount = 0
 	problem.lock.Unlock()
 }
 
 func (p *parallelLinearLocalSearch[T]) plsWorker(id int, wg *sync.WaitGroup, problem *AsyncMinimiserProblem[T]) {
 	// read config and make local of necessary data copy
 	problem.lock.RLock()
-	useLock := problem.config.parallelReads
+	useLock := problem.config.ParallelReads
 	minDelta := p.minDelta
-	maxIterations := problem.config.loopCount
+	maxIterations := problem.config.LoopCount
 	parameters := problem.parameter
 	minv := problem.minima[id]
 	maxv := problem.maxima[id]

@@ -3,6 +3,12 @@ package gui
 import (
 	"errors"
 	"fmt"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 	"io"
 	"log"
 	"math"
@@ -13,21 +19,16 @@ import (
 	"physicsGUI/pkg/gui/graph"
 	"physicsGUI/pkg/gui/helper"
 	"physicsGUI/pkg/gui/param"
+	"physicsGUI/pkg/minimizer"
 	"physicsGUI/pkg/physics"
 	"physicsGUI/pkg/trigger"
-
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/widget"
+	"time"
 )
 
 var (
 	// App reference
-	App            fyne.App
-	MainWindow     fyne.Window
-	GraphContainer *fyne.Container
+	App        fyne.App
+	MainWindow fyne.Window
 
 	functionMap = make(map[string]*function.Function)
 	graphMap    = make(map[string]*graph.GraphCanvas)
@@ -37,7 +38,7 @@ var (
 func Start() {
 	App = app.NewWithID("GUI-Physics")
 	MainWindow = App.NewWindow("Physics GUI")
-	GraphContainer = container.NewVBox()
+	App.Settings().SetTheme(theme.DarkTheme()) //TODO WIP to fix invisable while parameter lables
 
 	mainWindow()
 }
@@ -84,6 +85,78 @@ func addDataset(reader io.ReadCloser, uri fyne.URI, err error) function.Points {
 		MainWindow)
 
 	return points
+}
+
+func createMinimizeButton() *widget.Button {
+	btnMinimize := widget.NewButton("Minimize", func() {
+		println("minimize button")
+		problem := createMinimizerProblem()
+
+		go minimizer.FloatMinimizerHC.Minimize(problem)
+	})
+	return btnMinimize
+}
+func minimizeRefreshWorker[T minimizer.Number](problem *minimizer.AsyncMinimiserProblem[T], close <-chan struct{}, clock <-chan time.Time) {
+	for {
+		select {
+		case <-close:
+			return
+		case <-clock:
+
+		}
+	}
+}
+
+func createMinimizerProblem() *minimizer.AsyncMinimiserProblem[float64] {
+	eden, err := param.GetFloats("eden")
+	if err != nil {
+		return nil
+	}
+	d, err := param.GetFloats("thick")
+	if err != nil {
+		return nil
+	}
+	sigma, err := param.GetFloats("rough")
+	if err != nil {
+		return nil
+	}
+
+	// get general parameters
+	delta, err := param.GetFloat("general", "deltaq")
+	if err != nil {
+		return nil
+	}
+	background, err := param.GetFloat("general", "background")
+	if err != nil {
+		return nil
+	}
+	scaling, err := param.GetFloat("general", "scaling")
+	if err != nil {
+		return nil
+	}
+
+	parameters := make([]float64, 0)
+	parameters = append(parameters, eden...)
+	parameters = append(parameters, d...)
+	parameters = append(parameters, sigma...)
+	parameters = append(parameters, delta)
+	parameters = append(parameters, background)
+	parameters = append(parameters, scaling)
+
+	// Define error function
+	errorFunction := func(params []float64) float64 {
+		return 0
+	}
+	minima := make([]float64, len(parameters))
+	maxima := make([]float64, len(parameters))
+	for i := range minima {
+		minima[i] = -math.MaxFloat64
+		maxima[i] = math.MaxFloat64
+	}
+	return minimizer.NewProblem(parameters, minima, maxima, errorFunction, &minimizer.MinimiserConfig{
+		LoopCount:     1e7,
+		ParallelReads: true,
+	})
 }
 
 func createImportButton(window fyne.Window) *widget.Button {
@@ -183,7 +256,7 @@ func mainWindow() {
 	content := container.NewBorder(
 		container.NewVBox(
 			container.NewHBox(
-				createImportButton(MainWindow),
+				createMinimizeButton(),
 			),
 			helper.CreateSeparator(),
 		), // top

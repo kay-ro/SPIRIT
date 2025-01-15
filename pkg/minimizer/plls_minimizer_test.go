@@ -13,7 +13,10 @@ func TestPLLS2DMinimizer(t *testing.T) {
 	x0 := []float64{2, -2}
 	minima := []float64{-4, -4}
 	maxima := []float64{+4, +4}
-	problem := NewProblem(x0, minima, maxima, pllsTestFunc, NewAsyncConfig(1e7))
+	problem := NewProblem(x0, minima, maxima, pllsTestFunc, &MinimiserConfig{
+		LoopCount:     1e7,
+		ParallelReads: false,
+	})
 
 	FloatMinimizerPLLS.Minimize(problem)
 

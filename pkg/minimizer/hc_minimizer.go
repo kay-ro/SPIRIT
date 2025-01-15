@@ -29,7 +29,7 @@ Algo (Hill Climbing):
 
 func (h *hillClimbingMinimizer[T]) Minimize(problem *AsyncMinimiserProblem[T]) {
 	problem.lock.RLock()
-	useLocks := problem.config.parallelReads
+	useLocks := problem.config.ParallelReads
 	bestNode := problem.parameter
 	minv := problem.minima
 	maxv := problem.maxima
@@ -42,9 +42,9 @@ func (h *hillClimbingMinimizer[T]) Minimize(problem *AsyncMinimiserProblem[T]) {
 		if useLocks {
 			problem.lock.RLock()
 			defer problem.lock.RUnlock()
-			return problem.config.loopCount != 0
+			return problem.config.LoopCount != 0
 		} else {
-			return problem.config.loopCount != 0
+			return problem.config.LoopCount != 0
 		}
 	}
 	bestEval := problem.errorFunction(bestNode)
@@ -79,7 +79,7 @@ func (h *hillClimbingMinimizer[T]) Minimize(problem *AsyncMinimiserProblem[T]) {
 		// check if local minima was reached
 		if neighborErrors[mini] >= bestEval {
 			problem.lock.Lock()
-			problem.config.loopCount = 0
+			problem.config.LoopCount = 0
 			problem.lock.Unlock()
 			continue
 		}
@@ -92,7 +92,7 @@ func (h *hillClimbingMinimizer[T]) Minimize(problem *AsyncMinimiserProblem[T]) {
 		bestEval = neighborErrors[mini]
 
 		problem.lock.Lock()
-		problem.config.loopCount--
+		problem.config.LoopCount--
 		problem.parameter = bestNode
 		problem.lock.Unlock()
 	}

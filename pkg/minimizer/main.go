@@ -12,21 +12,8 @@ type Number interface {
 }
 
 type MinimiserConfig struct {
-	loopCount     int
-	parallelReads bool
-}
-
-func NewParallelConfig(maxLoopCount int) *MinimiserConfig {
-	return &MinimiserConfig{
-		loopCount:     maxLoopCount,
-		parallelReads: true,
-	}
-}
-func NewAsyncConfig(maxLoopCount int) *MinimiserConfig {
-	return &MinimiserConfig{
-		loopCount:     maxLoopCount,
-		parallelReads: false,
-	}
+	LoopCount     int
+	ParallelReads bool
 }
 
 type AsyncMinimiserProblem[T Number] struct {
@@ -50,11 +37,11 @@ func NewProblem[T Number](x0, minima, maxima []T, errorFunction func(parameter [
 }
 
 func (p *AsyncMinimiserProblem[T]) GetCurrentParameters() ([]T, error) {
-	if p.config.parallelReads {
+	if p.config.ParallelReads {
 		p.lock.RLock()
 		defer p.lock.RUnlock()
 		return p.parameter, nil
-	} else if p.config.loopCount == 0 {
+	} else if p.config.LoopCount == 0 {
 		return p.parameter, nil
 	} else {
 		return nil, errors.New("can not get parameters while minimizing with without parallel read option")
@@ -66,9 +53,9 @@ func (p *AsyncMinimiserProblem[T]) GetCurrentParameters() ([]T, error) {
 // WARNING:
 // Ensure, that this problem was not paused previously without successful resume otherwise it can crash you program with fatal error
 func (p *AsyncMinimiserProblem[_]) Pause() error {
-	if !p.config.parallelReads {
+	if !p.config.ParallelReads {
 		return errors.New("can not pause with without parallel read option")
-	} else if p.config.loopCount == 0 {
+	} else if p.config.LoopCount == 0 {
 		return errors.New("can not pause what is already completed")
 	}
 	p.lock.Lock()
@@ -80,9 +67,9 @@ func (p *AsyncMinimiserProblem[_]) Pause() error {
 // WARNING:
 // Ensure, that you have successfully paused this problem previously otherwise it can crash you program with fatal error
 func (p *AsyncMinimiserProblem[_]) Resume() error {
-	if !p.config.parallelReads {
+	if !p.config.ParallelReads {
 		return errors.New("can not resume without parallel read option")
-	} else if p.config.loopCount == 0 {
+	} else if p.config.LoopCount == 0 {
 		return errors.New("can not resume what is already completed")
 	}
 	p.lock.Unlock()

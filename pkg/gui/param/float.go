@@ -54,7 +54,6 @@ func Float(group, label string, defaultValue float64) (fyne.CanvasObject, *Param
 	fParams[group][label] = floatParameter
 	fParamsID[group][label] = fNextFreeID[group]
 	fNextFreeID[group] += 1
-
 	lbl := &canvas.Text{Text: label, Color: labelColor, TextSize: 14}
 
 	return container.NewVBox(

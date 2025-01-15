@@ -83,6 +83,14 @@ func (g *GraphCanvas) AddDataTrack(dataTrack *function.Function) {
 
 	g.Refresh()
 }
+
+func (g *GraphCanvas) GetDataTracks() function.Functions {
+	return g.loadedData
+}
+func (g *GraphCanvas) GetFunctions() function.Functions {
+	return g.functions
+}
+
 func (g *GraphCanvas) RemoveDataTrack(dataTrack *function.Function) {
 	i := slices.Index(g.loadedData, dataTrack)
 	if i != -1 {
