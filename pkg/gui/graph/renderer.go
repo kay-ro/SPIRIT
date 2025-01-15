@@ -71,19 +71,16 @@ func (r *GraphRenderer) base() {
 
 // draws the whole graph
 func (r *GraphRenderer) Layout(size fyne.Size) {
-	// size of the graph
-	r.size = &size
-	// About layout when size is zero and therefor component is not visible
-	if r.size.Width < r.MinSize().Width || r.size.Height < r.MinSize().Height {
-		fmt.Println(r.size)
-		r.objects = make([]fyne.CanvasObject, 0)
-		return
-	}
-
-	//fmt.Printf("%v\n", time.Now())
-
 	// clear objects
 	r.objects = make([]fyne.CanvasObject, 0)
+
+	// size of the graph
+	r.size = &size
+
+	// About layout when size is zero and therefor component is not visible
+	if r.size.Width < r.MinSize().Width || r.size.Height < r.MinSize().Height {
+		return
+	}
 
 	// set the base for the canvas
 	r.base()

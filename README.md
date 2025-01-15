@@ -1,4 +1,4 @@
-# PortGUIPhysics
+# SPIRIT - Scattering length Profile Integration and Reflectivity Iteration Tool
 
 ## Setup
 
