@@ -168,11 +168,11 @@ func onDrop(position fyne.Position, uri []fyne.URI) {
 
 					for _, point := range points {
 						point.Y = math.Pow(point.X, 4) * point.Y
-						point.Error = 0.0
+						point.Error = math.Pow(point.X, 4) * point.Error
 						fmt.Println(point)
-						if point.X >= 0.01 && point.X <= 1.0 {
+						/* 						if point.X >= 0.01 && point.X <= 1.0 {
 							clamped = append(clamped, point)
-						}
+						} */
 					}
 
 					newFunction := function.NewFunction(clamped, function.INTERPOLATION_NONE)
@@ -219,7 +219,10 @@ func mainWindow() {
 const (
 	ELECTRON_RADIUS = 2.81e-5 // classical electron radius in angstrom
 	ZNUMBER         = 150
+	QZNUMBER        = 500
 )
+
+var qzAxis = physics.GetDefaultQZAxis(QZNUMBER)
 
 func testFunc() {
 	counter := 11
@@ -277,8 +280,6 @@ func RecalculateData() {
 		functionMap["eden"].SetData(edenPoints)
 	}
 
-	// calculate zaxis
-	zaxis := physics.GetZAxis(d, ZNUMBER)
 	// transform points into sld floats
 	sld := make([]float64, len(edenPoints))
 	for i, e := range edenPoints {
@@ -286,18 +287,18 @@ func RecalculateData() {
 	}
 
 	// calculate intensity
-	intensity := physics.CalculateIntensity(zaxis, delta, sld, &physics.IntensityOptions{
+	intensity := physics.CalculateIntensity(qzAxis, delta, sld, &physics.IntensityOptions{
 		Background: background,
 		Scaling:    scaling,
 	})
 
 	// creates list with intensity points based on edenPoints x and error and calculated intensity as y
-	intensityPoints := make(function.Points, len(edenPoints))
+	intensityPoints := make(function.Points, QZNUMBER)
 	for i := range intensity {
 		intensityPoints[i] = &function.Point{
-			X:     edenPoints[i].X,
+			X:     qzAxis[i],
 			Y:     intensity[i],
-			Error: edenPoints[i].Error,
+			Error: 0.0,
 		}
 	}
 
