@@ -371,6 +371,8 @@ const (
 
 var qzAxis = physics.GetDefaultQZAxis(QZNUMBER)
 
+// this test func will create a basic x^2 dataset for testing
+// and set it to the sld and eden graphs
 func testFunc() {
 	counter := 11
 
