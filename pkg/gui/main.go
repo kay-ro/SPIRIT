@@ -16,6 +16,7 @@ import (
 	"physicsGUI/pkg/minimizer"
 	"physicsGUI/pkg/physics"
 	"physicsGUI/pkg/trigger"
+	"slices"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -44,6 +45,7 @@ func Start() {
 	mainWindow()
 }
 
+// parses a given file into a dataset
 func addDataset(reader io.ReadCloser, uri fyne.URI, err error) function.Points {
 	if err != nil {
 		dialog.ShowError(err, MainWindow)
@@ -89,26 +91,28 @@ func addDataset(reader io.ReadCloser, uri fyne.URI, err error) function.Points {
 }
 
 func createMinimizeButton() *widget.Button {
-	btnMinimize := widget.NewButton("Minimize", func() {
-		problem := createMinimizerProblem()
-		if problem == nil {
-			dialog.ShowInformation("Minimizer", "Minimisation Failed: Failed to create minimization Problem",
-				MainWindow)
+	return widget.NewButton("Minimize", func() {
+		if problem := createMinimizerProblem(); problem != nil {
+			closeChan := make(chan struct{}, 1)
+			clock := time.Tick(1 * time.Second)
+
+			go minimizeRefreshWorker(problem, closeChan, clock)
+
+			go func() {
+				minimizer.FloatMinimizerHC.Minimize(problem)
+				closeChan <- struct{}{}
+				dialog.ShowInformation("Minimizer", "Minimisation completed",
+					MainWindow)
+			}()
+
+			log.Println("Minimization started")
 			return
 		}
-		closeChan := make(chan struct{}, 1)
-		clock := time.Tick(1 * time.Second)
-		go minimizeRefreshWorker(problem, closeChan, clock)
 
-		go func() {
-			minimizer.FloatMinimizerHC.Minimize(problem)
-			closeChan <- struct{}{}
-			dialog.ShowInformation("Minimizer", "Minimisation completed",
-				MainWindow)
-		}()
+		dialog.ShowInformation("Minimizer", "Minimisation Failed: Failed to create minimization Problem", MainWindow)
 	})
-	return btnMinimize
 }
+
 func minimizeRefreshWorker(problem *minimizer.AsyncMinimiserProblem[float64], close <-chan struct{}, clock <-chan time.Time) {
 	for {
 		select {
@@ -159,19 +163,15 @@ func createMinimizerProblem() *minimizer.AsyncMinimiserProblem[float64] {
 		return nil
 	}
 
-	parameters := make([]float64, 0)
-	parameters = append(parameters, eden...)
-	parameters = append(parameters, d...)
-	parameters = append(parameters, sigma...)
-	parameters = append(parameters, delta)
-	parameters = append(parameters, background)
-	parameters = append(parameters, scaling)
+	parameters := slices.Concat(eden, d, sigma)
+	parameters = append(parameters, delta, background, scaling)
 
 	dataTracks := graphMap["sld"].GetDataTracks()
 	if len(dataTracks) == 0 {
 		return nil
 	}
 	dataTrack := dataTracks[0]
+
 	// Define error function
 	errorFunction := func(params []float64) float64 {
 		edenErr := params[0:4]
@@ -181,70 +181,42 @@ func createMinimizerProblem() *minimizer.AsyncMinimiserProblem[float64] {
 		backgroundErr := params[10]
 		scalingErr := params[11]
 
-		edenPoints, err := physics.GetEdensities(edenErr, dErr, sigmaErr, ZNUMBER)
+		edenPoints, err := physics.GetEdensities(edenErr, dErr, sigmaErr)
 		if err != nil {
 			fmt.Println("Error while calculating edensities:", err)
 			return math.MaxFloat64
 		}
-		sld := make([]float64, len(edenPoints))
-		for i, e := range edenPoints {
-			sld[i] = e.Y * ELECTRON_RADIUS
-		}
 
-		deltaz := 0.0
-		if edenPoints != nil && len(edenPoints) > 1 {
-			deltaz = edenPoints[1].X - edenPoints[0].X
-		}
-
-		// calculate intensity
-		modifiedQzAxis := make([]float64, len(qzAxis))
-		copy(modifiedQzAxis, qzAxis)
-		helper.Map(modifiedQzAxis, func(xPoint float64) float64 { return xPoint + deltaErr })
-		intensity := physics.CalculateIntensity(qzAxis, deltaz, sld, &physics.IntensityOptions{
+		intensityPoints := physics.CalculateIntensityPoints(edenPoints, deltaErr, &physics.IntensityOptions{
 			Background: backgroundErr,
 			Scaling:    scalingErr,
 		})
 
-		// creates list with intensity points based on edenPoints x and error and calculated intensity as y
-		intensityPoints := make(function.Points, QZNUMBER)
-		for i := range intensity {
-			intensityPoints[i] = &function.Point{
-				X:     qzAxis[i],
-				Y:     intensity[i],
-				Error: 0.0,
-			}
-			intensityPoints[i].Magie()
-		}
 		intensityFunction := function.NewFunction(intensityPoints, function.INTERPOLATION_LINEAR)
 		intensityFunction.Range(dataTrack.Scope.MinX, dataTrack.Scope.MaxX)
 		reelD, _ := dataTrack.Model(0, false)
+
 		_, interI := intensityFunction.Model(len(reelD), false)
 		functionMap["test"].SetData(interI)
+
 		diff := 0.0
 		for i := range reelD {
 			diff += math.Abs(reelD[i].Y - interI[i].Y)
 		}
 		return diff
 	}
+
 	minima := make([]float64, len(parameters))
 	maxima := make([]float64, len(parameters))
+
 	for i := range minima {
 		minima[i] = -math.MaxFloat64
 		maxima[i] = math.MaxFloat64
 	}
+
 	return minimizer.NewProblem(parameters, minima, maxima, errorFunction, &minimizer.MinimiserConfig{
 		LoopCount:     1e2,
 		ParallelReads: true,
-	})
-}
-
-func createImportButton(window fyne.Window) *widget.Button {
-	return widget.NewButton("Import Data", func() {
-		// open dialog
-		dialog.ShowFileOpen(func(reader fyne.URIReadCloser, err error) {
-			addDataset(reader, reader.URI(), err)
-			// TODO: HELP
-		}, window)
 	})
 }
 
@@ -308,11 +280,11 @@ func registerParams() *fyne.Container {
 	)
 }
 
+// onDrop is called when a file is dropped into the window and triggers
+// an import of the data if the file is dropped on a graph canvas
 func onDrop(position fyne.Position, uri []fyne.URI) {
 	for mapIdentifier, u := range graphMap {
 		if u.MouseInCanvas(position) {
-			fmt.Println("Dropped on graph:", mapIdentifier)
-
 			for _, v := range uri {
 				rc, err := os.OpenFile(v.Path(), os.O_RDONLY, 0666)
 				if err != nil {
@@ -362,14 +334,6 @@ func mainWindow() {
 
 	MainWindow.ShowAndRun()
 }
-
-const (
-	ELECTRON_RADIUS = 2.81e-5 // classical electron radius in angstrom
-	ZNUMBER         = 150
-	QZNUMBER        = 500
-)
-
-var qzAxis = physics.GetDefaultQZAxis(QZNUMBER)
 
 // this test func will create a basic x^2 dataset for testing
 // and set it to the sld and eden graphs
@@ -427,7 +391,7 @@ func RecalculateData() {
 	}
 
 	// calculate edensity
-	edenPoints, err := physics.GetEdensities(eden, d, sigma, ZNUMBER)
+	edenPoints, err := physics.GetEdensities(eden, d, sigma)
 	if err != nil {
 		log.Println("Error while calculating edensities:", err)
 		return
@@ -435,37 +399,10 @@ func RecalculateData() {
 		functionMap["eden"].SetData(edenPoints)
 	}
 
-	// transform points into sld floats
-	sld := make([]float64, len(edenPoints))
-	for i, e := range edenPoints {
-		sld[i] = e.Y * ELECTRON_RADIUS
-	}
-
-	deltaz := 0.0
-	if edenPoints != nil && len(edenPoints) > 1 {
-		deltaz = edenPoints[1].X - edenPoints[0].X
-	}
-
-	// calculate intensity
-	modifiedQzAxis := make([]float64, len(qzAxis))
-	copy(modifiedQzAxis, qzAxis)
-	helper.Map(modifiedQzAxis, func(xPoint float64) float64 { return xPoint + delta })
-	intensity := physics.CalculateIntensity(qzAxis, deltaz, sld, &physics.IntensityOptions{
+	intensityPoints := physics.CalculateIntensityPoints(edenPoints, delta, &physics.IntensityOptions{
 		Background: background,
 		Scaling:    scaling,
 	})
-
-	// creates list with intensity points based on edenPoints x and error and calculated intensity as y
-	intensityPoints := make(function.Points, QZNUMBER)
-	for i := range intensity {
-		intensityPoints[i] = &function.Point{
-			X:     qzAxis[i],
-			Y:     intensity[i],
-			Error: 0.0,
-		}
-		intensityPoints[i].Magie()
-		//fmt.Println(*intensityPoints[i])
-	}
 
 	functionMap["sld"].SetData(intensityPoints)
 }

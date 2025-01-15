@@ -3,11 +3,48 @@ package physics
 import (
 	"math"
 	"math/cmplx"
+	"physicsGUI/pkg/function"
+	"physicsGUI/pkg/gui/helper"
 )
 
 type IntensityOptions struct {
 	Background float64
 	Scaling    float64
+}
+
+func CalculateIntensityPoints(edenPoints function.Points, delta float64, opts *IntensityOptions) function.Points {
+	// transform points into sld floats
+	sld := make([]float64, len(edenPoints))
+	for i, e := range edenPoints {
+		sld[i] = e.Y * ELECTRON_RADIUS
+	}
+
+	deltaz := 0.0
+
+	if edenPoints != nil && len(edenPoints) > 1 {
+		deltaz = edenPoints[1].X - edenPoints[0].X
+	}
+
+	// calculate intensity
+	modifiedQzAxis := make([]float64, len(qzAxis))
+	copy(modifiedQzAxis, qzAxis)
+
+	helper.Map(modifiedQzAxis, func(xPoint float64) float64 { return xPoint + delta })
+
+	intensity := CalculateIntensity(qzAxis, deltaz, sld, opts)
+
+	// creates list with intensity points based on edenPoints x and error and calculated intensity as y
+	intensityPoints := make(function.Points, QZNUMBER)
+	for i := range intensity {
+		intensityPoints[i] = &function.Point{
+			X:     qzAxis[i],
+			Y:     intensity[i],
+			Error: 0.0,
+		}
+		intensityPoints[i].Magie()
+	}
+
+	return intensityPoints
 }
 
 // TODO: add caching for reflectivity values if only opts are changing

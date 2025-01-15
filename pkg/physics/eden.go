@@ -13,7 +13,7 @@ import (
 // - d array with the d values {d_1,d_2,...,d_n} (Thickness)
 //
 // - sigma array with sigma values {sigma_a1,sigma_12,sigma_23,...,sigma_(n-1)(n),sigma_nb} (Roughness)
-func GetEdensities(eden []float64, d []float64, sigma []float64, zNumber int) (function.Points, error) {
+func GetEdensities(eden []float64, d []float64, sigma []float64) (function.Points, error) {
 	step_n := len(d) + 1
 
 	//throw error if the param number does not match the scheme
@@ -31,10 +31,10 @@ func GetEdensities(eden []float64, d []float64, sigma []float64, zNumber int) (f
 		z[i] = z[i-1] + d[i-1]
 	}
 
-	edensities := make(function.Points, zNumber)
-	zaxis := GetZAxis(d, zNumber)
+	edensities := make(function.Points, ZNUMBER)
+	zaxis := GetZAxis(d, ZNUMBER)
 
-	for i := 0; i < zNumber; i++ {
+	for i := 0; i < ZNUMBER; i++ {
 		z_i := zaxis[i]
 
 		//calculate cumulative edensity at a specific z_i
