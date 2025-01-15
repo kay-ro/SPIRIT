@@ -101,7 +101,7 @@ func createMinimizeButton() *widget.Button {
 		go minimizeRefreshWorker(problem, closeChan, clock)
 
 		go func() {
-			minimizer.FloatMinimizerPLLS.Minimize(problem)
+			minimizer.FloatMinimizerHC.Minimize(problem)
 			closeChan <- struct{}{}
 			dialog.ShowInformation("Minimizer", "Minimisation completed",
 				MainWindow)
