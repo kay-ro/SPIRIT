@@ -2,11 +2,15 @@ package param
 
 // Get single string value based on group and label
 func GetString(group, label string) (string, error) {
-	if sParams[group] == nil || sParams[group][label] == nil {
+	if sParams[group] == nil {
 		return "", ErrParameterNotFound
 	}
 
-	return sParams[group][label].Get()
+	if p := sParams[group].GetParam(label); p != nil {
+		return p.Get()
+	}
+
+	return "", ErrParameterNotFound
 }
 
 // Get all string values based on group
@@ -15,27 +19,20 @@ func GetStrings(group string) ([]string, error) {
 		return nil, ErrParameterNotFound
 	}
 
-	values := make([]string, len(sParams[group]))
-	i := 0
-	for label, param := range sParams[group] {
-		if value, err := param.Get(); err == nil {
-			values[sParamsID[group][label]] = value
-			i++
-		} else {
-			return nil, err
-		}
-	}
-
-	return values, nil
+	return sParams[group].GetValues()
 }
 
 // Get single float value based on group and label
 func GetFloat(group, label string) (float64, error) {
-	if fParams[group] == nil || fParams[group][label] == nil {
+	if fParams[group] == nil {
 		return 0, ErrParameterNotFound
 	}
 
-	return fParams[group][label].Get()
+	if p := fParams[group].GetParam(label); p != nil {
+		return p.Get()
+	}
+
+	return 0, ErrParameterNotFound
 }
 
 // Get all float values based on group
@@ -44,28 +41,20 @@ func GetFloats(group string) ([]float64, error) {
 		return nil, ErrParameterNotFound
 	}
 
-	values := make([]float64, len(fParams[group]))
-	i := 0
-	for label, param := range fParams[group] {
-		if value, err := param.Get(); err == nil {
-			id := fParamsID[group][label]
-			values[id] = value
-			i++
-		} else {
-			return nil, err
-		}
-	}
-
-	return values, nil
+	return fParams[group].GetValues()
 }
 
 // Get single int value based on group and label
 func GetInt(group, label string) (int, error) {
-	if iParams[group] == nil || iParams[group][label] == nil {
+	if iParams[group] == nil {
 		return 0, ErrParameterNotFound
 	}
 
-	return iParams[group][label].Get()
+	if p := iParams[group].GetParam(label); p != nil {
+		return p.Get()
+	}
+
+	return 0, ErrParameterNotFound
 }
 
 // Get all int values based on group
@@ -74,16 +63,5 @@ func GetInts(group string) ([]int, error) {
 		return nil, ErrParameterNotFound
 	}
 
-	values := make([]int, len(iParams[group]))
-	i := 0
-	for label, param := range iParams[group] {
-		if value, err := param.Get(); err == nil {
-			values[iParamsID[group][label]] = value
-			i++
-		} else {
-			return nil, err
-		}
-	}
-
-	return values, nil
+	return iParams[group].GetValues()
 }

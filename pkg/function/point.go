@@ -68,7 +68,8 @@ func (p Points) Log() Points {
 	return p
 }
 
-func Magie(p *Point) {
+// applies magic to a point
+func (p *Point) Magie() {
 	p.Y = math.Pow(p.X, 4) * p.Y
 	p.Error = math.Pow(p.X, 4) * p.Error
 }
@@ -76,7 +77,7 @@ func Magie(p *Point) {
 // applies magic to all points
 func (p Points) Magie() {
 	for _, point := range p {
-		Magie(point)
+		point.Magie()
 	}
 }
 
