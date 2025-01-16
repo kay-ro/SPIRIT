@@ -85,9 +85,14 @@ func (h *hillClimbingMinimizer[T]) Minimize(problem *AsyncMinimiserProblem[T]) {
 		}
 
 		if mini < parameterCount {
-			bestNode[mini] += h.minDelta
+			if bestNode[mini]+h.minDelta <= maxv[mini] {
+				bestNode[mini] += h.minDelta
+			}
+
 		} else {
-			bestNode[mini-parameterCount] -= h.minDelta
+			if bestNode[mini-parameterCount]-h.minDelta >= minv[mini-parameterCount] {
+				bestNode[mini-parameterCount] -= h.minDelta
+			}
 		}
 		bestEval = neighborErrors[mini]
 
