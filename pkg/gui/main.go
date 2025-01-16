@@ -193,15 +193,16 @@ func createMinimizerProblem() *minimizer.AsyncMinimiserProblem[float64] {
 		})
 
 		intensityFunction := function.NewFunction(intensityPoints, function.INTERPOLATION_LINEAR)
-		intensityFunction.Range(dataTrack.Scope.MinX, dataTrack.Scope.MaxX)
-		reelD, _ := dataTrack.Model(0, false)
 
-		_, interI := intensityFunction.Model(len(reelD), false)
-		functionMap["test"].SetData(interI)
+		dataModel, _ := dataTrack.Model(0, false)
 
 		diff := 0.0
-		for i := range reelD {
-			diff += math.Abs(reelD[i].Y - interI[i].Y)
+		for i := range dataModel {
+			iy, err := intensityFunction.Eval(dataModel[i].X)
+			if err != nil {
+				fmt.Println("Error while calculating intensity:", err)
+			}
+			diff += math.Abs(dataModel[i].Y - iy)
 		}
 		return diff
 	}
@@ -215,7 +216,7 @@ func createMinimizerProblem() *minimizer.AsyncMinimiserProblem[float64] {
 	}
 
 	return minimizer.NewProblem(parameters, minima, maxima, errorFunction, &minimizer.MinimiserConfig{
-		LoopCount:     1e2,
+		LoopCount:     1e6,
 		ParallelReads: true,
 	})
 }

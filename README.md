@@ -50,3 +50,4 @@ go build main.go
 - make graph display range dynamic
 - add input lock
 - add back-reference for minmax inputs (revalidate main input)
+- go SIMD
