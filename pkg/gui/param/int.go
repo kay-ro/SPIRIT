@@ -2,6 +2,7 @@ package param
 
 import (
 	"errors"
+	"fmt"
 	"fyne.io/fyne/v2/widget"
 	"log"
 	"strconv"
@@ -13,7 +14,7 @@ import (
 
 // standard float formater for string to string conversion
 func StdIntFormater(f int) string {
-	return string(f)
+	return fmt.Sprintf("%d", f)
 }
 
 // create a new string parameter
