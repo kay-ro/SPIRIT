@@ -2,6 +2,7 @@ package param
 
 import (
 	"errors"
+	"fyne.io/fyne/v2/widget"
 	"log"
 	"strconv"
 
@@ -39,6 +40,7 @@ func Int(group, label string, defaultValue int) (fyne.CanvasObject, *Parameter[i
 	}
 
 	intParameter := IntParameter(defaultValue)
+	intParameter.chbxFit = widget.NewCheck("", func(b bool) {})
 
 	// add parameter to group
 	iParams[group].Add(label, intParameter)
@@ -46,7 +48,7 @@ func Int(group, label string, defaultValue int) (fyne.CanvasObject, *Parameter[i
 	lbl := &canvas.Text{Text: label, Color: labelColor, TextSize: 14}
 
 	return container.NewVBox(
-		lbl,
+		container.NewBorder(nil, nil, lbl, intParameter.chbxFit),
 		intParameter.Widget(),
 	), intParameter
 }

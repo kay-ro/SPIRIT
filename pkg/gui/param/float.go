@@ -3,6 +3,7 @@ package param
 import (
 	"errors"
 	"fmt"
+	"fyne.io/fyne/v2/widget"
 	"log"
 	"strconv"
 
@@ -49,6 +50,7 @@ func Float(group, label string, defaultValue float64) (fyne.CanvasObject, *Param
 	}
 
 	floatParameter := FloatParameter(defaultValue)
+	floatParameter.chbxFit = widget.NewCheck("", func(b bool) {})
 
 	// add parameter to group
 	fParams[group].Add(label, floatParameter)
@@ -56,7 +58,7 @@ func Float(group, label string, defaultValue float64) (fyne.CanvasObject, *Param
 	lbl := &canvas.Text{Text: label, Color: labelColor, TextSize: 14}
 
 	return container.NewVBox(
-		lbl,
+		container.NewBorder(nil, nil, lbl, floatParameter.chbxFit),
 		floatParameter.Widget(),
 	), floatParameter
 }
@@ -130,6 +132,7 @@ func FloatMinMax(group, label string, defaultValue float64) (fyne.CanvasObject, 
 		Parser: StdFloatParser,
 	})
 	param.SetRelatives(min, max)
+	param.chbxFit = widget.NewCheck("", nil)
 
 	// add parameter to group
 	fParams[group].Add(label, param)
@@ -139,7 +142,7 @@ func FloatMinMax(group, label string, defaultValue float64) (fyne.CanvasObject, 
 	maxL := &canvas.Text{Text: "Maximum", Color: minMaxColor, TextSize: 11}
 
 	return container.NewVBox(
-		lbl,
+		container.NewBorder(nil, nil, lbl, param.chbxFit),
 		param.Widget(),
 		container.NewGridWithColumns(2,
 			minL,

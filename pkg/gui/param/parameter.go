@@ -14,6 +14,9 @@ type Parameter[T any] struct {
 
 	// optional relative parameters
 	relatives []*Parameter[T]
+
+	// use for fit checkbox
+	chbxFit *widget.Check
 }
 
 type Config[T any] struct {
@@ -72,4 +75,11 @@ func (f *Parameter[T]) SetRelatives(relatives ...*Parameter[T]) {
 // Widget returns the widget (drawable element for the gui) of the parameter
 func (f *Parameter[T]) Widget() *widget.Entry {
 	return f.widget
+}
+
+func (f *Parameter[T]) useForFit() bool {
+	if f.chbxFit == nil {
+		return false
+	}
+	return f.chbxFit.Checked
 }
