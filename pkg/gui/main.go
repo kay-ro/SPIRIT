@@ -140,11 +140,37 @@ func createMinimizerProblem() *minimizer.AsyncMinimiserProblem[float64] {
 	if err != nil {
 		return nil
 	}
+	edenMinima, err := param.GetFloatMinimas("eden")
+	if err != nil {
+		return nil
+	}
+	edenMaxima, err := param.GetFloatMaximas("eden")
+	if err != nil {
+		return nil
+	}
+
 	d, err := param.GetFloats("thick")
 	if err != nil {
 		return nil
 	}
+	dMinima, err := param.GetFloatMinimas("thick")
+	if err != nil {
+		return nil
+	}
+	dMaxima, err := param.GetFloatMaximas("thick")
+	if err != nil {
+		return nil
+	}
+
 	sigma, err := param.GetFloats("rough")
+	if err != nil {
+		return nil
+	}
+	sigmaMinima, err := param.GetFloatMinimas("rough")
+	if err != nil {
+		return nil
+	}
+	sigmaMaxima, err := param.GetFloatMaximas("rough")
 	if err != nil {
 		return nil
 	}
@@ -154,17 +180,29 @@ func createMinimizerProblem() *minimizer.AsyncMinimiserProblem[float64] {
 	if err != nil {
 		return nil
 	}
+	deltaMinima := -math.MaxFloat64
+	deltaMaxima := math.MaxFloat64
+
 	background, err := param.GetFloat("general", "background")
 	if err != nil {
 		return nil
 	}
+	backgroundMinima := 0.0
+	backgroundMaxima := math.MaxFloat64
+
 	scaling, err := param.GetFloat("general", "scaling")
 	if err != nil {
 		return nil
 	}
+	scalingMinima := 0.0
+	scalingMaxima := math.MaxFloat64
 
 	parameters := slices.Concat(eden, d, sigma)
 	parameters = append(parameters, delta, background, scaling)
+	minimas := slices.Concat(edenMinima, dMinima, sigmaMinima)
+	minimas = append(minimas, deltaMinima, backgroundMinima, scalingMinima)
+	maximas := slices.Concat(edenMaxima, dMaxima, sigmaMaxima)
+	maximas = append(maximas, deltaMaxima, backgroundMaxima, scalingMaxima)
 
 	dataTracks := graphMap["sld"].GetDataTracks()
 	if len(dataTracks) == 0 {
@@ -207,15 +245,7 @@ func createMinimizerProblem() *minimizer.AsyncMinimiserProblem[float64] {
 		return diff
 	}
 
-	minima := make([]float64, len(parameters))
-	maxima := make([]float64, len(parameters))
-
-	for i := range minima {
-		minima[i] = -math.MaxFloat64
-		maxima[i] = math.MaxFloat64
-	}
-
-	return minimizer.NewProblem(parameters, minima, maxima, errorFunction, &minimizer.MinimiserConfig{
+	return minimizer.NewProblem(parameters, minimas, maximas, errorFunction, &minimizer.MinimiserConfig{
 		LoopCount:     1e6,
 		ParallelReads: true,
 	})
