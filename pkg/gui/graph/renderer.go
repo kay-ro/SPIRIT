@@ -87,6 +87,11 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 
 	// calculate the maximum scope
 	scope := function.GetMaximumScope(append(r.graph.functions, r.graph.loadedData...)...)
+	if r.graph.config.DisplayRange != nil {
+		scope.MinX = max(r.graph.config.DisplayRange.Min, scope.MinX)
+		scope.MaxX = min(r.graph.config.DisplayRange.Max, scope.MaxX)
+	}
+
 	if scope == nil {
 		r.DrawErrorMessage("Scope error")
 		return

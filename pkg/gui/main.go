@@ -99,7 +99,7 @@ func createMinimizeButton() *widget.Button {
 			go minimizeRefreshWorker(problem, closeChan, clock)
 
 			go func() {
-				minimizer.FloatMinimizerHC.Minimize(problem)
+				minimizer.FloatMinimizerStagedHC.Minimize(problem)
 				closeChan <- struct{}{}
 				dialog.ShowInformation("Minimizer", "Minimisation completed",
 					MainWindow)
@@ -240,7 +240,7 @@ func createMinimizerProblem() *minimizer.AsyncMinimiserProblem[float64] {
 			if err != nil {
 				fmt.Println("Error while calculating intensity:", err)
 			}
-			diff += math.Abs(dataModel[i].Y - iy)
+			diff += math.Pow(dataModel[i].Y-iy, 2)
 		}
 		return diff
 	}
@@ -299,9 +299,9 @@ func registerParams() *fyne.Container {
 	thickness1, _ := param.FloatMinMax("thick", "Thickness 1", 14.2657)
 	thickness2, _ := param.FloatMinMax("thick", "Thickness 2", 10.6906)
 
-	deltaQ, _ := param.Float("general", "deltaq", 0.0)
-	background, _ := param.Float("general", "background", 10e-9)
-	scaling, _ := param.Float("general", "scaling", 1.0)
+	deltaQ, _ := param.Float("general", "deltaq", -0.000305927)
+	background, _ := param.Float("general", "background", 1.43793e-7)
+	scaling, _ := param.Float("general", "scaling", 0.888730)
 
 	return container.NewVBox(
 		container.NewGridWithColumns(4, edenA, eden1, eden2, edenB),

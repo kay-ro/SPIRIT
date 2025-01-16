@@ -81,8 +81,9 @@ type Minimizer[T Number] interface {
 }
 
 var (
-	FloatMinimizerPLLS Minimizer[float64] = &parallelLinearLocalSearch[float64]{minDelta: 1e-2}
-	IntMinimizerPLLS   Minimizer[int64]   = &parallelLinearLocalSearch[int64]{minDelta: 1}
-	FloatMinimizerHC   Minimizer[float64] = &hillClimbingMinimizer[float64]{minDelta: 1e-2}
-	IntMinimizerHC     Minimizer[int64]   = &hillClimbingMinimizer[int64]{minDelta: 1}
+	FloatMinimizerPLLS     Minimizer[float64] = &parallelLinearLocalSearch[float64]{minDelta: 1e-2}
+	IntMinimizerPLLS       Minimizer[int64]   = &parallelLinearLocalSearch[int64]{minDelta: 1}
+	FloatMinimizerHC       Minimizer[float64] = &hillClimbingMinimizer[float64]{minDelta: 1e-2}
+	FloatMinimizerStagedHC Minimizer[float64] = &stagedHillClimbingMinimizer[float64]{maxDelta: 1e-1, minDelta: 1e-8, stageCount: 8}
+	IntMinimizerHC         Minimizer[int64]   = &hillClimbingMinimizer[int64]{minDelta: 1}
 )

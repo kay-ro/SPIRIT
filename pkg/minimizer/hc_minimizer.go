@@ -5,6 +5,29 @@ import (
 	"sync"
 )
 
+type stagedHillClimbingMinimizer[T Number] struct {
+	minDelta   T
+	maxDelta   T
+	stageCount int
+}
+
+func (s *stagedHillClimbingMinimizer[T]) Minimize(problem *AsyncMinimiserProblem[T]) {
+	problem.lock.RLock()
+	totalLoopPool := problem.config.LoopCount
+	problem.lock.RUnlock()
+
+	for i := 0; i < s.stageCount; i++ {
+		problem.lock.Lock()
+		problem.config.LoopCount = totalLoopPool / s.stageCount
+		problem.lock.Unlock()
+
+		currentMinimizer := hillClimbingMinimizer[T]{
+			minDelta: (s.maxDelta - s.minDelta) / T(s.stageCount) * T(i+1),
+		}
+		currentMinimizer.Minimize(problem)
+	}
+}
+
 type hillClimbingMinimizer[T Number] struct {
 	minDelta T
 }
