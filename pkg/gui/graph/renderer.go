@@ -85,19 +85,23 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	// set the base for the canvas
 	r.base()
 
+	if r.graph.config.DisplayRange != nil {
+		for _, f := range r.graph.config.Functions {
+			f.Range(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max)
+		}
+		for _, d := range r.graph.loadedData {
+			d.Range(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max)
+		}
+	}
 	// calculate the maximum scope
 	scope := function.GetMaximumScope(append(r.graph.functions, r.graph.loadedData...)...)
-	if r.graph.config.DisplayRange != nil {
-		scope.MinX = max(r.graph.config.DisplayRange.Min, scope.MinX)
-		scope.MaxX = min(r.graph.config.DisplayRange.Max, scope.MaxX)
-	}
 
 	if scope == nil {
 		r.DrawErrorMessage("Scope error")
 		return
 	}
 
-	if len(r.graph.functions) == 0 || r.graph.functions[0].GetDataCount() < 1 && len(r.graph.loadedData) == 0 {
+	if (len(r.graph.functions) == 0 || r.graph.functions[0].GetDataCount() < 1) && len(r.graph.loadedData) == 0 {
 		r.DrawErrorMessage("No data available")
 		return
 	}
@@ -108,7 +112,6 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	// draw model lines
 	if r.graph.config.IsLog {
 		for _, f := range r.graph.functions {
-			f.Range(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max)
 			points, iPoints := f.Model(r.graph.config.Resolution, true)
 			r.DrawGraphLog(scope, points, iPoints, pointColor)
 		}
@@ -242,14 +245,10 @@ func (r *GraphRenderer) DrawGraphLog(scope *function.Scope, points, iPoints func
 	}
 
 	// Calculate log ranges
-	logMinX := math.Log10(scope.MinX + xShift)
-	logMinX = float64(int(logMinX) - 1)
-	logMaxX := math.Log10(scope.MaxX + xShift)
-	logMaxX = float64(int(logMaxX))
-	logMinY := math.Log10(scope.MinY + yShift)
-	logMinY = float64(int(logMinY) - 1)
-	logMaxY := math.Log10(scope.MaxY + yShift)
-	logMaxY = float64(int(logMaxY))
+	logMinX := math.Floor(math.Log10(scope.MinX + xShift))
+	logMaxX := math.Ceil(math.Log10(scope.MaxX + xShift))
+	logMinY := math.Floor(math.Log10(scope.MinY + yShift))
+	logMaxY := math.Ceil(math.Log10(scope.MaxY + yShift))
 	xRange := math.Abs(logMaxX - logMinX)
 	yRange := math.Abs(logMaxY - logMinY)
 
@@ -365,10 +364,8 @@ func (r *GraphRenderer) DrawGridLinear(scope *function.Scope) {
 // TODO: draw grid lines and labels for logarithmic scale
 func (r *GraphRenderer) DrawGridLog(scope *function.Scope) {
 	// Horizontal grid-lines + y-labels (logarithmic)
-	minLogY := math.Log10(math.Max(scope.MinY, 1e-10))
-	minLogY = float64(int(minLogY) - 1)
-	maxLogY := math.Log10(scope.MaxY)
-	maxLogY = float64(int(maxLogY))
+	minLogY := math.Floor(math.Log10(math.Max(scope.MinY, 1e-10)))
+	maxLogY := math.Ceil(math.Log10(scope.MaxY))
 	yGridCount := int(maxLogY - minLogY)
 
 	for i := 0; i <= yGridCount; i++ {
@@ -414,14 +411,9 @@ func (r *GraphRenderer) DrawGridLog(scope *function.Scope) {
 	}
 
 	// Vertical grid-lines + x-labels (logarithmic)
-	minLogX := math.Log10(math.Max(scope.MinX, 1e-10))
-	minLogX = float64(int(minLogX) - 1)
-	maxLogX := math.Log10(scope.MaxX)
-	maxLogX = float64(int(maxLogX))
+	minLogX := math.Floor(math.Log10(math.Max(scope.MinX, 1e-10)))
+	maxLogX := math.Ceil(math.Log10(scope.MaxX))
 	xGridCount := int(maxLogX - minLogX)
-
-	// TODO: make this more dynamic
-	labelSkip := (xGridCount / (int(r.size.Width) / 50)) + 1
 
 	for i := 0; i <= xGridCount; i++ {
 		// Calculate logarithmic value
@@ -450,19 +442,17 @@ func (r *GraphRenderer) DrawGridLog(scope *function.Scope) {
 		}
 
 		// Label for major grid lines
-		if i%labelSkip == 0 {
-			text := fmt.Sprintf("%.3f", value)
-			if value < 0.01 {
-				text = fmt.Sprintf("%.0e", value)
-			}
-			label := &canvas.Text{
-				Text:     text,
-				Color:    legendColor,
-				TextSize: 12,
-			}
-			label.Move(fyne.NewPos(xPos-25, r.size.Height-r.margin+10))
-			r.AddObject(label)
+		text := fmt.Sprintf("%.3f", value)
+		if value < 0.01 {
+			text = fmt.Sprintf("%.0e", value)
 		}
+		label := &canvas.Text{
+			Text:     text,
+			Color:    legendColor,
+			TextSize: 12,
+		}
+		label.Move(fyne.NewPos(xPos-25, r.size.Height-r.margin+10))
+		r.AddObject(label)
 	}
 }
 
