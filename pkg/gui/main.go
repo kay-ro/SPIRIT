@@ -140,7 +140,7 @@ func createMinimizerProblem() *minimizer.AsyncMinimiserProblem[float64] {
 	if err != nil {
 		return nil
 	}
-	edenMinima, err := param.GetFloatMinimas("eden")
+	edenMinima, err := param.GetFloatMinima("eden")
 	if err != nil {
 		return nil
 	}
@@ -153,7 +153,7 @@ func createMinimizerProblem() *minimizer.AsyncMinimiserProblem[float64] {
 	if err != nil {
 		return nil
 	}
-	dMinima, err := param.GetFloatMinimas("thick")
+	dMinima, err := param.GetFloatMinima("thick")
 	if err != nil {
 		return nil
 	}
@@ -166,7 +166,7 @@ func createMinimizerProblem() *minimizer.AsyncMinimiserProblem[float64] {
 	if err != nil {
 		return nil
 	}
-	sigmaMinima, err := param.GetFloatMinimas("rough")
+	sigmaMinima, err := param.GetFloatMinima("rough")
 	if err != nil {
 		return nil
 	}

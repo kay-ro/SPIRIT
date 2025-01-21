@@ -16,7 +16,7 @@ type Parameter[T any] struct {
 	relatives []*Parameter[T]
 
 	// use for fit checkbox
-	chbxFit *widget.Check
+	enableFit *widget.Check
 }
 
 type Config[T any] struct {
@@ -78,8 +78,8 @@ func (f *Parameter[T]) Widget() *widget.Entry {
 }
 
 func (f *Parameter[T]) useForFit() bool {
-	if f.chbxFit == nil {
+	if f.enableFit == nil {
 		return false
 	}
-	return f.chbxFit.Checked
+	return f.enableFit.Checked
 }

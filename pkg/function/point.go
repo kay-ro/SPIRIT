@@ -26,32 +26,33 @@ func (p Points) Sort() {
 	})
 }
 
-// returns min and max X value of all points
-func (p Points) MinMaxX() (float64, float64) {
-	p.Sort()
-
-	return p[0].X, p[len(p)-1].X
-}
-
-// returns min and max Y value of all points
-func (p Points) MinMaxY() (float64, float64) {
+// returns min and max X or Y value of all points
+func (p Points) MinMaxXY() (minX float64, maxX float64, minY float64, maxY float64) {
 	if len(p) == 0 {
-		return 0, 0
+		return 0, 0, 0, 0
 	}
 
-	min := p[0].Y
-	max := p[0].Y
+	minY = p[0].Y
+	maxY = p[0].Y
+
+	minX = p[0].X
+	maxX = p[0].X
 
 	for _, point := range p {
-		if max < point.Y {
-			max = point.Y
+		if maxX < point.X {
+			maxX = point.X
 		}
-		if min > point.Y {
-			min = point.Y
+		if minX > point.X {
+			minX = point.X
+		}
+		if maxY < point.Y {
+			maxY = point.Y
+		}
+		if minY > point.Y {
+			minY = point.Y
 		}
 	}
-
-	return min, max
+	return
 }
 
 // ? may be useless, but may simplify some stuff so we will keep it for now
@@ -61,7 +62,7 @@ func (p Points) Log() Points {
 		np[i] = &Point{
 			X:     point.X,
 			Y:     math.Log10(point.Y),
-			Error: point.Error,
+			Error: math.Log10(point.Error),
 		}
 	}
 

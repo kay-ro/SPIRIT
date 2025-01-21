@@ -48,7 +48,8 @@ func NewEmptyFunction(interpolationMode InterpolationMode) *Function {
 	return f
 }
 
-// TODO: add full explanation
+// used if a funktion does not provide the right resolution
+// f is interpolated at equidistant (delta x=resolution) x values using it's interpolation function eval
 func (f *Function) Model(resolution int, isLog bool) (Points, Points) {
 	if f.eval == nil {
 		return f.data, f.data
@@ -114,8 +115,7 @@ func (f *Function) SetData(data Points) {
 
 	if len(data) != 0 {
 		// get min, max values of function
-		minX, maxX := data.MinMaxX()
-		minY, maxY := data.MinMaxY()
+		minX, maxX, minY, maxY := data.MinMaxXY()
 
 		f.Scope = &Scope{
 			minX,

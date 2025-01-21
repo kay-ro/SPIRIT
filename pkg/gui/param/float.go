@@ -3,9 +3,10 @@ package param
 import (
 	"errors"
 	"fmt"
-	"fyne.io/fyne/v2/widget"
 	"log"
 	"strconv"
+
+	"fyne.io/fyne/v2/widget"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -50,7 +51,7 @@ func Float(group, label string, defaultValue float64) (fyne.CanvasObject, *Param
 	}
 
 	floatParameter := FloatParameter(defaultValue)
-	floatParameter.chbxFit = widget.NewCheck("", func(b bool) {})
+	floatParameter.enableFit = widget.NewCheck("", func(b bool) {})
 
 	// add parameter to group
 	fParams[group].Add(label, floatParameter)
@@ -58,7 +59,7 @@ func Float(group, label string, defaultValue float64) (fyne.CanvasObject, *Param
 	lbl := &canvas.Text{Text: label, Color: labelColor, TextSize: 14}
 
 	return container.NewVBox(
-		container.NewBorder(nil, nil, lbl, floatParameter.chbxFit),
+		container.NewBorder(nil, nil, lbl, floatParameter.enableFit),
 		floatParameter.Widget(),
 	), floatParameter
 }
@@ -100,8 +101,6 @@ func FloatMinMax(group, label string, defaultValue float64) (fyne.CanvasObject, 
 		Parser: StdFloatParser,
 	})
 
-	// TODO: add validator update for min/max changes
-
 	param := New(&Config[float64]{
 		InitialValue: defaultValue,
 		Validator: func(s string) error {
@@ -109,8 +108,6 @@ func FloatMinMax(group, label string, defaultValue float64) (fyne.CanvasObject, 
 			if err != nil {
 				return errors.New("keine gültige Zahl")
 			}
-
-			// TODO: handle min/max not set (empty)
 
 			gin, err := min.Get()
 			if err != nil {
@@ -132,7 +129,7 @@ func FloatMinMax(group, label string, defaultValue float64) (fyne.CanvasObject, 
 		Parser: StdFloatParser,
 	})
 	param.SetRelatives(min, max)
-	param.chbxFit = widget.NewCheck("", nil)
+	param.enableFit = widget.NewCheck("", nil)
 
 	// add parameter to group
 	fParams[group].Add(label, param)
@@ -142,7 +139,7 @@ func FloatMinMax(group, label string, defaultValue float64) (fyne.CanvasObject, 
 	maxL := &canvas.Text{Text: "Maximum", Color: minMaxColor, TextSize: 11}
 
 	return container.NewVBox(
-		container.NewBorder(nil, nil, lbl, param.chbxFit),
+		container.NewBorder(nil, nil, lbl, param.enableFit),
 		param.Widget(),
 		container.NewGridWithColumns(2,
 			minL,

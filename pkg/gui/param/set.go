@@ -2,7 +2,7 @@ package param
 
 // SetString sets a string value for a specific group and label
 func SetString(group, label, value string) error {
-	if sParams[group] == nil || sParams[group].Check(label) {
+	if sParams[group] == nil || !sParams[group].Check(label) {
 		return ErrParameterNotFound
 	}
 

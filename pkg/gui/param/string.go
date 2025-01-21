@@ -9,7 +9,7 @@ import (
 	"fyne.io/fyne/v2/container"
 )
 
-// standard float formater for string to string conversion
+// standard string formater for string to string conversion
 func StdStringFormater(f string) string {
 	return f
 }

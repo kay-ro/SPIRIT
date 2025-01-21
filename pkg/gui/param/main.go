@@ -18,7 +18,7 @@ var (
 	// each group can be used for iterating through parameters of the same type (edesntiy, roughness, thickness)
 	fParams = make(ParameterGroup[float64])
 
-	// fParams is a map of float parameter groups
+	// iParams is a map of int parameter groups
 	// each group contains a map of parameter labels and their values
 	// each group can be used for iterating through parameters of the same type (limits, number of slabs)
 	iParams = make(ParameterGroup[int])

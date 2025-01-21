@@ -24,8 +24,8 @@ func GetStrings(group string) ([]string, error) {
 	return sParams[group].GetValues()
 }
 
-// Get all float minimas based on group
-func GetFloatMinima(group string, label string) (float64, error) {
+// Get float minimum for the parameter specified by group/label
+func GetFloatMinimum(group string, label string) (float64, error) {
 	if fParams[group] == nil {
 		return 0, ErrParameterNotFound
 	}
@@ -42,8 +42,8 @@ func GetFloatMinima(group string, label string) (float64, error) {
 	return 0, ErrParameterNotFound
 }
 
-// Get all float maximas based on group
-func GetFloatMaxima(group string, label string) (float64, error) {
+// Get float maximum for the parameter specified by group/label
+func GetFloatMaximum(group string, label string) (float64, error) {
 	if fParams[group] == nil {
 		return 0, ErrParameterNotFound
 	}
@@ -72,22 +72,22 @@ func GetFloat(group, label string) (float64, error) {
 	return 0, ErrParameterNotFound
 }
 
-// Get all float minimas based on group
-func GetFloatMinimas(group string) ([]float64, error) {
+// Get all float minima based on group
+func GetFloatMinima(group string) ([]float64, error) {
 	if fParams[group] == nil {
 		return nil, ErrParameterNotFound
 	}
 
-	return fParams[group].GetMinimas()
+	return fParams[group].GetMinima()
 }
 
-// Get all float maximas based on group
+// Get all float maxima based on group
 func GetFloatMaximas(group string) ([]float64, error) {
 	if fParams[group] == nil {
 		return nil, ErrParameterNotFound
 	}
 
-	return fParams[group].GetMaximas()
+	return fParams[group].GetMaxima()
 }
 
 // Get all float values based on group
