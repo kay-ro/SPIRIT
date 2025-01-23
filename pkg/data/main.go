@@ -28,6 +28,7 @@ func Parse(data []byte) (function.Points, error) {
 
 	for i, v := range lines {
 		if i == 0 {
+			v = strings.TrimSpace(v)
 			lengthString, err := strconv.Atoi(v)
 			if err != nil {
 				return nil, fmt.Errorf("parse error: expected int in first line: %v", err)
