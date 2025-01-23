@@ -49,6 +49,7 @@ var (
 type GraphConfig struct {
 	Title        string
 	IsLog        bool
+	AdaptDraw    bool
 	Resolution   int
 	Functions    []*function.Function
 	DisplayRange *GraphRange

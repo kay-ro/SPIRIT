@@ -232,7 +232,7 @@ func createMinimizerProblem() *minimizer.AsyncMinimiserProblem[float64] {
 
 		intensityFunction := function.NewFunction(intensityPoints, function.INTERPOLATION_LINEAR)
 
-		dataModel, _ := dataTrack.Model(0, false)
+		dataModel := dataTrack.Model(0, false)
 
 		diff := 0.0
 		for i := range dataModel {
@@ -263,6 +263,7 @@ func registerGraphs() *fyne.Container {
 	graphMap["sld"] = graph.NewGraphCanvas(&graph.GraphConfig{
 		Title:     "Intensity Graph",
 		IsLog:     true,
+		AdaptDraw: true,
 		Functions: function.Functions{functionMap["sld"]},
 		DisplayRange: &graph.GraphRange{
 			Min: 0.01,
@@ -273,12 +274,14 @@ func registerGraphs() *fyne.Container {
 	graphMap["eden"] = graph.NewGraphCanvas(&graph.GraphConfig{
 		Title:     "Edensity Graph",
 		IsLog:     false,
+		AdaptDraw: false,
 		Functions: function.Functions{functionMap["eden"]},
 	})
 
 	graphMap["test"] = graph.NewGraphCanvas(&graph.GraphConfig{
 		Title:     "Test Graph",
 		IsLog:     true,
+		AdaptDraw: true,
 		Functions: function.Functions{functionMap["test"]},
 	})
 
@@ -324,7 +327,6 @@ func onDrop(position fyne.Position, uri []fyne.URI) {
 				}
 
 				if points := addDataset(rc, v, nil); points != nil {
-					points.Magie()
 					newFunction := function.NewFunction(points, function.INTERPOLATION_NONE)
 					graphMap[mapIdentifier].AddDataTrack(newFunction)
 				}
