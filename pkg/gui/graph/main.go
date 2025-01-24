@@ -9,6 +9,7 @@ import (
 
 var (
 	DataTrackColors = []color.Color{
+		colornames.White,
 		colornames.Purple,
 		colornames.Blue,
 		colornames.Brown,
