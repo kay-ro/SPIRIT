@@ -15,6 +15,7 @@ var (
 		colornames.Brown,
 	}
 	RemoveButtonTopPadding float32 = 5
+	smallestGraphScope             = 1e-12
 )
 
 var (

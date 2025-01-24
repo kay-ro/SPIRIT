@@ -93,6 +93,14 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	}
 	// calculate the maximum scope
 	scope := function.GetMaximumScope(append(r.graph.functions, r.graph.loadedData...)...)
+	if scope.MinX == scope.MaxX {
+		scope.MinX = scope.MinX - smallestGraphScope
+		scope.MaxX = scope.MaxX + smallestGraphScope
+	}
+	if scope.MinY == scope.MaxY {
+		scope.MinY = scope.MinY - smallestGraphScope
+		scope.MaxY = scope.MaxY + smallestGraphScope
+	}
 
 	if scope == nil {
 		r.DrawErrorMessage("Scope error")
