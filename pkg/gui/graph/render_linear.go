@@ -94,7 +94,7 @@ func (r *GraphRenderer) DrawGridLinear(scope *function.Scope) {
 	maxY := ceilInOrder(scope.MaxY, order)
 
 	// horizontal grid-lines + y-labels
-	yGridCount := int(math.Ceil((maxY - minY) * math.Pow10(-order))) //TODO make -
+	yGridCount := int(math.Ceil((maxY - minY) * math.Pow10(-order)))
 	yStep := (maxY - minY) / float64(yGridCount)
 
 	for i := 0; i <= yGridCount; i++ {
