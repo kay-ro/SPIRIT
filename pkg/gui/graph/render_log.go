@@ -71,14 +71,13 @@ func (r *GraphRenderer) DrawGraphLog(scope *function.Scope, points, iPoints func
 		y := float32((logY-logMinY)/yRange) * availableHeight
 
 		xt, yt := r.normalize(x, y)
-
-		// error correction (also logarithmic)
-		yE1 := float32((math.Log10(point.Y+point.Error+yShift)-logMinY)/yRange) * availableHeight
-		yE2 := float32((math.Log10(point.Y-point.Error+yShift)-logMinY)/yRange) * availableHeight
-		_, e1 := r.normalize(x, yE1)
-		_, e2 := r.normalize(x, yE2)
-
 		if isDataSet {
+			// error correction (also logarithmic)
+			yE1 := float32((math.Log10(point.Y+point.Error+yShift)-logMinY)/yRange) * availableHeight
+			yE2 := float32((math.Log10(point.Y-point.Error+yShift)-logMinY)/yRange) * availableHeight
+			_, e1 := r.normalize(x, yE1)
+			_, e2 := r.normalize(x, yE2)
+
 			r.DrawError(xt, e1, e2, errorColor)
 		}
 		r.DrawPoint(xt, yt, pointColor)

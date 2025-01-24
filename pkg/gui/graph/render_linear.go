@@ -16,11 +16,12 @@ func (r *GraphRenderer) DrawGraphLinear(scope *function.Scope, points, iPoints f
 	availableHeight := r.size.Height - (1.5 * r.margin)
 
 	//
-	order := int(math.Floor(math.Log10(math.Abs(scope.MaxY - scope.MinY))))
-	minX := floorInOrder(scope.MinX, order)
-	minY := floorInOrder(scope.MinY, order)
-	maxX := ceilInOrder(scope.MaxX, order)
-	maxY := ceilInOrder(scope.MaxY, order)
+	orderY := int(math.Floor(math.Log10(math.Abs(scope.MaxY - scope.MinY))))
+	orderX := int(math.Floor(math.Log10(math.Abs(scope.MaxX - scope.MinX))))
+	minX := floorInOrder(scope.MinX, orderX)
+	minY := floorInOrder(scope.MinY, orderY)
+	maxX := ceilInOrder(scope.MaxX, orderX)
+	maxY := ceilInOrder(scope.MaxY, orderY)
 
 	// complete range
 	xRange := math.Abs(maxX - minX)
@@ -63,14 +64,14 @@ func (r *GraphRenderer) DrawGraphLinear(scope *function.Scope, points, iPoints f
 
 		xt, yt := r.normalize(x, y)
 
-		// error correction
-		yE1 := float32((point.Y+point.Error-minY)/yRange) * availableHeight
-		yE2 := float32((point.Y-point.Error-minY)/yRange) * availableHeight
-
-		_, e1 := r.normalize(x, yE1)
-		_, e2 := r.normalize(x, yE2)
-
 		if isDataSet {
+			// error correction
+			yE1 := float32((point.Y+point.Error-minY)/yRange) * availableHeight
+			yE2 := float32((point.Y-point.Error-minY)/yRange) * availableHeight
+
+			_, e1 := r.normalize(x, yE1)
+			_, e2 := r.normalize(x, yE2)
+
 			r.DrawError(xt, e1, e2, errorColor)
 		}
 		r.DrawPoint(xt, yt, pointColor)
@@ -87,14 +88,15 @@ func ceilInOrder(num float64, order int) float64 {
 func (r *GraphRenderer) DrawGridLinear(scope *function.Scope) {
 
 	//
-	order := int(math.Floor(math.Log10(math.Abs(scope.MaxY - scope.MinY))))
-	minX := floorInOrder(scope.MinX, order)
-	minY := floorInOrder(scope.MinY, order)
-	maxX := ceilInOrder(scope.MaxX, order)
-	maxY := ceilInOrder(scope.MaxY, order)
+	orderY := int(math.Floor(math.Log10(math.Abs(scope.MaxY - scope.MinY))))
+	orderX := int(math.Floor(math.Log10(math.Abs(scope.MaxX - scope.MinX))))
+	minX := floorInOrder(scope.MinX, orderX)
+	minY := floorInOrder(scope.MinY, orderY)
+	maxX := ceilInOrder(scope.MaxX, orderX)
+	maxY := ceilInOrder(scope.MaxY, orderY)
 
 	// horizontal grid-lines + y-labels
-	yGridCount := int(math.Ceil((maxY - minY) * math.Pow10(-order)))
+	yGridCount := int(math.Ceil((maxY - minY) * math.Pow10(-orderY)))
 	yStep := (maxY - minY) / float64(yGridCount)
 
 	for i := 0; i <= yGridCount; i++ {
@@ -121,7 +123,7 @@ func (r *GraphRenderer) DrawGridLinear(scope *function.Scope) {
 	}
 
 	// vertical grid-lines + x-labels
-	xGridCount := int(r.size.Width / 25)
+	xGridCount := int(math.Ceil((maxX - minX) * math.Pow10(-orderX)))
 	xStep := math.Abs(maxX-minX) / float64(xGridCount)
 
 	for i := 0; i <= xGridCount; i++ {
@@ -130,24 +132,20 @@ func (r *GraphRenderer) DrawGridLinear(scope *function.Scope) {
 		if i > 0 {
 			r.DrawGridLine(fyne.NewPos(xPos, r.margin/2), true, false)
 		}
-
-		// only draw every second label to prevent overlapping
-		if i%4 == 0 {
-			v := minX + xStep*float64(i)
-			text := fmt.Sprintf("%.3f", v)
-			if v < 0.01 {
-				text = fmt.Sprintf("%.1e", v)
-			}
-
-			// label
-			label := &canvas.Text{
-				Text:     text,
-				Color:    legendColor,
-				TextSize: 12,
-			}
-
-			label.Move(fyne.NewPos(xPos-15, r.size.Height-r.margin+10))
-			r.AddObject(label)
+		v := minX + xStep*float64(i)
+		text := fmt.Sprintf("%.3f", v)
+		if v < 0.01 {
+			text = fmt.Sprintf("%.1e", v)
 		}
+
+		// label
+		label := &canvas.Text{
+			Text:     text,
+			Color:    legendColor,
+			TextSize: 12,
+		}
+
+		label.Move(fyne.NewPos(xPos-15, r.size.Height-r.margin+10))
+		r.AddObject(label)
 	}
 }
