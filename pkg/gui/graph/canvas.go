@@ -70,12 +70,6 @@ func (g *GraphCanvas) CreateRenderer() fyne.WidgetRenderer {
 	}
 }
 
-// UpdateFunctions updates the function and refreshes the [GraphCanvas]
-func (g *GraphCanvas) UpdateFunctions(newFunctions function.Functions) {
-	g.functions = newFunctions
-	g.Refresh()
-}
-
 func (g *GraphCanvas) AddDataTrack(dataTrack *function.Function) {
 	i := len(g.loadedData)
 	g.loadedData = append(g.loadedData, dataTrack)
@@ -94,9 +88,6 @@ func (g *GraphCanvas) AddDataTrack(dataTrack *function.Function) {
 func (g *GraphCanvas) GetDataTracks() function.Functions {
 	return g.loadedData
 }
-func (g *GraphCanvas) GetFunctions() function.Functions {
-	return g.functions
-}
 
 func (g *GraphCanvas) RemoveDataTrack(dataTrack *function.Function) {
 	i := slices.Index(g.loadedData, dataTrack)
@@ -105,9 +96,4 @@ func (g *GraphCanvas) RemoveDataTrack(dataTrack *function.Function) {
 		g.dataRemoveButtons = append(g.dataRemoveButtons[:i], g.dataRemoveButtons[i+1:]...)
 		g.Refresh()
 	}
-}
-
-func (g *GraphCanvas) AddFunction(newFunction *function.Function) {
-	g.functions = append(g.functions, newFunction)
-	g.Refresh()
 }

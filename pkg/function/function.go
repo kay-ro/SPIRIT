@@ -50,9 +50,9 @@ func NewEmptyFunction(interpolationMode InterpolationMode) *Function {
 
 // used if a funktion does not provide the right resolution
 // f is interpolated at equidistant (delta x=resolution) x values using it's interpolation function eval
-func (f *Function) Model(resolution int, isLog bool) (Points, Points) {
+func (f *Function) Model(resolution int, isLog bool) Points {
 	if f.eval == nil {
-		return f.data, f.data
+		return f.data.Copy()
 	}
 
 	interpolated := make(Points, resolution)
@@ -71,7 +71,7 @@ func (f *Function) Model(resolution int, isLog bool) (Points, Points) {
 		}
 	}
 
-	return f.data, interpolated
+	return interpolated
 }
 
 // evaluates function value at x
@@ -124,6 +124,11 @@ func (f *Function) SetData(data Points) {
 			maxY,
 		}
 	}
+}
+
+// returns the data of the function
+func (f *Function) GetData() Points {
+	return f.data
 }
 
 func (f *Function) GetDataCount() int {

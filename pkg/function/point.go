@@ -55,20 +55,6 @@ func (p Points) MinMaxXY() (minX float64, maxX float64, minY float64, maxY float
 	return
 }
 
-// ? may be useless, but may simplify some stuff so we will keep it for now
-func (p Points) Log() Points {
-	np := make(Points, len(p))
-	for i, point := range p {
-		np[i] = &Point{
-			X:     point.X,
-			Y:     math.Log10(point.Y),
-			Error: math.Log10(point.Error),
-		}
-	}
-
-	return p
-}
-
 // applies magic to a point
 func (p *Point) Magie() {
 	p.Y = math.Pow(p.X, 4) * p.Y
@@ -76,10 +62,27 @@ func (p *Point) Magie() {
 }
 
 // applies magic to all points
-func (p Points) Magie() {
+func (p Points) Magie() Scope {
+	minX := math.MaxFloat64
+	minY := math.MaxFloat64
+	maxX := -math.MaxFloat64
+	maxY := -math.MaxFloat64
 	for _, point := range p {
 		point.Magie()
+		if point.X > maxX {
+			maxX = point.X
+		}
+		if point.X < minX {
+			minX = point.X
+		}
+		if point.Y < minY {
+			minY = point.Y
+		}
+		if point.Y > maxY {
+			maxY = point.Y
+		}
 	}
+	return Scope{MinX: minX, MaxX: maxX, MinY: minY, MaxY: maxY}
 }
 
 // copies the points
