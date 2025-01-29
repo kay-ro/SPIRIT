@@ -1,4 +1,4 @@
-# PortGUIPhysics
+# SPIRIT - Scattering length Profile Integration and Reflectivity Iteration Tool
 
 ## Setup
 
@@ -35,3 +35,19 @@ go build main.go
 # mac/linux
 ./main
 ```
+
+### TODO / Things we need to keep in mind
+
+- Add log sanitizing dynamically
+  otherwise we will face rendering issues if the min/max values aren't updated accordingly
+
+- add checkbox stuff
+- fix (re-implement) import data functionality
+- implement basic minimizer
+
+### Später
+
+- make graph display range dynamic
+- add input lock
+- add back-reference for minmax inputs (revalidate main input)
+- go SIMD

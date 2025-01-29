@@ -1,160 +1,150 @@
-package data
+package function
 
 import (
-	"cmp"
 	"errors"
 	"fmt"
 	"math"
-	"slices"
 )
 
-const (
-	INTERPOLATION_NONE   = iota
-	INTERPOLATION_LINEAR = iota
-	INTERPOLATION_SPLINE = iota
-	INTERPOLATION_PCHIP  = iota
-)
-
-type Point struct {
-	X   float64
-	Y   float64
-	ERR float64
-}
-type Function interface {
-	Scope() (Position, Position)
-	Model(resolution int) ([]Point, []Point)
-	Eval(x float64) (float64, error)
+// function with interpolation capabilities
+type Function struct {
+	data  Points
+	Scope *Scope
+	eval  InterpolationFunction
 }
 
-type DataFunction struct {
-	data  []Point
-	minX  float64
-	maxX  float64
-	minY  float64
-	maxY  float64
-	inter interpolationProvider
+type Functions []*Function
+
+// scope of a function
+type Scope struct {
+	MinX float64
+	MaxX float64
+	MinY float64
+	MaxY float64
 }
 
-func NewDataFunction(data []Point, interpolationMode int) *DataFunction {
-	var maxY float64 = data[0].Y
-	var minY float64 = data[0].Y
-	for _, point := range data {
-		if maxY < point.Y {
-			maxY = point.Y
-		}
-		if minY > point.Y {
-			minY = point.Y
+// returns a new function with the given data and interpolation mode
+func NewFunction(data Points, interpolationMode InterpolationMode) *Function {
+	// create function
+	f := NewEmptyFunction(interpolationMode)
+
+	// set data
+	f.SetData(data)
+
+	return f
+}
+
+// returns a new empty function with the given data and interpolation mode
+func NewEmptyFunction(interpolationMode InterpolationMode) *Function {
+	// create function
+	f := &Function{
+		data:  nil,
+		Scope: nil,
+	}
+
+	// set interpolation function
+	f.SetInterpolation(interpolationMode)
+
+	return f
+}
+
+// used if a funktion does not provide the right resolution
+// f is interpolated at equidistant (delta x=resolution) x values using it's interpolation function eval
+func (f *Function) Model(resolution int, isLog bool) Points {
+	if f.eval == nil {
+		return f.data.Copy()
+	}
+
+	interpolated := make(Points, resolution)
+
+	deltaX := (f.Scope.MaxX - f.Scope.MinX) / float64(resolution)
+	for i := range interpolated {
+		x := f.Scope.MinX + float64(i)*deltaX
+
+		// TODO: add error handling
+		y, _ := f.eval(f.data, x)
+
+		interpolated[i] = &Point{
+			X:     x,
+			Y:     y,
+			Error: 0,
 		}
 	}
 
-	slices.SortFunc(data, func(a, b Point) int {
-		return cmp.Compare(a.X, b.X)
-	})
-	var minX float64 = data[0].X
-	var maxX float64 = data[len(data)-1].X
+	return interpolated
+}
 
-	f := DataFunction{
-		data:  data,
-		minX:  minX,
-		maxX:  maxX,
-		minY:  minY,
-		maxY:  maxY,
-		inter: nil,
+// evaluates function value at x
+func (f *Function) Eval(x float64) (float64, error) {
+	return f.eval(f.data, x)
+}
+
+// sanitizes the function data and removes all 0 values for potential log scale issues
+// TODO: add point y handling back, but for now we only need x value handling
+func (f *Function) Sanitize() {
+	for i, point := range f.data {
+		if point.X == 0 /* || point.Y == 0  */ {
+			f.data = append(f.data[:i], f.data[i+1:]...)
+			//f.data[i].X = math.SmallestNonzeroFloat64
+		}
 	}
-	var interpolation interpolationProvider
+}
+
+// sets the interpolation function
+func (f *Function) SetInterpolation(interpolationMode InterpolationMode) {
 	switch interpolationMode {
 	case INTERPOLATION_NONE:
 		break
 	case INTERPOLATION_LINEAR:
-		interpolation = NewLinearInterpolator(&f.data)
+		f.eval = linearInterpolation
 		break
 	case INTERPOLATION_SPLINE:
-		panic("Function_Error: Interpolation Not Yet implemented")
-		break
 	case INTERPOLATION_PCHIP:
-		panic("Function_Error: Interpolation Not Yet implemented")
-		break
+		panic("SetInterpolation error: interpolation not implemented yet")
 	default:
-		panic("Function_Error: Unknown interpolationMode. Please use only values provided by related const's in data package")
+		panic("SetInterpolation error: Unknown interpolationMode. Please use only values provided by related const's in data package")
 	}
-	f.inter = interpolation
-	return &f
 }
 
-func (this *DataFunction) Model(resolution int) ([]Point, []Point) {
-	if this.inter == nil {
-		return this.data, this.data
-	}
-	var interpolatedModel = make([]Point, resolution)
-	deltaX := (this.maxX - this.minX) / float64(resolution)
-	for i := 0; i < resolution; i++ {
-		x := this.minX + float64(i)*deltaX
-		y, _ := this.inter.eval(x)
+// sets the data of the function
+func (f *Function) SetData(data Points) {
+	f.data = data
 
-		interpolatedModel[i] = Point{
-			X:   x,
-			Y:   y,
-			ERR: 0,
+	// sanitize data
+	f.Sanitize()
+
+	if len(data) != 0 {
+		// get min, max values of function
+		minX, maxX, minY, maxY := data.MinMaxXY()
+
+		f.Scope = &Scope{
+			minX,
+			maxX,
+			minY,
+			maxY,
 		}
 	}
-
-	return this.data, interpolatedModel
-}
-func (this *DataFunction) Eval(x float64) (float64, error) {
-	return this.inter.eval(x)
 }
 
-type Position struct {
-	X float64
-	Y float64
+// returns the data of the function
+func (f *Function) GetData() Points {
+	return f.data
 }
 
-func NewPos(x float64, y float64) Position {
-	return Position{
-		X: x,
-		Y: y,
-	}
+func (f *Function) GetDataCount() int {
+	return len(f.data)
 }
 
-func (this *DataFunction) Scope() (Position, Position) {
-	return NewPos(this.minX, this.minY), NewPos(this.maxX, this.maxY)
+// range cuts off the function data to the given range
+func (f *Function) Range(minX, maxX float64) {
+	// create new data slice
+	filtered := f.data.Filter(minX, maxX)
+
+	// set new data
+	f.SetData(filtered)
 }
 
-type interpolationProvider interface {
-	eval(x float64) (float64, error)
-}
-
-type LinearInterpolator struct {
-	data *[]Point
-}
-
-func NewLinearInterpolator(data *[]Point) *LinearInterpolator {
-	return &LinearInterpolator{data}
-}
-
-func (this *LinearInterpolator) eval(x float64) (float64, error) {
-	var lower = 0
-	var upper = 1
-
-	for i, v := range *this.data {
-		if v.X < x {
-			lower = i
-			upper = i + 1
-		} else {
-			break
-		}
-	}
-	if upper == len(*this.data) {
-		return -1, errors.New(fmt.Sprintf("Interpolator_Error: Out of bounds %f is not in the scoupe between %f and %f", x, (*this.data)[0], (*this.data)[lower]))
-	}
-
-	lp := (*this.data)[lower]
-	up := (*this.data)[upper]
-	m := (up.Y - lp.Y) / (up.X - lp.X)
-	b := lp.Y - m*lp.X
-	return m*x + b, nil
-}
-
+// TODO: add full explanation
 type FunctionSegment struct {
 	start float64
 	end   float64
@@ -222,11 +212,12 @@ func NewSegmentedFunction(segments []FunctionSegment) *SegmentedFunction {
 	}
 }
 
-func (this *SegmentedFunction) Scope() (Position, Position) {
-	if this.segments == nil || len(this.segments) == 0 {
-		return NewPos(0, 0), NewPos(0, 0)
+func (s *SegmentedFunction) Scope() (*Coordinate, *Coordinate) {
+	if s.segments == nil || len(s.segments) == 0 {
+		return &Coordinate{}, &Coordinate{}
 	}
-	return NewPos(this.segments[0].start, this.minY), NewPos(this.segments[len(this.segments)-1].end, this.maxY)
+
+	return &Coordinate{s.segments[0].start, s.minY}, &Coordinate{s.segments[len(s.segments)-1].end, s.maxY}
 }
 
 func (this *SegmentedFunction) Model(resolution int) ([]Point, []Point) {
@@ -241,15 +232,15 @@ func (this *SegmentedFunction) Model(resolution int) ([]Point, []Point) {
 		if err != nil {
 			println(err.Error())
 			res[i] = Point{
-				X:   0,
-				Y:   0,
-				ERR: 0,
+				X:     0,
+				Y:     0,
+				Error: 0,
 			}
 		}
 		res[i] = Point{
-			X:   nx,
-			Y:   val,
-			ERR: 0,
+			X:     nx,
+			Y:     val,
+			Error: 0,
 		}
 		nx += dx
 	}

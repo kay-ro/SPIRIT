@@ -8,15 +8,15 @@ import (
 	"strconv"
 )
 
-type measurement struct {
+type OldMeasurement struct {
 	Count int
 	Time  float64
 	Data  []float64
 	Error float64
 }
 
-func newMeasurment(time float64, error float64, count int, data []float64) measurement {
-	return measurement{
+func newMeasurment(time float64, error float64, count int, data []float64) OldMeasurement {
+	return OldMeasurement{
 		Time:  time,
 		Count: count,
 		Data:  data,
@@ -25,7 +25,7 @@ func newMeasurment(time float64, error float64, count int, data []float64) measu
 }
 
 type FileParser interface {
-	tryParse([]byte) ([]measurement, error) //TODO change from Measurement to programState
+	tryParse([]byte) ([]OldMeasurement, error) //TODO change from Measurement to programState
 }
 
 type DatParser struct {
@@ -33,14 +33,14 @@ type DatParser struct {
 	measurementSplitter []byte
 }
 
-func DefaultDatParser() *DatParser {
+func OldParser() *DatParser {
 	return &DatParser{
 		valueSplitter:       [][]byte{{'\t', ' '}},
 		measurementSplitter: []byte{'\n'},
 	}
 }
 
-func (p *DatParser) tryParse(data []byte) ([]measurement, error) {
+func (p *DatParser) tryParse(data []byte) ([]OldMeasurement, error) {
 	var pre = string(data)
 	// https://stackoverflow.com/a/37293398
 	reLeadcloseWhtsp := regexp.MustCompile(`^[\s\p{Zs}]+|[\s\p{Zs}]+$`)
@@ -49,7 +49,7 @@ func (p *DatParser) tryParse(data []byte) ([]measurement, error) {
 	pre = reInsideWhtsp.ReplaceAllString(pre, " ")
 	data = []byte(pre)
 	var err = errors.New("DAT_Parsing_Error: No Measurement separator defined")
-	var res []measurement = nil
+	var res []OldMeasurement = nil
 
 	for _, b := range p.measurementSplitter {
 		if err == nil {
@@ -67,7 +67,7 @@ func (p *DatParser) tryParse(data []byte) ([]measurement, error) {
 			err = errors.New("DAT_Parsing_Error: Couldn't parse length indicator at begin of file")
 			continue
 		}
-		res = make([]measurement, mCount)
+		res = make([]OldMeasurement, mCount)
 		if len(segments) < mCount+1 {
 			err = errors.New("DAT_Parsing_Error: Less measurements found than header indicated")
 			continue
