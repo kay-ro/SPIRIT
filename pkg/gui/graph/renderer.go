@@ -2,6 +2,7 @@ package graph
 
 import (
 	"image/color"
+	"math"
 	"physicsGUI/pkg/function"
 
 	"fyne.io/fyne/v2"
@@ -19,10 +20,6 @@ type GraphRenderer struct {
 	margin float32
 }
 
-type GraphScope struct {
-	Min function.Coordinate
-	Max function.Coordinate
-}
 type GraphRange struct {
 	Min float64
 	Max float64
@@ -91,8 +88,33 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 			d.Range(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max)
 		}
 	}
+
 	// calculate the maximum scope
-	scope := function.GetMaximumScope(append(r.graph.functions, r.graph.loadedData...)...)
+	var scope = &function.Scope{
+		MinX: math.MaxFloat64,
+		MinY: math.MaxFloat64,
+		MaxX: -math.MaxFloat64,
+		MaxY: -math.MaxFloat64,
+	}
+	funcCount := len(r.graph.functions)
+	var magicPoints []function.Points
+	if r.graph.config.AdaptDraw {
+		magicPoints = make([]function.Points, funcCount+len(r.graph.loadedData))
+		for i, f := range r.graph.functions {
+			magicPoints[i] = f.GetData().Copy()
+			tempScope := magicPoints[i].Magie()
+			scope.CombineScope(&tempScope)
+		}
+		for i, f := range r.graph.loadedData {
+			l := i + funcCount
+			magicPoints[l] = f.GetData().Copy()
+			tempScope := magicPoints[l].Magie()
+			scope.CombineScope(&tempScope)
+		}
+
+	} else {
+		scope = function.GetMaximumScope(append(r.graph.functions, r.graph.loadedData...)...)
+	}
 	if scope.MinX == scope.MaxX {
 		scope.MinX = scope.MinX - smallestGraphScope
 		scope.MaxX = scope.MaxX + smallestGraphScope
@@ -117,33 +139,53 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 
 	// draw model lines
 	if r.graph.config.IsLog {
-		for _, f := range r.graph.functions {
-			points, iPoints := f.Model(r.graph.config.Resolution, true)
-			r.DrawGraphLog(scope, points, iPoints, pointColor, false)
+		for i, f := range r.graph.functions {
+			var points function.Points
+			if r.graph.config.AdaptDraw {
+				points = magicPoints[i]
+			} else {
+				points = f.GetData().Copy()
+			}
+			r.DrawGraphLog(scope, points, points, pointColor, false)
 		}
 		for i, d := range r.graph.loadedData {
 			d.Range(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max)
-			points, iPoints := d.Model(r.graph.config.Resolution, true)
+			var points function.Points
+			if r.graph.config.AdaptDraw {
+				points = magicPoints[funcCount+i]
+			} else {
+				points = d.GetData().Copy()
+			}
 			dataColor := DataTrackColors[i%len(DataTrackColors)]
-			r.DrawGraphLog(scope, points, iPoints, dataColor, true)
+			r.DrawGraphLog(scope, points, points, dataColor, true)
 		}
 		r.DrawGridLog(scope)
 		return
 	}
 
-	for _, f := range r.graph.functions {
-		points, iPoints := f.Model(r.graph.config.Resolution, false)
+	for i, f := range r.graph.functions {
+		var points function.Points
+		if r.graph.config.AdaptDraw {
+			points = magicPoints[i]
+		} else {
+			points = f.GetData().Copy()
+		}
 		r.DrawGraphLinear(scope,
 			points.Filter(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max),
-			iPoints.Filter(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max),
+			points.Filter(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max),
 			pointColor, false)
 	}
 	for i, d := range r.graph.loadedData {
-		points, iPoints := d.Model(r.graph.config.Resolution, false)
+		var points function.Points
+		if r.graph.config.AdaptDraw {
+			points = magicPoints[funcCount+i]
+		} else {
+			points = d.GetData().Copy()
+		}
 		dataColor := DataTrackColors[i%len(DataTrackColors)]
 		r.DrawGraphLinear(scope,
 			points.Filter(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max),
-			iPoints.Filter(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max),
+			points.Filter(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max),
 			dataColor, true)
 	}
 	r.DrawGridLinear(scope)

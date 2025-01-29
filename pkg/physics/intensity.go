@@ -41,7 +41,6 @@ func CalculateIntensityPoints(edenPoints function.Points, delta float64, opts *I
 			Y:     intensity[i],
 			Error: 0.0,
 		}
-		intensityPoints[i].Magie()
 	}
 
 	return intensityPoints

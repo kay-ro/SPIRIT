@@ -28,3 +28,10 @@ func GetMaximumScope(functions ...*Function) *Scope {
 
 	return maxS
 }
+
+func (s *Scope) CombineScope(s2 *Scope) {
+	s.MinX = min(s.MinX, s2.MinX)
+	s.MinY = min(s.MinY, s2.MinY)
+	s.MaxX = max(s.MaxX, s2.MaxX)
+	s.MaxY = max(s.MaxY, s2.MaxY)
+}
