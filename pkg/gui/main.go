@@ -211,7 +211,7 @@ func createMinimizerProblem() *minimizer.AsyncMinimiserProblem[float64] {
 	dataTrack := dataTracks[0]
 
 	// Define error function
-	errorFunction := func(params []float64) float64 {
+	penaltyFunction := func(params []float64) float64 {
 		edenErr := params[0:4]
 		dErr := params[4:6]
 		sigmaErr := params[6:9]
@@ -245,7 +245,7 @@ func createMinimizerProblem() *minimizer.AsyncMinimiserProblem[float64] {
 		return diff
 	}
 
-	return minimizer.NewProblem(parameters, minimas, maximas, errorFunction, &minimizer.MinimiserConfig{
+	return minimizer.NewProblem(parameters, minimas, maximas, penaltyFunction, &minimizer.MinimiserConfig{
 		LoopCount:     1e6,
 		ParallelReads: true,
 	})
@@ -253,18 +253,18 @@ func createMinimizerProblem() *minimizer.AsyncMinimiserProblem[float64] {
 
 // register functions which can be used for graph plotting
 func registerFunctions() {
-	functionMap["sld"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
+	functionMap["intensity"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
 	functionMap["eden"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
 	functionMap["test"] = function.NewFunction(function.Points{}, function.INTERPOLATION_NONE)
 }
 
 // creates the graph containers for the different graphs
 func registerGraphs() *fyne.Container {
-	graphMap["sld"] = graph.NewGraphCanvas(&graph.GraphConfig{
+	graphMap["intensity"] = graph.NewGraphCanvas(&graph.GraphConfig{
 		Title:     "Intensity Graph",
 		IsLog:     true,
 		AdaptDraw: true,
-		Functions: function.Functions{functionMap["sld"]},
+		Functions: function.Functions{functionMap["intensity"]},
 		DisplayRange: &graph.GraphRange{
 			Min: 0.01,
 			Max: math.MaxFloat64,
@@ -285,7 +285,7 @@ func registerGraphs() *fyne.Container {
 		Functions: function.Functions{functionMap["test"]},
 	})
 
-	return container.NewGridWithColumns(2, graphMap["eden"], graphMap["sld"], graphMap["test"])
+	return container.NewGridWithColumns(2, graphMap["eden"], graphMap["intensity"], graphMap["test"])
 }
 
 // creates and registers the parameter and adds them to the parameter repository
@@ -383,7 +383,7 @@ func testFunc() {
 		}
 	}
 
-	functionMap["sld"].SetData(d)
+	functionMap["intensity"].SetData(d)
 	functionMap["eden"].SetData(d)
 }
 
@@ -437,5 +437,5 @@ func RecalculateData() {
 		Scaling:    scaling,
 	})
 
-	functionMap["sld"].SetData(intensityPoints)
+	functionMap["intensity"].SetData(intensityPoints)
 }

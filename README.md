@@ -42,8 +42,8 @@ go build main.go
   otherwise we will face rendering issues if the min/max values aren't updated accordingly
 
 - add checkbox stuff
-- fix (re-implement) import data functionality
-- implement basic minimizer
+
+- no dataset -> minimizer crashes
 
 ### Später
 

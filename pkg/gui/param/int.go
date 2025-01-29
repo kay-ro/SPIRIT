@@ -42,7 +42,7 @@ func Int(group, label string, defaultValue int) (fyne.CanvasObject, *Parameter[i
 	}
 
 	intParameter := IntParameter(defaultValue)
-	intParameter.enableFit = widget.NewCheck("", func(b bool) {})
+	intParameter.checkbox = widget.NewCheck("", func(b bool) {})
 
 	// add parameter to group
 	iParams[group].Add(label, intParameter)
@@ -50,7 +50,7 @@ func Int(group, label string, defaultValue int) (fyne.CanvasObject, *Parameter[i
 	lbl := &canvas.Text{Text: label, Color: labelColor, TextSize: 14}
 
 	return container.NewVBox(
-		container.NewBorder(nil, nil, lbl, intParameter.enableFit),
+		container.NewBorder(nil, nil, lbl, intParameter.checkbox),
 		intParameter.Widget(),
 	), intParameter
 }
