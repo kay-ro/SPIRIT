@@ -204,7 +204,7 @@ func createMinimizerProblem() *minimizer.AsyncMinimiserProblem[float64] {
 	maximas := slices.Concat(edenMaxima, dMaxima, sigmaMaxima)
 	maximas = append(maximas, deltaMaxima, backgroundMaxima, scalingMaxima)
 
-	dataTracks := graphMap["sld"].GetDataTracks()
+	dataTracks := graphMap["intensity"].GetDataTracks()
 	if len(dataTracks) == 0 {
 		return nil
 	}
