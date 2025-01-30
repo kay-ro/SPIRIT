@@ -92,7 +92,9 @@ func addDataset(reader io.ReadCloser, uri fyne.URI, err error) function.Points {
 
 func createMinimizeButton() *widget.Button {
 	return widget.NewButton("Minimize", func() {
-		if problem := createMinimizerProblem(); problem != nil {
+		errorStr, problem := createMinimizerProblem()
+
+		if problem != nil {
 			closeChan := make(chan struct{}, 1)
 			clock := time.Tick(1 * time.Second)
 
@@ -109,7 +111,9 @@ func createMinimizeButton() *widget.Button {
 			return
 		}
 
-		dialog.ShowInformation("Minimizer", "Minimisation Failed: Failed to create minimization Problem", MainWindow)
+		dialogFailedText := fmt.Sprintf("Failed to create minimization problem with error: %s", errorStr)
+
+		dialog.ShowInformation("Minimizer", dialogFailedText, MainWindow)
 	})
 }
 
@@ -135,64 +139,64 @@ func minimizeRefreshWorker(problem *minimizer.AsyncMinimiserProblem[float64], cl
 	}
 }
 
-func createMinimizerProblem() *minimizer.AsyncMinimiserProblem[float64] {
+func createMinimizerProblem() (string, *minimizer.AsyncMinimiserProblem[float64]) {
 	eden, err := param.GetFloats("eden")
 	if err != nil {
-		return nil
+		return "EDEN FLOATS MISS", nil
 	}
 	edenMinima, err := param.GetFloatMinima("eden")
 	if err != nil {
-		return nil
+		return "EDEN MINIMA MISS", nil
 	}
 	edenMaxima, err := param.GetFloatMaximas("eden")
 	if err != nil {
-		return nil
+		return "EDEN MAXIMA MISS", nil
 	}
 
 	d, err := param.GetFloats("thick")
 	if err != nil {
-		return nil
+		return "THICK FLOATS MISS", nil
 	}
 	dMinima, err := param.GetFloatMinima("thick")
 	if err != nil {
-		return nil
+		return "THICK MINIMA MISS", nil
 	}
 	dMaxima, err := param.GetFloatMaximas("thick")
 	if err != nil {
-		return nil
+		return "THICK MAXIMA MISS", nil
 	}
 
 	sigma, err := param.GetFloats("rough")
 	if err != nil {
-		return nil
+		return "ROUGH FLOATS MISS", nil
 	}
 	sigmaMinima, err := param.GetFloatMinima("rough")
 	if err != nil {
-		return nil
+		return "ROUGH MINIMA MISS", nil
 	}
 	sigmaMaxima, err := param.GetFloatMaximas("rough")
 	if err != nil {
-		return nil
+		return "ROUGH MAXIMA MISS", nil
 	}
 
 	// get general parameters
 	delta, err := param.GetFloat("general", "deltaq")
 	if err != nil {
-		return nil
+		return "(GENERAL) DELTAQ MISS", nil
 	}
 	deltaMinima := -math.MaxFloat64
 	deltaMaxima := math.MaxFloat64
 
 	background, err := param.GetFloat("general", "background")
 	if err != nil {
-		return nil
+		return "(GENERAL) BACKGROUND MISS", nil
 	}
 	backgroundMinima := 0.0
 	backgroundMaxima := math.MaxFloat64
 
 	scaling, err := param.GetFloat("general", "scaling")
 	if err != nil {
-		return nil
+		return "(GENERAL) SCALING MISS", nil
 	}
 	scalingMinima := 0.0
 	scalingMaxima := math.MaxFloat64
@@ -206,7 +210,7 @@ func createMinimizerProblem() *minimizer.AsyncMinimiserProblem[float64] {
 
 	dataTracks := graphMap["intensity"].GetDataTracks()
 	if len(dataTracks) == 0 {
-		return nil
+		return "NO DATA POINTS IN GRAPH", nil
 	}
 	dataTrack := dataTracks[0]
 
@@ -245,7 +249,7 @@ func createMinimizerProblem() *minimizer.AsyncMinimiserProblem[float64] {
 		return diff
 	}
 
-	return minimizer.NewProblem(parameters, minimas, maximas, penaltyFunction, &minimizer.MinimiserConfig{
+	return "", minimizer.NewProblem(parameters, minimas, maximas, penaltyFunction, &minimizer.MinimiserConfig{
 		LoopCount:     1e6,
 		ParallelReads: true,
 	})
@@ -347,7 +351,7 @@ func mainWindow() {
 				createMinimizeButton(),
 			),
 			helper.CreateSeparator(),
-		), // top
+		),   // top
 		nil, // bottom
 		nil, // left
 		nil, // right
