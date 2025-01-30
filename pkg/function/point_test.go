@@ -1,6 +1,8 @@
 package function
 
 import (
+	"cmp"
+	"slices"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
@@ -25,4 +27,34 @@ func TestPoint(t *testing.T) {
 	}
 
 	spew.Dump(points)
+}
+
+type PointT[T any] struct {
+	X T
+}
+
+type Number interface {
+	~uint8 | ~uint32 | ~uint64 |
+		~int8 | ~int16 | ~int32 | ~int64 |
+		~float32 | ~float64
+}
+
+func testSortFunc[T Number](p []*PointT[T]) {
+	slices.SortFunc(p, func(a, b *PointT[T]) int {
+		return cmp.Compare(a.X, b.X)
+	})
+}
+
+func TestSort(t *testing.T) {
+	p1 := &PointT[int32]{X: 1}
+	p2 := &PointT[int32]{X: 4}
+	p3 := &PointT[int32]{X: 7}
+
+	points := []*PointT[int32]{
+		p2,
+		p1,
+		p3,
+	}
+
+	testSortFunc(points)
 }

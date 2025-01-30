@@ -373,7 +373,7 @@ func mainWindow() {
 }
 
 // this test func will create a basic x^2 dataset for testing
-// and set it to the sld and eden graphs
+// and set it to the intensity and eden graphs
 func testFunc() {
 	counter := 11
 
@@ -391,7 +391,7 @@ func testFunc() {
 	functionMap["eden"].SetData(d)
 }
 
-// RecalculateData recalculates the data for the sld and eden graphs
+// RecalculateData recalculates the data for the intensity and eden graphs
 func RecalculateData() {
 	// Get current parameter groups
 	eden, err := param.GetFloats("eden")
