@@ -51,6 +51,9 @@ func createMinimizerButton() *widget.Button {
 
 func createPauseButton() *widget.Button {
 	return widget.NewButtonWithIcon("Pause", theme.MediaPauseIcon(), func() {
+		if Problem == nil {
+			return
+		}
 		err := Problem.Pause()
 		if err != nil {
 			dialog.ShowError(err, MainWindow)
@@ -60,6 +63,9 @@ func createPauseButton() *widget.Button {
 
 func createResumeButton() *widget.Button {
 	return widget.NewButtonWithIcon("Resume", theme.NavigateNextIcon(), func() {
+		if Problem == nil {
+			return
+		}
 		err := Problem.Resume()
 		if err != nil {
 			dialog.ShowError(err, MainWindow)
