@@ -3,6 +3,7 @@ package gui
 import (
 	"errors"
 	"fmt"
+	"fyne.io/fyne/v2/layout"
 	"io"
 	"log"
 	"math"
@@ -24,7 +25,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
 )
 
 var (
@@ -88,33 +88,6 @@ func addDataset(reader io.ReadCloser, uri fyne.URI, err error) function.Points {
 		MainWindow)
 
 	return points
-}
-
-func createMinimizeButton() *widget.Button {
-	return widget.NewButton("Minimize", func() {
-		errorStr, problem := createMinimizerProblem()
-
-		if problem != nil {
-			closeChan := make(chan struct{}, 1)
-			clock := time.Tick(1 * time.Second)
-
-			go minimizeRefreshWorker(problem, closeChan, clock)
-
-			go func() {
-				minimizer.FloatMinimizerStagedHC.Minimize(problem)
-				closeChan <- struct{}{}
-				dialog.ShowInformation("Minimizer", "Minimisation completed",
-					MainWindow)
-			}()
-
-			log.Println("Minimization started")
-			return
-		}
-
-		dialogFailedText := fmt.Sprintf("Failed to create minimization problem with error: %s", errorStr)
-
-		dialog.ShowInformation("Minimizer", dialogFailedText, MainWindow)
-	})
 }
 
 func minimizeRefreshWorker(problem *minimizer.AsyncMinimiserProblem[float64], close <-chan struct{}, clock <-chan time.Time) {
@@ -348,10 +321,14 @@ func mainWindow() {
 	content := container.NewBorder(
 		container.NewVBox(
 			container.NewHBox(
-				createMinimizeButton(),
+				createMinimizerButton(),
+				createPauseButton(),
+				createResumeButton(),
+				layout.NewSpacer(),
+				createMinimizerStateLabel(),
 			),
 			helper.CreateSeparator(),
-		),   // top
+		), // top
 		nil, // bottom
 		nil, // left
 		nil, // right
