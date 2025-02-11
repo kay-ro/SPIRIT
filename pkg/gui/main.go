@@ -351,7 +351,7 @@ func mainWindow() {
 				createMinimizeButton(),
 			),
 			helper.CreateSeparator(),
-		),   // top
+		), // top
 		nil, // bottom
 		nil, // left
 		nil, // right
