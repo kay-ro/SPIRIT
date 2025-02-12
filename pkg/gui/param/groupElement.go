@@ -101,12 +101,13 @@ func (g GroupElements[T]) GetMaxima() ([]T, error) {
 	values := make([]T, len(g.params))
 
 	for i, param := range g.params {
-		v, err := param.GetRelatives()[1].Get()
-		if err != nil {
-			return nil, fmt.Errorf("error getting value for parameter %d: %w", i, err)
+		if len(param.GetRelatives()) > 1 {
+			v, err := param.GetRelatives()[1].Get()
+			if err != nil {
+				return nil, fmt.Errorf("error getting value for parameter %d: %w", i, err)
+			}
+			values[i] = v
 		}
-
-		values[i] = v
 	}
 
 	return values, nil

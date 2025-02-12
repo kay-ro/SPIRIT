@@ -25,6 +25,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	minuit "github.com/empack/minuit2go/pkg"
 )
 
 var (
@@ -34,6 +35,11 @@ var (
 
 	functionMap = make(map[string]*function.Function)
 	graphMap    = make(map[string]*graph.GraphCanvas)
+
+	// TODO move to other location
+	errorFunction func(parameter []float64) float64
+	groupSequence []string
+	dataTracks    = make(map[string]function.Functions)
 )
 
 // Start GUI (function is blocking)
@@ -92,28 +98,81 @@ func addDataset(reader io.ReadCloser, uri fyne.URI, err error) function.Points {
 
 func createMinimizeButton() *widget.Button {
 	return widget.NewButton("Minimize", func() {
-		errorStr, problem := createMinimizerProblem()
+		if errorFunction == nil {
+			dialog.ShowInformation("Minimizer Setup", "No error function defined", MainWindow)
+			return
+		}
+		problemFunction := minimizer.NewDummyFCN(errorFunction)
+		groupSizes := []int{}
 
-		if problem != nil {
-			closeChan := make(chan struct{}, 1)
-			clock := time.Tick(1 * time.Second)
+		// load DataTracks
+		for n := range graphMap {
+			dataTracks[n] = graphMap[n].GetDataTracks()
+		}
 
-			go minimizeRefreshWorker(problem, closeChan, clock)
+		// Setup parameters
+		userParameters := minuit.NewEmptyMnUserParameters()
+		for _, group := range groupSequence {
+			vals, err := param.GetFloats(group)
+			if err != nil {
+				dialog.ShowInformation("Minimizer Setup", fmt.Sprintf("Failed to get value floats of group \"%s\" for minimisation setup", group), MainWindow)
+				return
+			}
+			mins, err := param.GetFloatMinima(group)
+			if err != nil {
+				dialog.ShowInformation("Minimizer Setup", fmt.Sprintf("Failed to get minima floats of group \"%s\" for minimisation setup", group), MainWindow)
+				return
+			}
+			maxs, err := param.GetFloatMaximas(group)
+			if err != nil {
+				dialog.ShowInformation("Minimizer Setup", fmt.Sprintf("Failed to get maxima floats of group \"%s\" for minimisation setup", group), MainWindow)
+				return
+			}
+			groupSizes = append(groupSizes, len(vals))
+			for i := range vals {
+				if vals[i] > maxs[i] || vals[i] < mins[i] { // TODO replace with better solution
+					userParameters.AddFree(fmt.Sprintf("%s-%d", group, i), vals[i], 0)
+					continue
+				}
 
-			go func() {
-				minimizer.FloatMinimizerStagedHC.Minimize(problem)
-				closeChan <- struct{}{}
-				dialog.ShowInformation("Minimizer", "Minimisation completed",
-					MainWindow)
-			}()
+				if vals[i] == mins[i] && vals[i] == maxs[i] {
+					userParameters.Add(fmt.Sprintf("%s-%d", group, i), vals[i])
+				} else if mins[i] == -math.MaxFloat64 && maxs[i] == math.MaxFloat64 {
+					//TODO error?
+					userParameters.AddFree(fmt.Sprintf("%s-%d", group, i), vals[i], 0)
+				} else {
+					//TODO error?
+					userParameters.AddLimited(fmt.Sprintf("%s-%d", group, i), vals[i], 0, mins[i], maxs[i])
+				}
+			}
+		}
 
-			log.Println("Minimization started")
+		mingrad := minuit.NewMnMigradWithParameters(problemFunction, userParameters)
+		minimum, err := mingrad.Minimize()
+		if err != nil {
+			dialog.ShowError(err, MainWindow)
 			return
 		}
 
-		dialogFailedText := fmt.Sprintf("Failed to create minimization problem with error: %s", errorStr)
+		var groupID int = 0
+		var offset int = 0
+		var collection []float64 = make([]float64, groupSizes[0])
+		for i, minimizedParameter := range minimum.UserParameters().Parameters() {
+			if i >= groupSizes[groupID]+offset {
+				err := param.SetFloats(groupSequence[groupID], collection)
+				if err != nil {
+					dialog.ShowInformation("Minimize", "Failed to write minimized Data to screen", MainWindow)
+					return
+				}
+				groupID++
+				offset = i
+				collection = make([]float64, groupSizes[groupID])
+			}
+			collection[i-offset] = minimizedParameter.Value()
+		}
+		//TODO check if last collection is Set
 
-		dialog.ShowInformation("Minimizer", dialogFailedText, MainWindow)
+		dialog.ShowInformation("Minimization Completed", fmt.Sprintf("Minimization Stats:\n Error function calls: %f \n Remaining error: %f", minimum.Nfcn(), minimum.Fval()), MainWindow)
 	})
 }
 
@@ -362,6 +421,9 @@ func mainWindow() {
 		),
 	)
 
+	// Define Error Function
+	MinimizerSetup()
+
 	// set onchange function for recalculating data
 	trigger.SetOnChange(RecalculateData)
 
@@ -389,6 +451,51 @@ func testFunc() {
 
 	functionMap["intensity"].SetData(d)
 	functionMap["eden"].SetData(d)
+}
+
+// Setup Minimization
+func MinimizerSetup() {
+	// Define Sequence of parameters
+	groupSequence = []string{"eden", "thick", "rough", "general"}
+	errorFunction = func(parameter []float64) float64 {
+		eden := parameter[0:4]
+		d := parameter[4:6]
+		sigma := parameter[6:9]
+		delta := parameter[9]
+		background := parameter[10]
+		scaling := parameter[11]
+
+		edenPoints, err := physics.GetEdensities(eden, d, sigma)
+		if err != nil {
+			fmt.Println("Error while calculating edensities:", err)
+			return math.MaxFloat64
+		}
+
+		intensityPoints := physics.CalculateIntensityPoints(edenPoints, delta, &physics.IntensityOptions{
+			Background: background,
+			Scaling:    scaling,
+		})
+
+		intensityFunction := function.NewFunction(intensityPoints, function.INTERPOLATION_LINEAR)
+
+		//
+		plotDataTracks, ok := dataTracks["intensity"]
+		if !ok {
+			fmt.Println("Could not load data Track from plot please check error function or load data in plot:")
+			return math.MaxFloat64
+		}
+		dataModel := plotDataTracks[0].Model(0, false)
+
+		diff := 0.0
+		for i := range dataModel {
+			iy, err := intensityFunction.Eval(dataModel[i].X)
+			if err != nil {
+				fmt.Println("Error while calculating intensity:", err)
+			}
+			diff += math.Pow(dataModel[i].Y-iy, 2)
+		}
+		return diff
+	}
 }
 
 // RecalculateData recalculates the data for the intensity and eden graphs
