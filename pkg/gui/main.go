@@ -205,7 +205,7 @@ func createMinimizeButton() *widget.Button {
 			return
 		}
 
-		if err := minimize(data[0], e1, e2, e3, e4, r1, r2, r3, t1, t2, delta, background, scaling); err != nil {
+		if err := minimize(data[0], e1, e2, e3, e4, t1, t2, r1, r2, r3, delta, background, scaling); err != nil {
 			fmt.Println("Error while minimizing:", err)
 			dialog.ShowError(err, MainWindow)
 			return
@@ -218,6 +218,8 @@ func createMinimizeButton() *widget.Button {
 
 func minimize(data *function.Function, parameters ...*param.Parameter[float64]) error {
 	mnParams := minuit.NewEmptyMnUserParameters()
+
+	var freeToChangeCnt int = 0
 
 	for i, p := range parameters {
 		if p == nil {
@@ -234,6 +236,7 @@ func minimize(data *function.Function, parameters ...*param.Parameter[float64]) 
 		// if not checked, add as constant parameter
 		if !p.IsChecked() {
 			mnParams.Add(id, par)
+			continue
 		}
 
 		min := p.GetRelative("min")
@@ -242,6 +245,7 @@ func minimize(data *function.Function, parameters ...*param.Parameter[float64]) 
 		// if min or max is nil, add as free parameter
 		if min == nil || max == nil {
 			mnParams.AddFree(id, par, 0.1)
+			freeToChangeCnt++
 			continue
 		}
 
@@ -257,6 +261,11 @@ func minimize(data *function.Function, parameters ...*param.Parameter[float64]) 
 		}
 
 		mnParams.AddLimited(id, par, 0.1, minV, maxV)
+		freeToChangeCnt++
+	}
+
+	if freeToChangeCnt == 0 {
+		return fmt.Errorf("minimizer: Parameter to change selected")
 	}
 
 	// create minuit setup
@@ -280,6 +289,8 @@ func minimize(data *function.Function, parameters ...*param.Parameter[float64]) 
 
 	fmt.Println("result")
 	spew.Dump(min.UserParameters().Params())
+	fmt.Printf("Fval: %f\n", min.Fval())
+	fmt.Printf("FCNCall: %d\n", min.Nfcn())
 
 	return mFunc.UpdateParameters(min.UserParameters().Params())
 }
@@ -321,7 +332,7 @@ func penaltyFunction(fcn *minimizer.MinuitFunction, params []float64) float64 {
 		if err != nil {
 			fmt.Println("Error while calculating intensity:", err)
 		}
-		diff += math.Pow(dataModel[i].Y-iy, 2)
+		diff += math.Pow((dataModel[i].Y-iy)*math.Pow(dataModel[i].X*100, 4), 2)
 	}
 	return diff
 }
