@@ -79,7 +79,7 @@ func (g GroupElements[T]) GetValues() ([]T, error) {
 }
 
 // returns all minima in the group
-func (g GroupElements[T]) GetMinima() ([]T, error) {
+/* func (g GroupElements[T]) GetMinima() ([]T, error) {
 	values := make([]T, len(g.params))
 
 	for i, param := range g.params {
@@ -94,10 +94,10 @@ func (g GroupElements[T]) GetMinima() ([]T, error) {
 	}
 
 	return values, nil
-}
+} */
 
 // returns all maxima in the group
-func (g GroupElements[T]) GetMaxima() ([]T, error) {
+/* func (g GroupElements[T]) GetMaxima() ([]T, error) {
 	values := make([]T, len(g.params))
 
 	for i, param := range g.params {
@@ -111,4 +111,4 @@ func (g GroupElements[T]) GetMaxima() ([]T, error) {
 	}
 
 	return values, nil
-}
+} */

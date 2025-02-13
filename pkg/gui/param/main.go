@@ -30,3 +30,15 @@ var (
 	// ErrParameterNotFound is returned when a parameter is not found
 	ErrParameterNotFound = errors.New("parameter not found")
 )
+
+func GetStringGroup(group string) *GroupElements[string] {
+	return sParams[group]
+}
+
+func GetFloatGroup(group string) *GroupElements[float64] {
+	return fParams[group]
+}
+
+func GetIntGroup(group string) *GroupElements[int] {
+	return iParams[group]
+}

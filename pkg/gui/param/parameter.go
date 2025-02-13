@@ -13,10 +13,16 @@ type Parameter[T any] struct {
 	config  *Config[T]
 
 	// optional relative parameters
-	relatives []*Parameter[T]
+	relatives map[string]*Parameter[T]
 
 	// use for fit checkbox
 	checkbox *widget.Check
+}
+
+type Parameters[T any] []*Parameter[T]
+
+type ParameterType interface {
+	Get() (any, error)
 }
 
 type Config[T any] struct {
@@ -29,8 +35,9 @@ type Config[T any] struct {
 // New creates a new parameter with the given configuration
 func New[T any](config *Config[T]) *Parameter[T] {
 	f := &Parameter[T]{
-		binding: binding.NewString(),
-		config:  config,
+		binding:   binding.NewString(),
+		config:    config,
+		relatives: make(map[string]*Parameter[T]),
 	}
 
 	// creates the widget with the binding
@@ -63,13 +70,18 @@ func (f *Parameter[T]) Get() (T, error) {
 }
 
 // return relative parameters (min, max, checkboxes, ...)
-func (f *Parameter[T]) GetRelatives() []*Parameter[T] {
+func (f *Parameter[T]) GetRelatives() map[string]*Parameter[T] {
 	return f.relatives
 }
 
+// return relative parameter by name
+func (f *Parameter[T]) GetRelative(key string) *Parameter[T] {
+	return f.relatives[key]
+}
+
 // set relative parameters (min, max, checkboxes, ...)
-func (f *Parameter[T]) SetRelatives(relatives ...*Parameter[T]) {
-	f.relatives = relatives
+func (f *Parameter[T]) SetRelative(key string, relatives *Parameter[T]) {
+	f.relatives[key] = relatives
 }
 
 // Widget returns the widget (drawable element for the gui) of the parameter

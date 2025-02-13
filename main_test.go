@@ -32,8 +32,8 @@ func TestRosenbrock(t *testing.T) {
 
 	// Parameter Setup
 	upar := minuit.NewEmptyMnUserParameters()
-	upar.AddFree("x", 10.2, 0.0001)
-	upar.AddFree("y", 0.9, 0.0001)
+	upar.AddFree("x", 10.2, 0.1)
+	upar.AddFree("y", 0.9, 0.1)
 
 	log.Printf("Initial parameters: %s\n", upar)
 

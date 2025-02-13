@@ -16,8 +16,6 @@ import (
 	"physicsGUI/pkg/minimizer"
 	"physicsGUI/pkg/physics"
 	"physicsGUI/pkg/trigger"
-	"slices"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -25,6 +23,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/davecgh/go-spew/spew"
 	minuit "github.com/empack/minuit2go/pkg"
 )
 
@@ -38,8 +37,8 @@ var (
 
 	// TODO move to other location
 	errorFunction func(parameter []float64) float64
-	groupSequence []string
-	dataTracks    = make(map[string]function.Functions)
+	//groupSequence []string
+	//dataTracks    = make(map[string]function.Functions)
 )
 
 // Start GUI (function is blocking)
@@ -98,11 +97,11 @@ func addDataset(reader io.ReadCloser, uri fyne.URI, err error) function.Points {
 
 func createMinimizeButton() *widget.Button {
 	return widget.NewButton("Minimize", func() {
-		if errorFunction == nil {
+		/* if errorFunction == nil {
 			dialog.ShowInformation("Minimizer Setup", "No error function defined", MainWindow)
 			return
-		}
-		problemFunction := minimizer.NewDummyFCN(errorFunction)
+		} */
+		/* problemFunction := minimizer.NewDummyFCN(errorFunction)
 		groupSizes := []int{}
 
 		// load DataTracks
@@ -170,13 +169,164 @@ func createMinimizeButton() *widget.Button {
 			}
 			collection[i-offset] = minimizedParameter.Value()
 		}
-		//TODO check if last collection is Set
+		//TODO check if last collection is Set */
 
-		dialog.ShowInformation("Minimization Completed", fmt.Sprintf("Minimization Stats:\n Error function calls: %f \n Remaining error: %f", minimum.Nfcn(), minimum.Fval()), MainWindow)
+		// get parameters + experimental data and put them into minimize()
+		edens := param.GetFloatGroup("eden")
+
+		e1 := edens.GetParam("Eden a")
+		e2 := edens.GetParam("Eden 1")
+		e3 := edens.GetParam("Eden 2")
+		e4 := edens.GetParam("Eden b")
+
+		// get roughness parameters
+		roughness := param.GetFloatGroup("rough")
+
+		r1 := roughness.GetParam("Roughness a/1")
+		r2 := roughness.GetParam("Roughness 1/2")
+		r3 := roughness.GetParam("Roughness 2/b")
+
+		// get thickness parameters
+		thickness := param.GetFloatGroup("thick")
+
+		t1 := thickness.GetParam("Thickness 1")
+		t2 := thickness.GetParam("Thickness 2")
+
+		// get general parameters
+		general := param.GetFloatGroup("general")
+
+		delta := general.GetParam("deltaq")
+		background := general.GetParam("background")
+		scaling := general.GetParam("scaling")
+
+		data := graphMap["intensity"].GetDataTracks()
+		if len(data) != 1 {
+			dialog.ShowError(errors.New("exactly 1 dataset in intensity graph needed"), MainWindow)
+			return
+		}
+
+		if err := minimize(data[0], e1, e2, e3, e4, r1, r2, r3, t1, t2, delta, background, scaling); err != nil {
+			fmt.Println("Error while minimizing:", err)
+			dialog.ShowError(err, MainWindow)
+			return
+		}
+
+		dialog.ShowInformation("Minimization Completed", fmt.Sprintf("Minimization TODO"), MainWindow)
+		//dialog.ShowInformation("Minimization Completed", fmt.Sprintf("Minimization Stats:\n Error function calls: %f \n Remaining error: %f", minimum.Nfcn(), minimum.Fval()), MainWindow)
 	})
 }
 
-func minimizeRefreshWorker(problem *minimizer.AsyncMinimiserProblem[float64], close <-chan struct{}, clock <-chan time.Time) {
+func minimize(data *function.Function, parameters ...*param.Parameter[float64]) error {
+	mnParams := minuit.NewEmptyMnUserParameters()
+
+	for i, p := range parameters {
+		if p == nil {
+			return fmt.Errorf("minimizer: parameter %d is nil", i)
+		}
+
+		par, err := p.Get()
+		if err != nil {
+			return err
+		}
+
+		id := fmt.Sprintf("p%d", i)
+
+		// if not checked, add as constant parameter
+		if !p.IsChecked() {
+			mnParams.Add(id, par)
+		}
+
+		min := p.GetRelative("min")
+		max := p.GetRelative("max")
+
+		// if min or max is nil, add as free parameter
+		if min == nil || max == nil {
+			mnParams.AddFree(id, par, 0.1)
+			continue
+		}
+
+		// if min and max are set, add as limited parameter
+		minV, err := min.Get()
+		if err != nil {
+			return err
+		}
+
+		maxV, err := max.Get()
+		if err != nil {
+			return err
+		}
+
+		mnParams.AddLimited(id, par, 0.1, minV, maxV)
+	}
+
+	// create minuit setup
+	mFunc := minimizer.NewMinuitFcn(data, penaltyFunction, parameters)
+
+	// create migrad
+	migrad := minuit.NewMnMigradWithParameters(mFunc, mnParams)
+
+	min, err := migrad.Minimize()
+	if err != nil {
+		return err
+	}
+
+	if !min.IsValid() {
+		migrad2 := minuit.NewMnMigradWithParameterStateStrategy(mFunc, min.UserState(), minuit.NewMnStrategyWithStra(minuit.PreciseStrategy))
+		min, err = migrad2.Minimize()
+		if err != nil {
+			return err
+		}
+	}
+
+	fmt.Println("result")
+	spew.Dump(min.UserParameters().Params())
+
+	return mFunc.UpdateParameters(min.UserParameters().Params())
+}
+
+func penaltyFunction(fcn *minimizer.MinuitFunction, params []float64) float64 {
+	// parameter needed for parsing the parameters params[11] -> 12 parameters needed etc.
+	paramCount := 12
+	if len(params) != paramCount {
+		dialog.ShowError(fmt.Errorf("penaltyFunction has %d parameters but expects %d", len(params), paramCount), MainWindow)
+		return math.MaxFloat64
+	}
+
+	edenErr := params[0:4]
+	dErr := params[4:6]
+	sigmaErr := params[6:9]
+	deltaErr := params[9]
+	backgroundErr := params[10]
+	scalingErr := params[11]
+
+	log.Println("params", params)
+
+	edenPoints, err := physics.GetEdensities(edenErr, dErr, sigmaErr)
+	if err != nil {
+		fmt.Println("Error while calculating edensities:", err)
+		return math.MaxFloat64
+	}
+
+	intensityPoints := physics.CalculateIntensityPoints(edenPoints, deltaErr, &physics.IntensityOptions{
+		Background: backgroundErr,
+		Scaling:    scalingErr,
+	})
+
+	intensityFunction := function.NewFunction(intensityPoints, function.INTERPOLATION_LINEAR)
+
+	dataModel := fcn.Datatrack.Model(0, false)
+	diff := 0.0
+	for i := range dataModel {
+		iy, err := intensityFunction.Eval(dataModel[i].X)
+		if err != nil {
+			fmt.Println("Error while calculating intensity:", err)
+		}
+		diff += math.Pow(dataModel[i].Y-iy, 2)
+	}
+	return diff
+}
+
+/* func minimizeRefreshWorker(problem *minimizer.AsyncMinimiserProblem[float64], close <-chan struct{}, clock <-chan time.Time) {
 	for {
 		select {
 		case <-close:
@@ -196,9 +346,9 @@ func minimizeRefreshWorker(problem *minimizer.AsyncMinimiserProblem[float64], cl
 			param.SetFloat("general", "scaling", parameters[11])
 		}
 	}
-}
+} */
 
-func createMinimizerProblem() (string, *minimizer.AsyncMinimiserProblem[float64]) {
+/* func createMinimizerProblem() (string, *minimizer.AsyncMinimiserProblem[float64]) {
 	eden, err := param.GetFloats("eden")
 	if err != nil {
 		return "EDEN FLOATS MISS", nil
@@ -312,7 +462,7 @@ func createMinimizerProblem() (string, *minimizer.AsyncMinimiserProblem[float64]
 		LoopCount:     1e6,
 		ParallelReads: true,
 	})
-}
+} */
 
 // register functions which can be used for graph plotting
 func registerFunctions() {
@@ -422,7 +572,7 @@ func mainWindow() {
 	)
 
 	// Define Error Function
-	MinimizerSetup()
+	//MinimizerSetup()
 
 	// set onchange function for recalculating data
 	trigger.SetOnChange(RecalculateData)
@@ -454,7 +604,7 @@ func testFunc() {
 }
 
 // Setup Minimization
-func MinimizerSetup() {
+/* func MinimizerSetup() {
 	// Define Sequence of parameters
 	groupSequence = []string{"eden", "thick", "rough", "general"}
 	errorFunction = func(parameter []float64) float64 {
@@ -496,7 +646,7 @@ func MinimizerSetup() {
 		}
 		return diff
 	}
-}
+} */
 
 // RecalculateData recalculates the data for the intensity and eden graphs
 func RecalculateData() {

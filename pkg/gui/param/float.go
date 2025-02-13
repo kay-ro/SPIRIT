@@ -128,7 +128,9 @@ func FloatMinMax(group, label string, defaultValue float64) (fyne.CanvasObject, 
 		Format: StdFloatFormater,
 		Parser: StdFloatParser,
 	})
-	param.SetRelatives(min, max)
+	param.SetRelative("min", min)
+	param.SetRelative("max", max)
+
 	param.checkbox = widget.NewCheck("", nil)
 
 	// add parameter to group

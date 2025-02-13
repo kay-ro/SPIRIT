@@ -7,8 +7,6 @@ github.com/BurntSushi/toml v1.4.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/empack/minuit2go v0.0.0-20250212101924-aa5f775d8789 h1:fDDjBleQCbdw9u9vopK2f8J0vZ1z7kDRE8gB4205xTY=
-github.com/empack/minuit2go v0.0.0-20250212101924-aa5f775d8789/go.mod h1:yyh7jtxKWggZC3UaIrx1D79Ye6BeK70fgjjPW4XP0JA=
 github.com/empack/minuit2go v0.0.0-20250212104857-a1740a8eb28b h1:+MwReRLoiaTK70FMomL58tWScWvNyLdmHxyZbjwhQPA=
 github.com/empack/minuit2go v0.0.0-20250212104857-a1740a8eb28b/go.mod h1:yyh7jtxKWggZC3UaIrx1D79Ye6BeK70fgjjPW4XP0JA=
 github.com/felixge/fgprof v0.9.3 h1:VvyZxILNuCiUCSXtPtYmmtGvb65nqXh2QFWc0Wpf2/g=
