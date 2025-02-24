@@ -20,7 +20,7 @@ func SetStrings(group string, values []string) error {
 
 // SetFloat sets a float value for a specific group and label
 func SetFloat(group, label string, value float64) error {
-	if fParams[group] == nil || fParams[group].Check(label) {
+	if fParams[group] == nil || !fParams[group].Check(label) {
 		return ErrParameterNotFound
 	}
 
@@ -38,7 +38,7 @@ func SetFloats(group string, values []float64) error {
 
 // SetInt sets an int value for a specific group and label
 func SetInt(group, label string, value int) error {
-	if iParams[group] == nil || iParams[group].Check(label) {
+	if iParams[group] == nil || !iParams[group].Check(label) {
 		return ErrParameterNotFound
 	}
 

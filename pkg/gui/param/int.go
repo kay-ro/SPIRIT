@@ -18,6 +18,11 @@ func StdIntFormater(f int) string {
 	return fmt.Sprintf("%d", f)
 }
 
+// standard float parser for string to float64 conversion
+func StdIntParser(f string) (int, error) {
+	return strconv.Atoi(f)
+}
+
 // create a new int parameter
 func IntParameter(defaultValue int) *Parameter[int] {
 	return New(&Config[int]{

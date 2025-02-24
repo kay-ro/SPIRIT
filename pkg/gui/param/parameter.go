@@ -99,3 +99,8 @@ func (f *Parameter[T]) IsChecked() bool {
 
 	return f.checkbox.Checked
 }
+func (f *Parameter[T]) SetCheck(checked bool) {
+	if f.checkbox == nil {
+	}
+	f.checkbox.SetChecked(checked)
+}

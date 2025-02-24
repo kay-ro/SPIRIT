@@ -2,6 +2,8 @@ package param
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 )
 
 type GroupElements[T any] struct {
@@ -15,6 +17,10 @@ func NewGroupElements[T any]() *GroupElements[T] {
 		params: make([]*Parameter[T], 0),
 		ref:    make(map[string]int),
 	}
+}
+
+func (g *GroupElements[T]) GetKeys() []string {
+	return slices.Collect(maps.Keys(g.ref))
 }
 
 // checks if parameter is in the group

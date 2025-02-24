@@ -3,6 +3,8 @@ package param
 import (
 	"errors"
 	"image/color"
+	"maps"
+	"slices"
 )
 
 type ParameterGroup[T any] map[string]*GroupElements[T]
@@ -41,4 +43,13 @@ func GetFloatGroup(group string) *GroupElements[float64] {
 
 func GetIntGroup(group string) *GroupElements[int] {
 	return iParams[group]
+}
+func GetStringKeys() []string {
+	return slices.Collect(maps.Keys(sParams))
+}
+func GetFloatKeys() []string {
+	return slices.Collect(maps.Keys(fParams))
+}
+func GetIntKeys() []string {
+	return slices.Collect(maps.Keys(iParams))
 }
