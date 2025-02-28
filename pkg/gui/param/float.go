@@ -15,7 +15,7 @@ import (
 
 // standard float formater for float64 to string conversion
 func StdFloatFormater(f float64) string {
-	return fmt.Sprintf("%f", f)
+	return fmt.Sprintf("%g", f)
 }
 
 // standard float parser for string to float64 conversion
