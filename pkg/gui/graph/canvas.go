@@ -1,9 +1,11 @@
 package graph
 
 import (
+	"fyne.io/fyne/v2/theme"
 	"image/color"
 	"math"
 	"physicsGUI/pkg/function"
+	"physicsGUI/pkg/minimizer"
 	"slices"
 
 	"fyne.io/fyne/v2/container"
@@ -75,13 +77,14 @@ func (g *GraphCanvas) AddDataTrack(dataTrack *function.Function) {
 	g.loadedData = append(g.loadedData, dataTrack)
 
 	// create remove button
-	btnRemove := widget.NewButton("🗑", func() {
+	btnRemove := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
 		g.RemoveDataTrack(dataTrack)
 	})
 	btnRemove.Resize(fyne.NewSize(20, 20))
 	btnColor := DataTrackColors[i%len(DataTrackColors)]
 	g.dataRemoveButtons = append(g.dataRemoveButtons, container.NewStack(canvas.NewRectangle(btnColor), btnRemove))
 
+	_ = minimizer.State.Set(1)
 	g.Refresh()
 }
 
@@ -95,5 +98,8 @@ func (g *GraphCanvas) RemoveDataTrack(dataTrack *function.Function) {
 		g.loadedData = append(g.loadedData[:i], g.loadedData[i+1:]...)
 		g.dataRemoveButtons = append(g.dataRemoveButtons[:i], g.dataRemoveButtons[i+1:]...)
 		g.Refresh()
+	}
+	if len(g.loadedData) == 0 {
+		_ = minimizer.State.Set(0)
 	}
 }

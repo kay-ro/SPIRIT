@@ -3,6 +3,7 @@ package gui
 import (
 	"errors"
 	"fmt"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
@@ -11,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/davecgh/go-spew/spew"
 	minuit "github.com/empack/minuit2go/pkg"
+  
 	"io"
 	"log"
 	"math"
@@ -24,6 +26,8 @@ import (
 	"physicsGUI/pkg/minimizer"
 	"physicsGUI/pkg/physics"
 	"physicsGUI/pkg/trigger"
+	"slices"
+	"time"
 )
 
 var (
@@ -94,6 +98,20 @@ func addDataset(reader io.ReadCloser, uri fyne.URI, err error) function.Points {
 	return points
 }
 
+
+func minimizeRefreshWorker(problem *minimizer.AsyncMinimiserProblem[float64], close <-chan struct{}, clock <-chan time.Time) {
+	for {
+		select {
+		case <-close:
+			return
+		case <-clock:
+			parameters, err := problem.GetCurrentParameters()
+			if err != nil {
+				continue
+		  }
+    }
+  }
+}
 func createFileMenu() *fyne.Menu {
 	mnLoad := fyne.NewMenuItem("Load", loadFileChooser)
 	mnSave := fyne.NewMenuItem("Save", saveFileChooser)
@@ -361,7 +379,11 @@ func mainWindow() {
 	content := container.NewBorder(
 		container.NewVBox(
 			container.NewHBox(
-				createMinimizeButton(),
+				createMinimizerButton(),
+				createPauseButton(),
+				createResumeButton(),
+				layout.NewSpacer(),
+				createMinimizerStateLabel(),
 			),
 			helper.CreateSeparator(),
 		), // top
