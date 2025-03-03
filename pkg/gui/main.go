@@ -330,6 +330,7 @@ func registerParams() *fyne.Container {
 		container.NewGridWithColumns(4, thickness1, thickness2),
 		container.NewGridWithColumns(4, deltaQ, background, scaling),
 	)
+	//Makes a scrollbar for the parameters
 	con2 := container.NewScroll((containers))
 	con2.SetMinSize(fyne.NewSize(300, 300))
 	containers = container.NewVBox(con2)
