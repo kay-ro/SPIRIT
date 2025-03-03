@@ -3,6 +3,8 @@ package param
 import (
 	"errors"
 	"image/color"
+	"maps"
+	"slices"
 )
 
 type ParameterGroup[T any] map[string]*GroupElements[T]
@@ -30,3 +32,24 @@ var (
 	// ErrParameterNotFound is returned when a parameter is not found
 	ErrParameterNotFound = errors.New("parameter not found")
 )
+
+func GetStringGroup(group string) *GroupElements[string] {
+	return sParams[group]
+}
+
+func GetFloatGroup(group string) *GroupElements[float64] {
+	return fParams[group]
+}
+
+func GetIntGroup(group string) *GroupElements[int] {
+	return iParams[group]
+}
+func GetStringKeys() []string {
+	return slices.Collect(maps.Keys(sParams))
+}
+func GetFloatKeys() []string {
+	return slices.Collect(maps.Keys(fParams))
+}
+func GetIntKeys() []string {
+	return slices.Collect(maps.Keys(iParams))
+}
