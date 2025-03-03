@@ -3,14 +3,6 @@ package gui
 import (
 	"errors"
 	"fmt"
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
-	"github.com/davecgh/go-spew/spew"
-	minuit "github.com/empack/minuit2go/pkg"
 	"io"
 	"log"
 	"math"
@@ -24,6 +16,15 @@ import (
 	"physicsGUI/pkg/minimizer"
 	"physicsGUI/pkg/physics"
 	"physicsGUI/pkg/trigger"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
+	"github.com/davecgh/go-spew/spew"
+	minuit "github.com/empack/minuit2go/pkg"
 )
 
 var (
@@ -301,8 +302,8 @@ func registerGraphs() *fyne.Container {
 		AdaptDraw: true,
 		Functions: function.Functions{functionMap["test"]},
 	})
-
-	return container.NewGridWithColumns(2, graphMap["eden"], graphMap["intensity"], graphMap["test"])
+	return container.NewGridWithColumns(2, graphMap["eden"], graphMap["intensity"])
+	//return container.NewGridWithColumns(2, graphMap["eden"], graphMap["intensity"], graphMap["test"])
 }
 
 // creates and registers the parameter and adds them to the parameter repository
@@ -323,12 +324,16 @@ func registerParams() *fyne.Container {
 	background, _ := param.Float("general", "background", 1.43793e-7)
 	scaling, _ := param.Float("general", "scaling", 0.888730)
 
-	return container.NewVBox(
+	containers := container.NewVBox(
 		container.NewGridWithColumns(4, edenA, eden1, eden2, edenB),
 		container.NewGridWithColumns(4, roughnessA1, roughness12, roughness2B),
 		container.NewGridWithColumns(4, thickness1, thickness2),
 		container.NewGridWithColumns(4, deltaQ, background, scaling),
 	)
+	con2 := container.NewScroll((containers))
+	con2.SetMinSize(fyne.NewSize(300, 300))
+	containers = container.NewVBox(con2)
+	return containers
 }
 
 // onDrop is called when a file is dropped into the window and triggers
