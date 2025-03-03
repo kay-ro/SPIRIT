@@ -3,14 +3,6 @@ package gui
 import (
 	"errors"
 	"fmt"
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
-	"github.com/davecgh/go-spew/spew"
-	minuit "github.com/empack/minuit2go/pkg"
 	"io"
 	"log"
 	"math"
@@ -24,6 +16,15 @@ import (
 	"physicsGUI/pkg/minimizer"
 	"physicsGUI/pkg/physics"
 	"physicsGUI/pkg/trigger"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
+	"github.com/davecgh/go-spew/spew"
+	minuit "github.com/empack/minuit2go/pkg"
 )
 
 var (
@@ -33,17 +34,12 @@ var (
 
 	functionMap = make(map[string]*function.Function)
 	graphMap    = make(map[string]*graph.GraphCanvas)
-
-	// TODO move to other location
-	errorFunction func(parameter []float64) float64
-	//groupSequence []string
-	//dataTracks    = make(map[string]function.Functions)
 )
 
 // Start GUI (function is blocking)
 func Start() {
 	App = app.NewWithID("GUI-Physics")
-	App.Settings().SetTheme(theme.DarkTheme()) //TODO WIP to fix invisable while parameter lables
+	App.Settings().SetTheme(theme.DarkTheme()) //TODO WIP to fix invisible while parameter lables
 	MainWindow = App.NewWindow("Physics GUI")
 
 	mainWindow()
@@ -130,24 +126,21 @@ func createMinimizeButton() *widget.Button {
 		background := general.GetParam("background")
 		scaling := general.GetParam("scaling")
 
-		data := graphMap["intensity"].GetDataTracks()
-		if len(data) != 1 {
-			dialog.ShowError(errors.New("exactly 1 dataset in intensity graph needed"), MainWindow)
-			return
-		}
+		experimentalData := graphMap["intensity"].GetDataTracks()
 
-		if err := minimize(data[0], e1, e2, e3, e4, t1, t2, r1, r2, r3, delta, background, scaling); err != nil {
+		if err := minimize(experimentalData, e1, e2, e3, e4, t1, t2, r1, r2, r3, delta, background, scaling); err != nil {
 			fmt.Println("Error while minimizing:", err)
 			dialog.ShowError(err, MainWindow)
 			return
 		}
 
-		dialog.ShowInformation("Minimization Completed", fmt.Sprintf("Minimization TODO"), MainWindow)
+		dialog.ShowInformation("Minimization Completed", "successfully exited", MainWindow)
 		//dialog.ShowInformation("Minimization Completed", fmt.Sprintf("Minimization Stats:\n Error function calls: %f \n Remaining error: %f", minimum.Nfcn(), minimum.Fval()), MainWindow)
 	})
 }
 
-func minimize(data *function.Function, parameters ...*param.Parameter[float64]) error {
+// fit parameters to the experimental data
+func minimize(experimentalData []*function.Function, parameters ...*param.Parameter[float64]) error {
 	mnParams := minuit.NewEmptyMnUserParameters()
 
 	var freeToChangeCnt int = 0
@@ -200,7 +193,7 @@ func minimize(data *function.Function, parameters ...*param.Parameter[float64]) 
 	}
 
 	// create minuit setup
-	mFunc := minimizer.NewMinuitFcn(data, penaltyFunction, parameters)
+	mFunc := minimizer.NewMinuitFcn(experimentalData, penaltyFunction, parameters)
 
 	// create migrad
 	migrad := minuit.NewMnMigradWithParameters(mFunc, mnParams)
@@ -226,6 +219,7 @@ func minimize(data *function.Function, parameters ...*param.Parameter[float64]) 
 	return mFunc.UpdateParameters(min.UserParameters().Params())
 }
 
+// the penalty function defines the error we minimize with minuit
 func penaltyFunction(fcn *minimizer.MinuitFunction, params []float64) float64 {
 	// parameter needed for parsing the parameters params[11] -> 12 parameters needed etc.
 	paramCount := 12
@@ -256,15 +250,18 @@ func penaltyFunction(fcn *minimizer.MinuitFunction, params []float64) float64 {
 
 	intensityFunction := function.NewFunction(intensityPoints, function.INTERPOLATION_LINEAR)
 
-	dataModel := fcn.Datatrack.Model(0, false)
 	diff := 0.0
-	for i := range dataModel {
-		iy, err := intensityFunction.Eval(dataModel[i].X)
-		if err != nil {
-			fmt.Println("Error while calculating intensity:", err)
+	for _, expData := range fcn.ExperimentalData {
+		data := expData.GetData()
+		for i := range data {
+			iy, err := intensityFunction.Eval(data[i].X)
+			if err != nil {
+				fmt.Println("Error while calculating intensity:", err)
+			}
+			diff += math.Pow((data[i].Y-iy)*math.Pow(data[i].X*100, 4), 2)
 		}
-		diff += math.Pow((dataModel[i].Y-iy)*math.Pow(dataModel[i].X*100, 4), 2)
 	}
+
 	return diff
 }
 
@@ -295,14 +292,7 @@ func registerGraphs() *fyne.Container {
 		Functions: function.Functions{functionMap["eden"]},
 	})
 
-	graphMap["test"] = graph.NewGraphCanvas(&graph.GraphConfig{
-		Title:     "Test Graph",
-		IsLog:     true,
-		AdaptDraw: true,
-		Functions: function.Functions{functionMap["test"]},
-	})
-
-	return container.NewGridWithColumns(2, graphMap["eden"], graphMap["intensity"], graphMap["test"])
+	return container.NewGridWithColumns(2, graphMap["eden"], graphMap["intensity"])
 }
 
 // creates and registers the parameter and adds them to the parameter repository
@@ -375,9 +365,6 @@ func mainWindow() {
 		),
 	)
 
-	// Define Error Function
-	//MinimizerSetup()
-
 	// set onchange function for recalculating data
 	trigger.SetOnChange(RecalculateData)
 
@@ -390,25 +377,6 @@ func mainWindow() {
 	MainWindow.SetOnDropped(onDrop)
 
 	MainWindow.ShowAndRun()
-}
-
-// this test func will create a basic x^2 dataset for testing
-// and set it to the intensity and eden graphs
-func testFunc() {
-	counter := 11
-
-	d := make(function.Points, counter)
-
-	for i := 0; i < counter; i++ {
-		d[i] = &function.Point{
-			X:     float64(i),
-			Y:     math.Pow(float64(i), 2),
-			Error: 1,
-		}
-	}
-
-	functionMap["intensity"].SetData(d)
-	functionMap["eden"].SetData(d)
 }
 
 // RecalculateData recalculates the data for the intensity and eden graphs

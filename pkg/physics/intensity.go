@@ -46,13 +46,7 @@ func CalculateIntensityPoints(edenPoints function.Points, delta float64, opts *I
 	return intensityPoints
 }
 
-// TODO: add caching for reflectivity values if only opts are changing
-
-// CalculateIntensity calculates the measured intensity from reflectivity
-//
-// parameters[0]: background
-//
-// parameters[1]: scaling
+// CalculateIntensity calculates intensity from the slds
 func CalculateIntensity(qzaxis []float64, deltaz float64, sld []float64, opts *IntensityOptions) []float64 {
 	// Get reflectivity values
 	refl := CalculateReflectivity(qzaxis, deltaz, sld)
