@@ -3,16 +3,11 @@ package gui
 import (
 	"errors"
 	"fmt"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
-	"github.com/davecgh/go-spew/spew"
-	minuit "github.com/empack/minuit2go/pkg"
-  
 	"io"
 	"log"
 	"math"
@@ -26,8 +21,6 @@ import (
 	"physicsGUI/pkg/minimizer"
 	"physicsGUI/pkg/physics"
 	"physicsGUI/pkg/trigger"
-	"slices"
-	"time"
 )
 
 var (
@@ -98,150 +91,52 @@ func addDataset(reader io.ReadCloser, uri fyne.URI, err error) function.Points {
 	return points
 }
 
-
-func minimizeRefreshWorker(problem *minimizer.AsyncMinimiserProblem[float64], close <-chan struct{}, clock <-chan time.Time) {
-	for {
-		select {
-		case <-close:
-			return
-		case <-clock:
-			parameters, err := problem.GetCurrentParameters()
-			if err != nil {
-				continue
-		  }
-    }
-  }
-}
 func createFileMenu() *fyne.Menu {
 	mnLoad := fyne.NewMenuItem("Load", loadFileChooser)
 	mnSave := fyne.NewMenuItem("Save", saveFileChooser)
 	return fyne.NewMenu("File", mnLoad, mnSave)
 }
 
-func createMinimizeButton() *widget.Button {
-	return widget.NewButton("Minimize", func() {
-		// get parameters + experimental data and put them into minimize()
-		edens := param.GetFloatGroup("eden")
+func (this *MinimizerControlPanel) minimizerProblemSetup() error {
+	// get parameters + experimental data and put them into minimize()
+	edens := param.GetFloatGroup("eden")
 
-		e1 := edens.GetParam("Eden a")
-		e2 := edens.GetParam("Eden 1")
-		e3 := edens.GetParam("Eden 2")
-		e4 := edens.GetParam("Eden b")
+	e1 := edens.GetParam("Eden a")
+	e2 := edens.GetParam("Eden 1")
+	e3 := edens.GetParam("Eden 2")
+	e4 := edens.GetParam("Eden b")
 
-		// get roughness parameters
-		roughness := param.GetFloatGroup("rough")
+	// get roughness parameters
+	roughness := param.GetFloatGroup("rough")
 
-		r1 := roughness.GetParam("Roughness a/1")
-		r2 := roughness.GetParam("Roughness 1/2")
-		r3 := roughness.GetParam("Roughness 2/b")
+	r1 := roughness.GetParam("Roughness a/1")
+	r2 := roughness.GetParam("Roughness 1/2")
+	r3 := roughness.GetParam("Roughness 2/b")
 
-		// get thickness parameters
-		thickness := param.GetFloatGroup("thick")
+	// get thickness parameters
+	thickness := param.GetFloatGroup("thick")
 
-		t1 := thickness.GetParam("Thickness 1")
-		t2 := thickness.GetParam("Thickness 2")
+	t1 := thickness.GetParam("Thickness 1")
+	t2 := thickness.GetParam("Thickness 2")
 
-		// get general parameters
-		general := param.GetFloatGroup("general")
+	// get general parameters
+	general := param.GetFloatGroup("general")
 
-		delta := general.GetParam("deltaq")
-		background := general.GetParam("background")
-		scaling := general.GetParam("scaling")
+	delta := general.GetParam("deltaq")
+	background := general.GetParam("background")
+	scaling := general.GetParam("scaling")
 
-		data := graphMap["intensity"].GetDataTracks()
-		if len(data) != 1 {
-			dialog.ShowError(errors.New("exactly 1 dataset in intensity graph needed"), MainWindow)
-			return
-		}
-
-		if err := minimize(data[0], e1, e2, e3, e4, t1, t2, r1, r2, r3, delta, background, scaling); err != nil {
-			fmt.Println("Error while minimizing:", err)
-			dialog.ShowError(err, MainWindow)
-			return
-		}
-
-		dialog.ShowInformation("Minimization Completed", fmt.Sprintf("Minimization TODO"), MainWindow)
-		//dialog.ShowInformation("Minimization Completed", fmt.Sprintf("Minimization Stats:\n Error function calls: %f \n Remaining error: %f", minimum.Nfcn(), minimum.Fval()), MainWindow)
-	})
-}
-
-func minimize(data *function.Function, parameters ...*param.Parameter[float64]) error {
-	mnParams := minuit.NewEmptyMnUserParameters()
-
-	var freeToChangeCnt int = 0
-
-	for i, p := range parameters {
-		if p == nil {
-			return fmt.Errorf("minimizer: parameter %d is nil", i)
-		}
-
-		par, err := p.Get()
-		if err != nil {
-			return err
-		}
-
-		id := fmt.Sprintf("p%d", i)
-
-		// if not checked, add as constant parameter
-		if !p.IsChecked() {
-			mnParams.Add(id, par)
-			continue
-		}
-
-		min := p.GetRelative("min")
-		max := p.GetRelative("max")
-
-		// if min or max is nil, add as free parameter
-		if min == nil || max == nil {
-			mnParams.AddFree(id, par, 0.1)
-			freeToChangeCnt++
-			continue
-		}
-
-		// if min and max are set, add as limited parameter
-		minV, err := min.Get()
-		if err != nil {
-			return err
-		}
-
-		maxV, err := max.Get()
-		if err != nil {
-			return err
-		}
-
-		mnParams.AddLimited(id, par, 0.1, minV, maxV)
-		freeToChangeCnt++
+	data := graphMap["intensity"].GetDataTracks()
+	if len(data) != 1 {
+		return errors.New("exactly 1 dataset in intensity graph needed")
 	}
 
-	if freeToChangeCnt == 0 {
-		return fmt.Errorf("minimizer: Parameter to change selected")
-	}
-
-	// create minuit setup
-	mFunc := minimizer.NewMinuitFcn(data, penaltyFunction, parameters)
-
-	// create migrad
-	migrad := minuit.NewMnMigradWithParameters(mFunc, mnParams)
-
-	min, err := migrad.Minimize()
-	if err != nil {
+	if err := this.minimize(data[0], e1, e2, e3, e4, t1, t2, r1, r2, r3, delta, background, scaling); err != nil {
+		fmt.Println("Error while minimizing:", err)
 		return err
 	}
 
-	if !min.IsValid() {
-		migrad2 := minuit.NewMnMigradWithParameterStateStrategy(mFunc, min.UserState(), minuit.NewMnStrategyWithStra(minuit.PreciseStrategy))
-		min, err = migrad2.Minimize()
-		if err != nil {
-			return err
-		}
-	}
-
-	fmt.Println("result")
-	spew.Dump(min.UserParameters().Params())
-	fmt.Printf("Fval: %f\n", min.Fval())
-	fmt.Printf("FCNCall: %d\n", min.Nfcn())
-
-	return mFunc.UpdateParameters(min.UserParameters().Params())
+	return nil
 }
 
 func penaltyFunction(fcn *minimizer.MinuitFunction, params []float64) float64 {
@@ -379,11 +274,7 @@ func mainWindow() {
 	content := container.NewBorder(
 		container.NewVBox(
 			container.NewHBox(
-				createMinimizerButton(),
-				createPauseButton(),
-				createResumeButton(),
-				layout.NewSpacer(),
-				createMinimizerStateLabel(),
+				NewMinimizerControlPanel().Widget(),
 			),
 			helper.CreateSeparator(),
 		), // top
