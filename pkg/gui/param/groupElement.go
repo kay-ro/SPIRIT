@@ -2,6 +2,8 @@ package param
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 )
 
 type GroupElements[T any] struct {
@@ -15,6 +17,10 @@ func NewGroupElements[T any]() *GroupElements[T] {
 		params: make([]*Parameter[T], 0),
 		ref:    make(map[string]int),
 	}
+}
+
+func (g *GroupElements[T]) GetKeys() []string {
+	return slices.Collect(maps.Keys(g.ref))
 }
 
 // checks if parameter is in the group
@@ -79,7 +85,7 @@ func (g GroupElements[T]) GetValues() ([]T, error) {
 }
 
 // returns all minima in the group
-func (g GroupElements[T]) GetMinima() ([]T, error) {
+/* func (g GroupElements[T]) GetMinima() ([]T, error) {
 	values := make([]T, len(g.params))
 
 	for i, param := range g.params {
@@ -94,20 +100,21 @@ func (g GroupElements[T]) GetMinima() ([]T, error) {
 	}
 
 	return values, nil
-}
+} */
 
 // returns all maxima in the group
-func (g GroupElements[T]) GetMaxima() ([]T, error) {
+/* func (g GroupElements[T]) GetMaxima() ([]T, error) {
 	values := make([]T, len(g.params))
 
 	for i, param := range g.params {
-		v, err := param.GetRelatives()[1].Get()
-		if err != nil {
-			return nil, fmt.Errorf("error getting value for parameter %d: %w", i, err)
+		if len(param.GetRelatives()) > 1 {
+			v, err := param.GetRelatives()[1].Get()
+			if err != nil {
+				return nil, fmt.Errorf("error getting value for parameter %d: %w", i, err)
+			}
+			values[i] = v
 		}
-
-		values[i] = v
 	}
 
 	return values, nil
-}
+} */
