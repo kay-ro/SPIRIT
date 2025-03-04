@@ -18,9 +18,6 @@ import (
 )
 
 type MinimizerState int
-type MinimizerWorkerStatus int
-type MinimizerWorkerCommand int
-type MinimizerCommandStatus int
 
 const (
 	MinimizerNotStarted = MinimizerState(0x1 << iota)

@@ -74,7 +74,7 @@ func loadFileChooser() {
 						minP := fParam.GetRelative("min")
 						maxP := fParam.GetRelative("max")
 						if minP == nil || maxP == nil {
-							dialog.ShowInformation("Loading Error", fmt.Sprintf("Mismatching Limitations: Data to load contains limitations for Parameter %s/%s, but current program does not. Limitations will be discarded"), MainWindow)
+							dialog.ShowInformation("Loading Error", fmt.Sprintf("Mismatching Limitations: Data to load contains limitations for Parameter %s, but current program does not. Limitations will be discarded", value.Name), MainWindow)
 						}
 						err = minP.Set(minV)
 						if err != nil {
