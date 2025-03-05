@@ -300,7 +300,7 @@ func (this *MinimizerControlPanel) Failed(err error) {
 	this.lblStatus.SetText("Failed")
 }
 
-func (this *MinimizerControlPanel) minimize(data *function.Function, parameters ...*param.Parameter[float64]) error {
+func (this *MinimizerControlPanel) minimize(experimentalData []*function.Function, parameters ...*param.Parameter[float64]) error {
 	mnParams := minuit.NewEmptyMnUserParameters()
 
 	var freeToChangeCnt int = 0
@@ -353,7 +353,7 @@ func (this *MinimizerControlPanel) minimize(data *function.Function, parameters 
 	}
 
 	// create minuit setup
-	mFunc := minimizer.NewMinuitFcn(data, penaltyFunction, parameters)
+	mFunc := minimizer.NewMinuitFcn(experimentalData, penaltyFunction, parameters)
 
 	this.sharedStorage.rw.Lock()
 	this.sharedStorage.mFunc = mFunc

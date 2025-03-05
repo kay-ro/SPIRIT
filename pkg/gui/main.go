@@ -22,7 +22,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
 	"github.com/davecgh/go-spew/spew"
 	minuit "github.com/empack/minuit2go/pkg"
 )
@@ -212,7 +211,7 @@ func mainWindow() {
 	content := container.NewBorder(
 		container.NewVBox(
 			container.NewHBox(
-				createMinimizeButton(),
+				NewMinimizerControlPanel().Widget(),
 			),
 			helper.CreateSeparator(),
 		), // top
@@ -242,50 +241,44 @@ func mainWindow() {
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! adapt everything from here !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-// creates the button where the minimization is started
 // this is also the place where you need to pass:
 // all current parameters and all experimental data tracks
-func createMinimizeButton() *widget.Button {
-	return widget.NewButton("Minimize", func() {
-		// get parameters + experimental data and put them into minimize()
-		edens := param.GetFloatGroup("eden")
+func (this *MinimizerControlPanel) minimizerProblemSetup() error {
+	// get parameters + experimental data and put them into minimize()
+	edens := param.GetFloatGroup("eden")
 
-		e1 := edens.GetParam("Eden a")
-		e2 := edens.GetParam("Eden 1")
-		e3 := edens.GetParam("Eden 2")
-		e4 := edens.GetParam("Eden b")
+	e1 := edens.GetParam("Eden a")
+	e2 := edens.GetParam("Eden 1")
+	e3 := edens.GetParam("Eden 2")
+	e4 := edens.GetParam("Eden b")
 
-		// get roughness parameters
-		roughness := param.GetFloatGroup("rough")
+	// get roughness parameters
+	roughness := param.GetFloatGroup("rough")
 
-		r1 := roughness.GetParam("Roughness a/1")
-		r2 := roughness.GetParam("Roughness 1/2")
-		r3 := roughness.GetParam("Roughness 2/b")
+	r1 := roughness.GetParam("Roughness a/1")
+	r2 := roughness.GetParam("Roughness 1/2")
+	r3 := roughness.GetParam("Roughness 2/b")
 
-		// get thickness parameters
-		thickness := param.GetFloatGroup("thick")
+	// get thickness parameters
+	thickness := param.GetFloatGroup("thick")
 
-		t1 := thickness.GetParam("Thickness 1")
-		t2 := thickness.GetParam("Thickness 2")
+	t1 := thickness.GetParam("Thickness 1")
+	t2 := thickness.GetParam("Thickness 2")
 
-		// get general parameters
-		general := param.GetFloatGroup("general")
+	// get general parameters
+	general := param.GetFloatGroup("general")
 
-		delta := general.GetParam("deltaq")
-		background := general.GetParam("background")
-		scaling := general.GetParam("scaling")
+	delta := general.GetParam("deltaq")
+	background := general.GetParam("background")
+	scaling := general.GetParam("scaling")
 
-		experimentalData := graphMap["intensity"].GetDataTracks()
+	experimentalData := graphMap["intensity"].GetDataTracks()
 
-		if err := minimize(experimentalData, e1, e2, e3, e4, t1, t2, r1, r2, r3, delta, background, scaling); err != nil {
-			fmt.Println("Error while minimizing:", err)
-			dialog.ShowError(err, MainWindow)
-			return
-		}
-
-		dialog.ShowInformation("Minimization Completed", "successfully exited", MainWindow)
-		//dialog.ShowInformation("Minimization Completed", fmt.Sprintf("Minimization Stats:\n Error function calls: %f \n Remaining error: %f", minimum.Nfcn(), minimum.Fval()), MainWindow)
-	})
+	if err := this.minimize(experimentalData, e1, e2, e3, e4, t1, t2, r1, r2, r3, delta, background, scaling); err != nil {
+		fmt.Println("Error while minimizing:", err)
+		return err
+	}
+	return nil
 }
 
 // the penalty function defines the error we minimize with minuit
@@ -414,10 +407,9 @@ func registerParams() *fyne.Container {
 	)
 
 	//makes a scrollbar for the parameters
-	con2 := container.NewScroll((containers))
+	con2 := container.NewScroll(containers)
 	con2.SetMinSize(fyne.NewSize(300, 300))
-	containers = container.NewVBox(con2)
-	return containers
+	return container.NewStack(con2)
 }
 
 // RecalculateData recalculates the data for the current graphs
