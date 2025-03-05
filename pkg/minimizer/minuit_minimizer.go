@@ -13,18 +13,18 @@ type MinuitFunction struct {
 	// function for calculating the penalty
 	PenaltyFunction PentaltyFunction
 
-	// datatrack of the experimantel data
-	Datatrack *function.Function
+	// datatracks of the experimantel data
+	ExperimentalData []*function.Function
 
 	// parameter values
 	Parameters param.Parameters[float64]
 }
 
-func NewMinuitFcn(dtrack *function.Function, pen PentaltyFunction, params param.Parameters[float64]) *MinuitFunction {
+func NewMinuitFcn(dtrack []*function.Function, pen PentaltyFunction, params param.Parameters[float64]) *MinuitFunction {
 	return &MinuitFunction{
-		PenaltyFunction: pen,
-		Datatrack:       dtrack,
-		Parameters:      params,
+		PenaltyFunction:  pen,
+		ExperimentalData: dtrack,
+		Parameters:       params,
 	}
 }
 

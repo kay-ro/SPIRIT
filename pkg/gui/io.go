@@ -3,13 +3,14 @@ package gui
 import (
 	"errors"
 	"fmt"
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/dialog"
 	"os"
 	"physicsGUI/pkg/gui/param"
 	"physicsGUI/pkg/io"
 	"reflect"
 	"strings"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/dialog"
 )
 
 func loadFileChooser() {
@@ -73,8 +74,9 @@ func loadFileChooser() {
 						}
 						minP := fParam.GetRelative("min")
 						maxP := fParam.GetRelative("max")
+						print(fParam.Widget().Text)
 						if minP == nil || maxP == nil {
-							dialog.ShowInformation("Loading Error", fmt.Sprintf("Mismatching Limitations: Data to load contains limitations for Parameter %s, but current program does not. Limitations will be discarded", value.Name), MainWindow)
+							dialog.ShowInformation("Loading Error", fmt.Sprintf("Mismatching Limitations: Data to load contains limitations for Parameter %s, but current program does not. Limitations will be discarded", fParam.Widget().Text), MainWindow)
 						}
 						err = minP.Set(minV)
 						if err != nil {
