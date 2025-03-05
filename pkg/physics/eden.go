@@ -6,16 +6,21 @@ import (
 	"physicsGUI/pkg/function"
 )
 
-// getEden returns a DataPoints based on the old implementation of the old getEden function
-//
+//You need some different edensity calculation?
+// => copy this function until you have the number of variants you need
+// => give each function a unique name (GetEdensities1/GetXYEdensities)
+// => insert the kind of parameters the calculation needs to the first bracket GetEdensities(param_1 type_1, ..., param_n type_n)
+// => insert your calculation
+// => continue by adapting RecalculateData and penaltyFunction in PortGUIPhysics\pkg\gui\main.go
+
+// GetEdensities returns DataPoints based on the old implementation of the old getEden function
 // - eden is an array with all the eden values {eden_a,eden_1,eden_2,...,eden_n,eden_b} (edensity)
-//
 // - d array with the d values {d_1,d_2,...,d_n} (Thickness)
-//
 // - sigma array with sigma values {sigma_a1,sigma_12,sigma_23,...,sigma_(n-1)(n),sigma_nb} (Roughness)
 func GetEdensities(eden []float64, d []float64, sigma []float64) (function.Points, error) {
 	step_n := len(d) + 1
 
+	//If you use arrays/slices it helps to check if they have the correct length. Not necessary.
 	//throw error if the param number does not match the scheme
 	if len(eden) != step_n+1 {
 		return nil, fmt.Errorf("Missmatch in parameter dimensionality edensities %d/thickness %d", len(eden), len(d))
@@ -54,7 +59,6 @@ func GetEdensities(eden []float64, d []float64, sigma []float64) (function.Point
 	return edensities, nil
 }
 
-// TODO: needs a comment
 func GetZAxis(d []float64, zNumber int) []float64 {
 	z0 := -20.0
 	var z1 = 30.0
@@ -72,12 +76,4 @@ func GetZAxis(d []float64, zNumber int) []float64 {
 	}
 
 	return zAxis
-}
-
-func GetDefaultQZAxis(qzNumber int) []float64 {
-	qzAxis := make([]float64, qzNumber)
-	for i := 0; i < qzNumber; i++ {
-		qzAxis[i] = -0.02 + float64(i)*0.001
-	}
-	return qzAxis
 }

@@ -5,6 +5,8 @@ import (
 	"math/cmplx"
 	"physicsGUI/pkg/function"
 	"physicsGUI/pkg/gui/helper"
+	"slices"
+	"sort"
 )
 
 type IntensityOptions struct {
@@ -34,7 +36,7 @@ func CalculateIntensityPoints(edenPoints function.Points, delta float64, opts *I
 	intensity := CalculateIntensity(qzAxis, deltaz, sld, opts)
 
 	// creates list with intensity points based on edenPoints x and error and calculated intensity as y
-	intensityPoints := make(function.Points, QZNUMBER)
+	intensityPoints := make(function.Points, len(qzAxis))
 	for i := range intensity {
 		intensityPoints[i] = &function.Point{
 			X:     qzAxis[i],
@@ -131,4 +133,29 @@ func CalculateReflectivity(qzaxis []float64, deltaz float64, sld []float64) []fl
 	}
 
 	return refl
+}
+
+func GetDefaultQZAxis(qzNumber int) []float64 {
+	qzAxis := make([]float64, qzNumber)
+	for i := 0; i < qzNumber; i++ {
+		qzAxis[i] = -0.02 + float64(i)*0.001
+	}
+	return qzAxis
+}
+
+// could be made more efficient
+// use the combined experimental axis as current qz axis
+func AlterQZAxis(dataSets function.Functions, graphID string) {
+	if graphID == "intensity" {
+		var qzValues []float64
+		for _, dataSet := range dataSets {
+			for _, point := range dataSet.GetData() {
+				qzValues = append(qzValues, point.X)
+			}
+		}
+		sort.Float64s(qzValues)
+		qzValues = slices.Compact(qzValues)
+		qzAxis = qzValues
+	}
+
 }

@@ -7,4 +7,5 @@ const (
 	QZNUMBER = 500
 )
 
+// need more than one? => Copy and rename it. Be careful when to use which axis.
 var qzAxis = GetDefaultQZAxis(QZNUMBER)
