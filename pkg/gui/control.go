@@ -281,7 +281,7 @@ func (this *MinimizerControlPanel) Reset() {
 
 func (this *MinimizerControlPanel) Completed() {
 	this.Reset()
-	dialog.ShowInformation("Minimization Completed", "", MainWindow)
+	dialog.ShowInformation("Minimizer Completed", "Minimizer finished. No further improvements found.", MainWindow)
 	this.state = MinimizerFinished
 	// this blocks until current cycle is completed
 	this.sharedStorage.rw.Lock()
@@ -349,7 +349,7 @@ func (this *MinimizerControlPanel) minimize(experimentalData []*function.Functio
 	}
 
 	if freeToChangeCnt == 0 {
-		return fmt.Errorf("minimizer: Parameter to change selected")
+		return fmt.Errorf("minimizer: No parameter(s) selected to be minimized")
 	}
 
 	// create minuit setup
