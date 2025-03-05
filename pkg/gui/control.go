@@ -55,11 +55,13 @@ func (this *MinimizerControlPanel) MinuitUpdateHandler() {
 				migrad = minuit.NewMnMigradWithParameters(this.sharedStorage.mFunc, this.sharedStorage.mnParams)
 			}
 
-			res, err := migrad.MinimizeWithMaxfcn(20)
+			res, err := migrad.MinimizeWithMaxfcn(50)
 
 			if err != nil {
 				this.SetStats(err, 0, 0)
 				this.sharedStorage.err = err
+				migrad = nil
+				migrad2 = nil
 				this.sharedStorage.rw.Unlock()
 				this.Failed(err)
 				continue
@@ -69,10 +71,12 @@ func (this *MinimizerControlPanel) MinuitUpdateHandler() {
 				if migrad2 == nil {
 					migrad2 = minuit.NewMnMigradWithParameterStateStrategy(this.sharedStorage.mFunc, res.UserState(), minuit.NewMnStrategyWithStra(minuit.PreciseStrategy))
 				}
-				res, err = migrad2.MinimizeWithMaxfcn(20)
+				res, err = migrad2.MinimizeWithMaxfcn(50)
 				if err != nil {
 					this.SetStats(err, 0, 0)
 					this.sharedStorage.err = err
+					migrad = nil
+					migrad2 = nil
 					this.sharedStorage.rw.Unlock()
 					this.Failed(err)
 					continue
@@ -246,6 +250,7 @@ func (this *MinimizerControlPanel) Stop() {
 	this.btnStop.Hide()
 
 	this.Reset()
+	this.SetStats(nil, 0, 0)
 
 	this.sharedStorage.rw.Lock()
 	_ = this.sharedStorage.mFunc.UpdateParameters(this.oldMinimizerData)
@@ -269,7 +274,6 @@ func (this *MinimizerControlPanel) Reset() {
 	this.sharedStorage.rw.Lock()
 	this.sharedStorage.rw.Unlock()
 	this.lblStatus.SetText("Not Initialized")
-	this.SetStats(nil, 0, 0)
 	this.btnStart.Enable()
 	this.btnStart.Show()
 
@@ -277,7 +281,7 @@ func (this *MinimizerControlPanel) Reset() {
 
 func (this *MinimizerControlPanel) Completed() {
 	this.Reset()
-	dialog.ShowInformation("Minimization Completed", "//TODO insert stats here", MainWindow)
+	dialog.ShowInformation("Minimization Completed", "", MainWindow)
 	this.state = MinimizerFinished
 	// this blocks until current cycle is completed
 	this.sharedStorage.rw.Lock()
