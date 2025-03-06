@@ -1,6 +1,7 @@
 package physics
 
 import (
+	"fmt"
 	"math"
 	"math/cmplx"
 	"physicsGUI/pkg/function"
@@ -16,7 +17,7 @@ type IntensityOptions struct {
 
 func CalculateIntensityPoints(edenPoints function.Points, delta float64, opts *IntensityOptions) function.Points {
 	// transform points into sld floats
-	sld := make([]float64, len(edenPoints))
+	sld := make([]float64, ZNUMBER)
 	for i, e := range edenPoints {
 		sld[i] = e.Y * ELECTRON_RADIUS
 	}
@@ -28,7 +29,7 @@ func CalculateIntensityPoints(edenPoints function.Points, delta float64, opts *I
 	}
 
 	// calculate intensity
-	modifiedQzAxis := make([]float64, len(qzAxis))
+	modifiedQzAxis := make([]float64, qzNumber)
 	copy(modifiedQzAxis, qzAxis)
 
 	helper.Map(modifiedQzAxis, func(xPoint float64) float64 { return xPoint + delta })
@@ -36,7 +37,7 @@ func CalculateIntensityPoints(edenPoints function.Points, delta float64, opts *I
 	intensity := CalculateIntensity(qzAxis, deltaz, sld, opts)
 
 	// creates list with intensity points based on edenPoints x and error and calculated intensity as y
-	intensityPoints := make(function.Points, len(qzAxis))
+	intensityPoints := make(function.Points, qzNumber)
 	for i := range intensity {
 		intensityPoints[i] = &function.Point{
 			X:     qzAxis[i],
@@ -156,6 +157,24 @@ func AlterQZAxis(dataSets function.Functions, graphID string) {
 		sort.Float64s(qzValues)
 		qzValues = slices.Compact(qzValues)
 		qzAxis = qzValues
+		qzNumber = len(qzAxis)
 	}
 
+}
+
+func Sim2SigRMS(dataSets []function.Points, intensity function.Points) (float64, error) {
+	if len(intensity) != qzNumber {
+		return math.MaxFloat64, fmt.Errorf("rms calculation: intensity slice has the wrong length: %d vs %d", len(intensity), qzNumber)
+	}
+	var diff float64
+	for _, dataSet := range dataSets {
+		for _, point := range dataSet {
+			y_intensity, err := function.GetY(intensity, point.X)
+			if err != nil {
+				return math.MaxFloat64, fmt.Errorf("rms calculation: there is no intensity for: %f", point.X)
+			}
+			diff += math.Pow(point.X, 2) * math.Pow(((y_intensity-point.Y)/point.Error), 2)
+		}
+	}
+	return diff, nil
 }
