@@ -44,7 +44,7 @@ var (
 	gridMinorColor = &color.NRGBA{R: 128, G: 128, B: 128, A: 48}
 
 	// size of the points
-	pointRadius = float32(0.5)
+	pointRadius = float32(1.5)
 )
 
 // GraphConfig configures the basic struct for a graph

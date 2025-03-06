@@ -17,7 +17,7 @@ type IntensityOptions struct {
 
 func CalculateIntensityPoints(edenPoints function.Points, delta float64, opts *IntensityOptions) function.Points {
 	// transform points into sld floats
-	sld := make([]float64, ZNUMBER)
+	sld := make([]float64, len(edenPoints))
 	for i, e := range edenPoints {
 		sld[i] = e.Y * ELECTRON_RADIUS
 	}
@@ -29,7 +29,7 @@ func CalculateIntensityPoints(edenPoints function.Points, delta float64, opts *I
 	}
 
 	// calculate intensity
-	modifiedQzAxis := make([]float64, qzNumber)
+	modifiedQzAxis := make([]float64, len(qzAxis))
 	copy(modifiedQzAxis, qzAxis)
 
 	helper.Map(modifiedQzAxis, func(xPoint float64) float64 { return xPoint + delta })
@@ -49,7 +49,13 @@ func CalculateIntensityPoints(edenPoints function.Points, delta float64, opts *I
 	return intensityPoints
 }
 
-// CalculateIntensity calculates intensity from the slds
+// TODO: add caching for reflectivity values if only opts are changing
+
+// CalculateIntensity calculates the measured intensity from reflectivity
+//
+// parameters[0]: background
+//
+// parameters[1]: scaling
 func CalculateIntensity(qzaxis []float64, deltaz float64, sld []float64, opts *IntensityOptions) []float64 {
 	// Get reflectivity values
 	refl := CalculateReflectivity(qzaxis, deltaz, sld)
@@ -134,14 +140,6 @@ func CalculateReflectivity(qzaxis []float64, deltaz float64, sld []float64) []fl
 	}
 
 	return refl
-}
-
-func GetDefaultQZAxis(qzNumber int) []float64 {
-	qzAxis := make([]float64, qzNumber)
-	for i := 0; i < qzNumber; i++ {
-		qzAxis[i] = -0.02 + float64(i)*0.001
-	}
-	return qzAxis
 }
 
 // could be made more efficient
