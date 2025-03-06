@@ -6,6 +6,18 @@ import (
 
 type InterpolationFunction func(points Points, x float64) (float64, error)
 
+func simpleEvaluation(points Points, x float64) (float64, error) {
+	for _, v := range points {
+		if v.X == x {
+			return v.Y, nil
+		}
+		if v.X > x {
+			return -1, fmt.Errorf("evaluation error: function not defined at %f", x)
+		}
+	}
+	return -1, fmt.Errorf("evaluation error: function not defined at %f", x)
+}
+
 func linearInterpolation(points Points, x float64) (float64, error) {
 	var lower = 0
 	var upper = 1

@@ -2,6 +2,7 @@ package function
 
 import (
 	"cmp"
+	"fmt"
 	"math"
 	"slices"
 )
@@ -24,6 +25,15 @@ func (p Points) Sort() {
 
 		return cmp.Compare(a.X, b.X)
 	})
+}
+
+func GetY(points Points, x float64) (float64, error) {
+	for _, v := range points {
+		if v.X == x {
+			return v.Y, nil
+		}
+	}
+	return -1, fmt.Errorf("evaluation error: x not found %f", x)
 }
 
 // returns min and max X or Y value of all points

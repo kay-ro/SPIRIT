@@ -24,10 +24,20 @@ type Scope struct {
 }
 
 // returns a new function with the given data and interpolation mode
-func NewFunction(data Points, interpolationMode InterpolationMode) *Function {
+func NewInterpolatedFunction(data Points, interpolationMode InterpolationMode) *Function {
 	// create function
 	f := NewEmptyFunction(interpolationMode)
 
+	// set data
+	f.SetData(data)
+
+	return f
+}
+
+// returns a new function with the given data and interpolation mode
+func NewFunction(data Points) *Function {
+	// create function
+	f := NewEmptyFunction(INTERPOLATION_NONE)
 	// set data
 	f.SetData(data)
 
@@ -94,6 +104,7 @@ func (f *Function) Sanitize() {
 func (f *Function) SetInterpolation(interpolationMode InterpolationMode) {
 	switch interpolationMode {
 	case INTERPOLATION_NONE:
+		f.eval = simpleEvaluation
 		break
 	case INTERPOLATION_LINEAR:
 		f.eval = linearInterpolation
