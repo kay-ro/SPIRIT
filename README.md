@@ -53,15 +53,17 @@ go build -o spirit
 The SPIRIT interface consists of several main components:
 
 1. **Parameter Controls**: Input fields for model parameters, organized by category
+   ![extension tab](.github/Gui_ParameterControls.png)
 2. **Data Visualization**: Graphs showing the experimental data and model fits
+   ![extension tab](.github/Gui_DataVisualization.png)
 3. **Minimization Controls**: Options for fitting the model to experimental data
+   ![extension tab](.github/Gui_MinimizerControll.png)
 
 ### Loading Data
 
-Experimental data can be loaded by:
+1. Experimental data can be loaded by Dragging and dropping data files onto the Graph area
+   ![extension tab](.github/Gui_LoadDataDrop.png)
 
-1. Dragging and dropping data files onto the Intensity Graph area
-2. Using File > Open to select data files
 
 Supported data format is a space/tab-delimited text file with three columns:
 - Q-value (momentum transfer)
@@ -92,14 +94,20 @@ Each parameter can be:
 4. Click the "Start" button to start the fitting process
 5. Review the fit quality on the graphs
 
-While `FVal` displays the error value and `Calls` gives the number of minimizer calls since the last update.
+While `FVal` displays the error value and `Calls` gives the number of penalty function calls since the last update.
 
 ### Saving and Loading Parameters
 
 You can save your current parameter settings and load them later:
 
 - **Save**: File > Save
+  - For JSON-Format use ".json" file extension
+  - For XML-Format use ".xml" file extension 
+  - All not supported extensions will be saved in the GOB-Format
 - **Load**: File > Load
+  - When loading JSON-Format make sure the files uses ".json" file extension
+  - When loading XML-Format make sure the files uses ".xml" file extension
+  - In All other formats, it is attempted to load them in GOB-Format
 
 ## Customization Guide
 
@@ -261,7 +269,7 @@ When parameters change, the following happens:
 When fitting is requested:
 
 1. Parameters marked for fitting are collected
-2. A Minuit2 function is created that calculates the penalty
+2. A Minuit function is created that calculates the penalty
 3. The minimizer iteratively adjusts parameters to reduce the penalty
 4. Updated parameters are displayed in the GUI
 5. Graphs are refreshed to show the new fit
