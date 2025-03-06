@@ -23,10 +23,10 @@ func GetEdensities(eden []float64, d []float64, sigma []float64) (function.Point
 	//If you use arrays/slices it helps to check if they have the correct length. Not necessary.
 	//throw error if the param number does not match the scheme
 	if len(eden) != step_n+1 {
-		return nil, fmt.Errorf("Missmatch in parameter dimensionality edensities %d/thickness %d", len(eden), len(d))
+		return nil, fmt.Errorf("missmatch in parameter dimensionality edensities %d/thickness %d", len(eden), len(d))
 	}
 	if len(sigma) != step_n {
-		return nil, fmt.Errorf("Missmatch in parameter dimensionality roughness %d/thickness %d", len(sigma), len(d))
+		return nil, fmt.Errorf("missmatch in parameter dimensionality roughness %d/thickness %d", len(sigma), len(d))
 	}
 
 	//calculate distances

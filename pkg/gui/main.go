@@ -321,8 +321,12 @@ func penaltyFunction(fcn *minimizer.MinuitFunction, params []float64) float64 {
 		Background: backgroundErr,
 		Scaling:    scalingErr,
 	})
+	dataPoints := make([]function.Points, len(fcn.ExperimentalData))
+	for i, expData := range fcn.ExperimentalData {
+		dataPoints[i] = expData.GetData()
+	}
 
-	//real penalty calculation
+	/* //real penalty calculation
 	diff := 0.0
 	for _, expData := range fcn.ExperimentalData {
 		data := expData.GetData()
@@ -334,6 +338,11 @@ func penaltyFunction(fcn *minimizer.MinuitFunction, params []float64) float64 {
 			//metric, maybe you like to exchange it to other ones
 			diff += math.Pow((data[i].Y-y_i)*math.Pow(data[i].X*100, 4), 2)
 		}
+	} */
+
+	diff, err := physics.Sim2SigRMS(dataPoints, intensityPoints)
+	if err != nil {
+		dialog.ShowError(err, MainWindow)
 	}
 
 	return diff
