@@ -64,6 +64,7 @@ func getProgramParameterKeys() []string {
 	return keys
 }
 func getProgramPlotKeys() []string {
+
 	panic("TODO") //TODO
 }
 
@@ -80,9 +81,15 @@ func LoadConfig(config *io.ConfigInformation, forceLoad bool) error {
 	}
 
 	// check plot version indicator skipped in force Load
-	//if !forceLoad && !slices.Equal(makeVersionCheckSum(getProgramPlotKeys()), config.PlotVersionIndicator) {
-	//	return differentPlotVersionError
-	//}
+	if !forceLoad && !slices.Equal(makeVersionCheckSum(getProgramPlotKeys()), config.PlotVersionIndicator) {
+		return differentPlotVersionError
+	}
+
+	// load Plot information
+	err = loadPlotInformation(config.Plot)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -153,6 +160,11 @@ func loadParameterInformation(paramInfo []io.ParameterInformation) error {
 	return nil
 }
 
+func loadPlotInformation(paramInfo []io.PlotInformation) error {
+	//TODO
+	return nil
+}
+
 func CreateConfig() (*io.ConfigInformation, error) {
 
 	// create ParameterInformation
@@ -162,9 +174,14 @@ func CreateConfig() (*io.ConfigInformation, error) {
 	}
 
 	// create PlotInformation
-	//TODO
+	plot, err := createPlotInformation()
+	if err != nil {
+		return nil, err
+	}
 
 	return &io.ConfigInformation{
+		PlotVersionIndicator:      makeVersionCheckSum(getProgramPlotKeys()),
+		Plot:                      plot,
 		ParameterVersionIndicator: makeVersionCheckSum(getProgramParameterKeys()),
 		Parameter:                 parameters,
 	}, nil
@@ -288,4 +305,8 @@ func createParameterInformation() ([]io.ParameterInformation, error) {
 	}
 
 	return parameters, nil
+}
+
+func createPlotInformation() ([]io.PlotInformation, error) {
+	panic("") //TODO
 }

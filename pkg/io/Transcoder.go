@@ -8,7 +8,13 @@ import (
 )
 
 type ConfigInformation struct {
-	Parameter []ParameterInformation `json:"parameter" xml:"parameter"`
+	PlotVersionIndicator      []byte                 `json:"plot_version" xml:"plot_version"`
+	Plot                      []PlotInformation      `json:"plot" xml:"plot"`
+	ParameterVersionIndicator []byte                 `json:"parameter_version" xml:"parameter_version"`
+	Parameter                 []ParameterInformation `json:"parameter" xml:"parameter"`
+}
+type PlotInformation struct {
+	Name string `json:"name" xml:"name"`
 }
 
 type ParameterInformation struct {
