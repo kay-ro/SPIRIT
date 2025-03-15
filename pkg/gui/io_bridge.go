@@ -4,7 +4,8 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
-	"fyne.io/fyne/v2/dialog"
+	"maps"
+	"physicsGUI/pkg/function"
 	"physicsGUI/pkg/gui/param"
 	"physicsGUI/pkg/io"
 	"reflect"
@@ -63,9 +64,11 @@ func getProgramParameterKeys() []string {
 	}
 	return keys
 }
-func getProgramPlotKeys() []string {
 
-	panic("TODO") //TODO
+func getProgramPlotKeys() []string {
+	keys := slices.Collect(maps.Keys(graphMap))
+	sort.Strings(keys)
+	return keys
 }
 
 func LoadConfig(config *io.ConfigInformation, forceLoad bool) error {
@@ -98,7 +101,16 @@ func loadParameterInformation(paramInfo []io.ParameterInformation) error {
 	// load parameters
 	for _, value := range paramInfo {
 		if strings.EqualFold(reflect.TypeOf(float64(0)).String(), value.FieldType) {
-			fParam := param.GetFloatGroup(value.Group).GetParam(value.Name)
+			fpGroup := param.GetFloatGroup(value.Group)
+			if fpGroup == nil {
+				fmt.Printf("Could not load %s no such parameter group (float64) in program -> Skipped", value.Group)
+				continue
+			}
+			fParam := fpGroup.GetParam(value.Name)
+			if fParam == nil {
+				fmt.Printf("Could not load %s no such parameter(float64) in program -> Skipped", value.Group+"/"+value.Name)
+				continue
+			}
 			if val, err := param.StdFloatParser(value.FieldValue); err == nil {
 				err = fParam.Set(val)
 				if err != nil {
@@ -121,7 +133,8 @@ func loadParameterInformation(paramInfo []io.ParameterInformation) error {
 				maxP := fParam.GetRelative("max")
 				print(fParam.Widget().Text)
 				if minP == nil || maxP == nil {
-					dialog.ShowInformation("Loading Error", fmt.Sprintf("Mismatching Limitations: Data to load contains limitations for Parameter %s, but current program does not. Limitations will be discarded", fParam.Widget().Text), MainWindow)
+					fmt.Printf("Could not set min/max for parameter(float64) %s in program, no such fields -> Skipped", value.Name)
+					continue
 				} else {
 					err = minP.Set(minV)
 					if err != nil {
@@ -138,7 +151,12 @@ func loadParameterInformation(paramInfo []io.ParameterInformation) error {
 			if val, err := param.StdIntParser(value.FieldValue); err == nil {
 				err = param.SetInt(value.Group, value.Name, val)
 				if err != nil {
-					return err
+					if errors.Is(err, param.ErrParameterNotFound) {
+						fmt.Printf("Could not load %s no such parameter(int) in program -> Skipped", value.Group+"/"+value.Name)
+						continue
+					} else {
+						return err
+					}
 				}
 			} else {
 				return err
@@ -147,21 +165,37 @@ func loadParameterInformation(paramInfo []io.ParameterInformation) error {
 			if val, err := param.StdStringParser(value.FieldValue); err == nil {
 				err = param.SetString(value.Group, value.Name, val)
 				if err != nil {
-					return err
+					if errors.Is(err, param.ErrParameterNotFound) {
+						fmt.Printf("Could not load %s no such parameter(string) in program -> Skipped", value.Group+"/"+value.Name)
+						continue
+					} else {
+						return err
+					}
 				}
 			} else {
 				return err
 			}
 
 		} else {
-			return errors.New(fmt.Sprint(value.FieldType) + " is not supported type")
+			fmt.Printf("Type: %s is not supported -> Skipped", value.FieldType)
 		}
 	}
 	return nil
 }
 
 func loadPlotInformation(paramInfo []io.PlotInformation) error {
-	//TODO
+	for _, information := range paramInfo {
+		if _, ok := graphMap[information.Name]; !ok {
+			fmt.Printf("Could not load %s no such plot in program", information.Name)
+			continue
+		}
+		for i := 0; i < len(information.DataTracks); i++ {
+			fcn := function.NewFunction(information.DataTracks[i].Points)
+			scopeCopy := information.DataTracks[i].Scope
+			fcn.Scope = &scopeCopy
+			graphMap[information.Name].AddDataTrack(fcn)
+		}
+	}
 	return nil
 }
 
@@ -308,5 +342,26 @@ func createParameterInformation() ([]io.ParameterInformation, error) {
 }
 
 func createPlotInformation() ([]io.PlotInformation, error) {
-	panic("") //TODO
+	plotInfos := make([]io.PlotInformation, 0, len(graphMap))
+
+	for key, plot := range graphMap {
+		dataTracks := plot.GetDataTracks()
+		funcInfos := make([]io.FunctionInformation, 0, len(dataTracks))
+		for i := 0; i < len(dataTracks); i++ {
+			scopeCopy := *dataTracks[i].Scope // this should copy the struct
+
+			funcInfo := io.FunctionInformation{
+				Points: dataTracks[i].GetData(),
+				Scope:  scopeCopy,
+			}
+			funcInfos = append(funcInfos, funcInfo)
+		}
+		plotInfo := io.PlotInformation{
+			Name:       key,
+			DataTracks: funcInfos,
+		}
+		plotInfos = append(plotInfos, plotInfo)
+	}
+
+	return plotInfos, nil
 }

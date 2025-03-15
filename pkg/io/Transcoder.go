@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"encoding/xml"
+	"physicsGUI/pkg/function"
 )
 
 type ConfigInformation struct {
@@ -13,8 +14,14 @@ type ConfigInformation struct {
 	ParameterVersionIndicator []byte                 `json:"parameter_version" xml:"parameter_version"`
 	Parameter                 []ParameterInformation `json:"parameter" xml:"parameter"`
 }
+
+type FunctionInformation struct {
+	Points function.Points `json:"points" xml:"points"`
+	Scope  function.Scope  `json:"scope" xml:"scope"`
+}
 type PlotInformation struct {
-	Name string `json:"name" xml:"name"`
+	Name       string                `json:"name" xml:"name"`
+	DataTracks []FunctionInformation `json:"data_tracks" xml:"data_tracks"`
 }
 
 type ParameterInformation struct {
