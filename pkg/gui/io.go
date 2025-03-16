@@ -113,3 +113,44 @@ func fileSaver(writer fyne.URIWriteCloser, err error) {
 		return
 	}
 }
+
+func exportFileChooser() {
+	// select file
+	fileDialog := dialog.NewFileSave(fileExporter, MainWindow)
+	fileDialog.Show()
+}
+
+func fileExporter(writer fyne.URIWriteCloser, err error) {
+	if err != nil {
+		dialog.ShowError(err, MainWindow)
+	}
+	if writer == nil {
+		return // user abort
+	}
+
+	exportInfo := CreateExport()
+
+	var data []byte
+	var eError error
+	uri := writer.URI()
+	if strings.EqualFold(".xml", uri.Extension()) {
+		data, eError = io.ExportXMLToFile(exportInfo)
+	} else if strings.EqualFold(".json", uri.Extension()) {
+		data, eError = io.ExportJSONToFile(exportInfo)
+	} else if strings.EqualFold(".csv", uri.Extension()) {
+		data, eError = io.ExportCSVToFile(exportInfo)
+	} else { // default point export format?
+		data, eError = io.ExportRAWToFile(exportInfo)
+	}
+
+	if eError != nil {
+		dialog.ShowError(eError, MainWindow)
+		return
+	}
+
+	wError := os.WriteFile(uri.Path(), data, 0644) // TODO fix magic number eventually with writer.write?
+	if wError != nil {
+		dialog.ShowError(err, MainWindow)
+		return
+	}
+}

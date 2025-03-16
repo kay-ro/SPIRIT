@@ -365,3 +365,24 @@ func createPlotInformation() ([]io.PlotInformation, error) {
 
 	return plotInfos, nil
 }
+
+func CreateExport() []io.PointsExport {
+	res := make([]io.PointsExport, 0, len(graphMap))
+
+	for key, plot := range graphMap {
+		points := make([]function.Points, 0, len(plot.GetDataTracks())+len(plot.Config.Functions))
+		for _, fcn := range plot.Config.Functions {
+			points = append(points, fcn.GetData())
+		}
+		for _, fcn := range plot.GetDataTracks() {
+			points = append(points, fcn.GetData())
+		}
+
+		res = append(res, io.PointsExport{
+			Id:     key,
+			Points: points,
+		})
+	}
+
+	return res
+}
