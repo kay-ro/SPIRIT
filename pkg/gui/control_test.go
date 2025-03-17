@@ -12,7 +12,6 @@ import (
 )
 
 var once bool = false
-var pnlMinimizerUUt *MinimizerControlPanel
 
 func TestSetup(t *testing.T) {
 	if once {

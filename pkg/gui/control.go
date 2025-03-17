@@ -3,7 +3,6 @@ package gui
 import (
 	"fmt"
 	"math"
-	"physicsGUI/pkg/function"
 	"physicsGUI/pkg/gui/helper"
 	"physicsGUI/pkg/gui/param"
 	"physicsGUI/pkg/minimizer"
@@ -29,68 +28,67 @@ const (
 )
 
 type SharedMinimizerData struct {
-	rw          sync.RWMutex
-	threadCount int
-	mnParams    *minuit.MnUserParameters
-	mFunc       *minimizer.MinuitFunction
-	err         error
+	rw       sync.RWMutex
+	mnParams *minuit.MnUserParameters
+	mFunc    *minimizer.MinuitFunction
+	err      error
 }
 
-func (this *MinimizerControlPanel) MinuitUpdateHandler() {
+func (controlPanel *MinimizerControlPanel) MinuitUpdateHandler() {
 	var migrad *minuit.MnMigrad
 	var migrad2 *minuit.MnMigrad
 	lastError := math.MaxFloat64
 
 	stateReader := func() MinimizerState {
-		this.rw.RLock()
-		defer this.rw.RUnlock()
-		return this.state
+		controlPanel.rw.RLock()
+		defer controlPanel.rw.RUnlock()
+		return controlPanel.state
 	}
 
 	for {
 		switch stateReader() {
 		case MinimizerRunning:
-			this.sharedStorage.rw.Lock()
+			controlPanel.sharedStorage.rw.Lock()
 			if migrad == nil {
 				// create migrad
-				migrad = minuit.NewMnMigradWithParameters(this.sharedStorage.mFunc, this.sharedStorage.mnParams)
+				migrad = minuit.NewMnMigradWithParameters(controlPanel.sharedStorage.mFunc, controlPanel.sharedStorage.mnParams)
 			}
 
 			res, err := migrad.MinimizeWithMaxfcn(50)
 
 			if err != nil {
-				this.SetStats(err, 0, 0)
-				this.sharedStorage.err = err
+				controlPanel.SetStats(err, 0, 0)
+				controlPanel.sharedStorage.err = err
 				migrad = nil
 				migrad2 = nil
-				this.sharedStorage.rw.Unlock()
-				this.Failed(err)
+				controlPanel.sharedStorage.rw.Unlock()
+				controlPanel.Failed(err)
 				continue
 			}
 
 			if !res.IsValid() {
 				if migrad2 == nil {
-					migrad2 = minuit.NewMnMigradWithParameterStateStrategy(this.sharedStorage.mFunc, res.UserState(), minuit.NewMnStrategyWithStra(minuit.PreciseStrategy))
+					migrad2 = minuit.NewMnMigradWithParameterStateStrategy(controlPanel.sharedStorage.mFunc, res.UserState(), minuit.NewMnStrategyWithStra(minuit.PreciseStrategy))
 				}
 				res, err = migrad2.MinimizeWithMaxfcn(50)
 				if err != nil {
-					this.SetStats(err, 0, 0)
-					this.sharedStorage.err = err
+					controlPanel.SetStats(err, 0, 0)
+					controlPanel.sharedStorage.err = err
 					migrad = nil
 					migrad2 = nil
-					this.sharedStorage.rw.Unlock()
-					this.Failed(err)
+					controlPanel.sharedStorage.rw.Unlock()
+					controlPanel.Failed(err)
 					continue
 				}
 			}
-			this.SetStats(err, res.Fval(), res.Nfcn())
-			_ = this.sharedStorage.mFunc.UpdateParameters(res.UserParameters().Params())
-			this.sharedStorage.rw.Unlock()
+			controlPanel.SetStats(err, res.Fval(), res.Nfcn())
+			_ = controlPanel.sharedStorage.mFunc.UpdateParameters(res.UserParameters().Params())
+			controlPanel.sharedStorage.rw.Unlock()
 			if res.Fval() == lastError {
 				migrad = nil
 				migrad2 = nil
 				lastError = math.MaxFloat64
-				this.Completed()
+				controlPanel.Completed()
 			} else {
 				lastError = res.Fval()
 			}
@@ -153,155 +151,155 @@ func NewMinimizerControlPanel() *MinimizerControlPanel {
 	return pnlControl
 }
 
-func (this *MinimizerControlPanel) Widget() fyne.CanvasObject {
-	return container.NewHBox(this.btnStart, this.btnContinue, this.btnPause, this.btnStop, helper.CreateSeparator(), container.NewVBox(container.NewHBox(this.lblError, this.lblFVal, this.lblNCalls), helper.CreateSeparator(), this.lblStatus))
+func (controlPanel *MinimizerControlPanel) Widget() fyne.CanvasObject {
+	return container.NewHBox(controlPanel.btnStart, controlPanel.btnContinue, controlPanel.btnPause, controlPanel.btnStop, helper.CreateSeparator(), container.NewVBox(container.NewHBox(controlPanel.lblError, controlPanel.lblFVal, controlPanel.lblNCalls), helper.CreateSeparator(), controlPanel.lblStatus))
 }
 
-func (this *MinimizerControlPanel) Pause() {
-	if this.state == MinimizerRunning {
-		this.btnStart.Disable()
-		this.btnStart.Hide()
-		this.btnPause.Disable()
-		this.btnPause.Hide()
-		this.btnContinue.Disable()
-		this.btnContinue.Hide()
-		this.btnStop.Disable()
-		this.btnStop.Hide()
+func (controlPanel *MinimizerControlPanel) Pause() {
+	if controlPanel.state == MinimizerRunning {
+		controlPanel.btnStart.Disable()
+		controlPanel.btnStart.Hide()
+		controlPanel.btnPause.Disable()
+		controlPanel.btnPause.Hide()
+		controlPanel.btnContinue.Disable()
+		controlPanel.btnContinue.Hide()
+		controlPanel.btnStop.Disable()
+		controlPanel.btnStop.Hide()
 
-		this.state = MinimizerPaused
+		controlPanel.state = MinimizerPaused
 
 		// this blocks until current cycle is completed
-		this.sharedStorage.rw.Lock()
-		this.sharedStorage.rw.Unlock()
+		controlPanel.sharedStorage.rw.Lock()
+		controlPanel.sharedStorage.rw.Unlock()
 
-		this.lblStatus.SetText("Paused")
+		controlPanel.lblStatus.SetText("Paused")
 
-		this.btnContinue.Enable()
-		this.btnContinue.Show()
-		this.btnStop.Enable()
-		this.btnStop.Show()
+		controlPanel.btnContinue.Enable()
+		controlPanel.btnContinue.Show()
+		controlPanel.btnStop.Enable()
+		controlPanel.btnStop.Show()
 
 	}
 }
 
-func (this *MinimizerControlPanel) Continue() {
-	if this.state == MinimizerPaused {
-		this.btnStart.Disable()
-		this.btnStart.Hide()
-		this.btnPause.Disable()
-		this.btnPause.Hide()
-		this.btnContinue.Disable()
-		this.btnContinue.Hide()
-		this.btnStop.Disable()
-		this.btnStop.Hide()
+func (controlPanel *MinimizerControlPanel) Continue() {
+	if controlPanel.state == MinimizerPaused {
+		controlPanel.btnStart.Disable()
+		controlPanel.btnStart.Hide()
+		controlPanel.btnPause.Disable()
+		controlPanel.btnPause.Hide()
+		controlPanel.btnContinue.Disable()
+		controlPanel.btnContinue.Hide()
+		controlPanel.btnStop.Disable()
+		controlPanel.btnStop.Hide()
 
-		this.state = MinimizerRunning
+		controlPanel.state = MinimizerRunning
 
 		// this blocks until current cycle is completed
-		this.sharedStorage.rw.Lock()
-		this.sharedStorage.rw.Unlock()
-		this.lblStatus.SetText("Running")
+		controlPanel.sharedStorage.rw.Lock()
+		controlPanel.sharedStorage.rw.Unlock()
+		controlPanel.lblStatus.SetText("Running")
 
-		this.btnPause.Enable()
-		this.btnPause.Show()
-		this.btnStop.Enable()
-		this.btnStop.Show()
+		controlPanel.btnPause.Enable()
+		controlPanel.btnPause.Show()
+		controlPanel.btnStop.Enable()
+		controlPanel.btnStop.Show()
 	}
 }
 
-func (this *MinimizerControlPanel) Start() {
-	if this.state == MinimizerNotStarted || this.state == MinimizerFinished || this.state == MinimizerFailed {
-		err := this.minimizerProblemSetup()
+func (controlPanel *MinimizerControlPanel) Start() {
+	if controlPanel.state == MinimizerNotStarted || controlPanel.state == MinimizerFinished || controlPanel.state == MinimizerFailed {
+		err := controlPanel.minimizerProblemSetup()
 		if err != nil {
 			dialog.ShowError(err, MainWindow)
 			return
 		}
-		this.sharedStorage.rw.RLock()
-		this.oldMinimizerData = this.sharedStorage.mnParams.Params()
-		this.sharedStorage.rw.RUnlock()
+		controlPanel.sharedStorage.rw.RLock()
+		controlPanel.oldMinimizerData = controlPanel.sharedStorage.mnParams.Params()
+		controlPanel.sharedStorage.rw.RUnlock()
 
-		this.btnStart.Disable()
-		this.btnStart.Hide()
-		this.btnPause.Disable()
-		this.btnPause.Hide()
-		this.btnContinue.Disable()
-		this.btnContinue.Hide()
-		this.btnStop.Disable()
-		this.btnStop.Hide()
+		controlPanel.btnStart.Disable()
+		controlPanel.btnStart.Hide()
+		controlPanel.btnPause.Disable()
+		controlPanel.btnPause.Hide()
+		controlPanel.btnContinue.Disable()
+		controlPanel.btnContinue.Hide()
+		controlPanel.btnStop.Disable()
+		controlPanel.btnStop.Hide()
 
-		this.state = MinimizerPaused
+		controlPanel.state = MinimizerPaused
 
 		// this blocks until current cycle is completed
-		this.sharedStorage.rw.Lock()
-		this.sharedStorage.rw.Unlock()
-		this.lblStatus.SetText("Ready")
+		controlPanel.sharedStorage.rw.Lock()
+		controlPanel.sharedStorage.rw.Unlock()
+		controlPanel.lblStatus.SetText("Ready")
 
-		this.Continue()
+		controlPanel.Continue()
 	}
 }
 
-func (this *MinimizerControlPanel) Stop() {
-	this.btnStart.Disable()
-	this.btnStart.Hide()
-	this.btnPause.Disable()
-	this.btnPause.Hide()
-	this.btnContinue.Disable()
-	this.btnContinue.Hide()
-	this.btnStop.Disable()
-	this.btnStop.Hide()
+func (controlPanel *MinimizerControlPanel) Stop() {
+	controlPanel.btnStart.Disable()
+	controlPanel.btnStart.Hide()
+	controlPanel.btnPause.Disable()
+	controlPanel.btnPause.Hide()
+	controlPanel.btnContinue.Disable()
+	controlPanel.btnContinue.Hide()
+	controlPanel.btnStop.Disable()
+	controlPanel.btnStop.Hide()
 
-	this.Reset()
-	this.SetStats(nil, 0, 0)
+	controlPanel.Reset()
+	controlPanel.SetStats(nil, 0, 0)
 
-	this.sharedStorage.rw.Lock()
-	_ = this.sharedStorage.mFunc.UpdateParameters(this.oldMinimizerData)
-	this.sharedStorage.rw.Unlock()
-	this.lblStatus.SetText("Not Initialized")
+	controlPanel.sharedStorage.rw.Lock()
+	_ = controlPanel.sharedStorage.mFunc.UpdateParameters(controlPanel.oldMinimizerData)
+	controlPanel.sharedStorage.rw.Unlock()
+	controlPanel.lblStatus.SetText("Not Initialized")
 }
 
-func (this *MinimizerControlPanel) Reset() {
-	this.btnStart.Disable()
-	this.btnStart.Hide()
-	this.btnPause.Disable()
-	this.btnPause.Hide()
-	this.btnContinue.Disable()
-	this.btnContinue.Hide()
-	this.btnStop.Disable()
-	this.btnStop.Hide()
+func (controlPanel *MinimizerControlPanel) Reset() {
+	controlPanel.btnStart.Disable()
+	controlPanel.btnStart.Hide()
+	controlPanel.btnPause.Disable()
+	controlPanel.btnPause.Hide()
+	controlPanel.btnContinue.Disable()
+	controlPanel.btnContinue.Hide()
+	controlPanel.btnStop.Disable()
+	controlPanel.btnStop.Hide()
 
-	this.state = MinimizerNotStarted
+	controlPanel.state = MinimizerNotStarted
 
 	// this blocks until current cycle is completed
-	this.sharedStorage.rw.Lock()
-	this.sharedStorage.rw.Unlock()
-	this.lblStatus.SetText("Not Initialized")
-	this.btnStart.Enable()
-	this.btnStart.Show()
+	controlPanel.sharedStorage.rw.Lock()
+	controlPanel.sharedStorage.rw.Unlock()
+	controlPanel.lblStatus.SetText("Not Initialized")
+	controlPanel.btnStart.Enable()
+	controlPanel.btnStart.Show()
 
 }
 
-func (this *MinimizerControlPanel) Completed() {
-	this.Reset()
+func (controlPanel *MinimizerControlPanel) Completed() {
+	controlPanel.Reset()
 	dialog.ShowInformation("Minimizer Completed", "Minimizer finished. No further improvements found.", MainWindow)
-	this.state = MinimizerFinished
+	controlPanel.state = MinimizerFinished
 	// this blocks until current cycle is completed
-	this.sharedStorage.rw.Lock()
-	this.sharedStorage.rw.Unlock()
-	this.lblStatus.SetText("Completed")
+	controlPanel.sharedStorage.rw.Lock()
+	controlPanel.sharedStorage.rw.Unlock()
+	controlPanel.lblStatus.SetText("Completed")
 }
 
-func (this *MinimizerControlPanel) Failed(err error) {
-	this.Reset()
+func (controlPanel *MinimizerControlPanel) Failed(err error) {
+	controlPanel.Reset()
 	dialog.ShowError(err, MainWindow)
 	//TODO ask user if he wants to use data?
-	this.state = MinimizerFailed
+	controlPanel.state = MinimizerFailed
 	// this blocks until current cycle is completed
-	this.sharedStorage.rw.Lock()
-	this.sharedStorage.rw.Unlock()
-	this.lblStatus.SetText("Failed")
+	controlPanel.sharedStorage.rw.Lock()
+	controlPanel.sharedStorage.rw.Unlock()
+	controlPanel.lblStatus.SetText("Failed")
 }
 
-func (this *MinimizerControlPanel) minimize(experimentalData []function.Functions, parameters ...*param.Parameter[float64]) error {
+func (controlPanel *MinimizerControlPanel) minimize(parameters ...*param.Parameter[float64]) error {
 	mnParams := minuit.NewEmptyMnUserParameters()
 
 	var freeToChangeCnt int = 0
@@ -354,36 +352,36 @@ func (this *MinimizerControlPanel) minimize(experimentalData []function.Function
 	}
 
 	// create minuit setup
-	mFunc := minimizer.NewMinuitFcn(experimentalData, penaltyFunction, parameters)
+	mFunc := minimizer.NewMinuitFcn(penaltyFunction, parameters)
 
-	this.sharedStorage.rw.Lock()
-	this.sharedStorage.mFunc = mFunc
-	this.sharedStorage.mnParams = mnParams
-	this.sharedStorage.rw.Unlock()
+	controlPanel.sharedStorage.rw.Lock()
+	controlPanel.sharedStorage.mFunc = mFunc
+	controlPanel.sharedStorage.mnParams = mnParams
+	controlPanel.sharedStorage.rw.Unlock()
 
 	return nil
 }
 
-func (this *MinimizerControlPanel) SetStats(err error, fVal float64, nCalls int) {
+func (controlPanel *MinimizerControlPanel) SetStats(err error, fVal float64, nCalls int) {
 	if err != nil {
-		this.lblError.SetText(err.Error())
-		this.lblError.Show()
-		this.lblFVal.Hide()
-		this.lblNCalls.Hide()
+		controlPanel.lblError.SetText(err.Error())
+		controlPanel.lblError.Show()
+		controlPanel.lblFVal.Hide()
+		controlPanel.lblNCalls.Hide()
 	} else {
-		this.lblError.SetText("")
-		this.lblError.Hide()
-		this.lblFVal.Show()
-		this.lblNCalls.Show()
+		controlPanel.lblError.SetText("")
+		controlPanel.lblError.Hide()
+		controlPanel.lblFVal.Show()
+		controlPanel.lblNCalls.Show()
 	}
 	if fVal == 0 {
-		this.lblFVal.SetText(fmt.Sprintf("FVal: -"))
+		controlPanel.lblFVal.SetText(fmt.Sprintf("FVal: -"))
 	} else {
-		this.lblFVal.SetText(fmt.Sprintf("FVal: %g", fVal))
+		controlPanel.lblFVal.SetText(fmt.Sprintf("FVal: %g", fVal))
 	}
 	if nCalls == 0 {
-		this.lblNCalls.SetText(fmt.Sprintf("Calls: -"))
+		controlPanel.lblNCalls.SetText(fmt.Sprintf("Calls: -"))
 	} else {
-		this.lblNCalls.SetText(fmt.Sprintf("Calls: %d", nCalls))
+		controlPanel.lblNCalls.SetText(fmt.Sprintf("Calls: %d", nCalls))
 	}
 }

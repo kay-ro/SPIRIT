@@ -22,8 +22,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
-	"github.com/davecgh/go-spew/spew"
-	minuit "github.com/empack/minuit2go/pkg"
 )
 
 var (
@@ -123,87 +121,6 @@ func createFileMenu() *fyne.Menu {
 }
 
 // adaption should not be necessary here
-// fit parameters to the experimental data passing everything to minuit
-func minimize(experimentalData []function.Functions, parameters ...*param.Parameter[float64]) error {
-	mnParams := minuit.NewEmptyMnUserParameters()
-
-	var freeToChangeCnt int = 0
-
-	for i, p := range parameters {
-		if p == nil {
-			return fmt.Errorf("minimizer: parameter %d is nil", i)
-		}
-
-		par, err := p.Get()
-		if err != nil {
-			return err
-		}
-
-		id := fmt.Sprintf("p%d", i)
-
-		// if not checked, add as constant parameter
-		if !p.IsChecked() {
-			mnParams.Add(id, par)
-			continue
-		}
-
-		min := p.GetRelative("min")
-		max := p.GetRelative("max")
-
-		// if min or max is nil, add as free parameter
-		if min == nil || max == nil {
-			mnParams.AddFree(id, par, 0.1)
-			freeToChangeCnt++
-			continue
-		}
-
-		// if min and max are set, add as limited parameter
-		minV, err := min.Get()
-		if err != nil {
-			return err
-		}
-
-		maxV, err := max.Get()
-		if err != nil {
-			return err
-		}
-
-		mnParams.AddLimited(id, par, 0.1, minV, maxV)
-		freeToChangeCnt++
-	}
-
-	if freeToChangeCnt == 0 {
-		return fmt.Errorf("minimizer: Parameter to change selected")
-	}
-
-	// create minuit setup
-	mFunc := minimizer.NewMinuitFcn(experimentalData, penaltyFunction, parameters)
-
-	// create migrad
-	migrad := minuit.NewMnMigradWithParameters(mFunc, mnParams)
-
-	min, err := migrad.Minimize()
-	if err != nil {
-		return err
-	}
-
-	if !min.IsValid() {
-		migrad2 := minuit.NewMnMigradWithParameterStateStrategy(mFunc, min.UserState(), minuit.NewMnStrategyWithStra(minuit.PreciseStrategy))
-		min, err = migrad2.Minimize()
-		if err != nil {
-			return err
-		}
-	}
-
-	fmt.Println("result")
-	spew.Dump(min.UserParameters().Params())
-	fmt.Printf("Fval: %f\n", min.Fval())
-	fmt.Printf("FCNCall: %d\n", min.Nfcn())
-
-	return mFunc.UpdateParameters(min.UserParameters().Params())
-}
-
-// adaption should not be necessary here
 // mainWindow builds and renders the main GUI content, it will show and run the main window
 func mainWindow() {
 	registerFunctions()
@@ -243,7 +160,7 @@ func mainWindow() {
 
 // this is also the place where you need to pass:
 // all current parameters and all experimental data tracks
-func (this *MinimizerControlPanel) minimizerProblemSetup() error {
+func (controlPanel *MinimizerControlPanel) minimizerProblemSetup() error {
 	// get parameters + experimental data and put them into minimize()
 	edens := param.GetFloatGroup("eden")
 
@@ -272,11 +189,7 @@ func (this *MinimizerControlPanel) minimizerProblemSetup() error {
 	background := general.GetParam("background")
 	scaling := general.GetParam("scaling")
 
-	experimentalData := []function.Functions{
-		graphMap["intensity"].GetDataTracks(),
-	}
-
-	if err := this.minimize(experimentalData, e1, e2, e3, e4, t1, t2, r1, r2, r3, delta, background, scaling); err != nil {
+	if err := controlPanel.minimize(e1, e2, e3, e4, t1, t2, r1, r2, r3, delta, background, scaling); err != nil {
 		fmt.Println("Error while minimizing:", err)
 		return err
 	}
@@ -315,15 +228,15 @@ func penaltyFunction(fcn *minimizer.MinuitFunction, params []float64) float64 {
 		Background: backgroundErr,
 		Scaling:    scalingErr,
 	})
-	dataPoints := make([]function.Points, len(fcn.ExperimentalData))
-	for _, funcInGraph := range fcn.ExperimentalData {
-		for i, expData := range funcInGraph {
-			dataPoints[i] = expData.GetData()
-		}
+
+	experimentalData := graphMap["intensity"].GetDataTracks()
+	dataTracks := make([]function.Points, len(experimentalData))
+	for i, dataTrack := range experimentalData {
+		dataTracks[i] = dataTrack.GetData()
 	}
 
 	//real penalty calculation
-	diff, err := physics.Sim2SigRMS(dataPoints, intensityPoints)
+	diff, err := physics.Sim2SigRMS(dataTracks, intensityPoints)
 	if err != nil {
 		dialog.ShowError(err, MainWindow)
 	}
