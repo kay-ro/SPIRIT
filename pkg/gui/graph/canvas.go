@@ -57,7 +57,7 @@ func NewGraphCanvas(config *GraphConfig) *GraphCanvas {
 }
 
 func (g *GraphCanvas) MouseInCanvas(position fyne.Position) bool {
-	pos := g.BaseWidget.Position()
+	pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(g)
 
 	return position.X >= pos.X && position.X <= pos.X+g.Size().Width && position.Y >= pos.Y && position.Y <= pos.Y+g.Size().Height
 }
