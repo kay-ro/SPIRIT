@@ -2,7 +2,7 @@ package function
 
 import "math"
 
-// returns the maximum scope of all of the function scopes
+// returns the maximum scope of all of the function scopes (needed for plotting)
 func GetMaximumScope(functions ...*Function) *Scope {
 	if len(functions) == 0 {
 		return nil
@@ -19,11 +19,7 @@ func GetMaximumScope(functions ...*Function) *Scope {
 		if f.Scope == nil {
 			continue
 		}
-
-		maxS.MinX = min(maxS.MinX, f.Scope.MinX)
-		maxS.MinY = min(maxS.MinY, f.Scope.MinY)
-		maxS.MaxX = max(maxS.MaxX, f.Scope.MaxX)
-		maxS.MaxY = max(maxS.MaxY, f.Scope.MaxY)
+		maxS.CombineScope(f.Scope)
 	}
 
 	return maxS

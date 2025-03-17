@@ -199,7 +199,6 @@ func (controlPanel *MinimizerControlPanel) minimizerProblemSetup() error {
 // the penalty function defines the error we minimize with minuit
 // !the order of the parameters needs to fit
 func penaltyFunction(fcn *minimizer.MinuitFunction, params []float64) float64 {
-	// parameter needed for parsing the parameters params[11] -> 12 parameters needed etc.
 	paramCount := 12
 	if len(params) != paramCount {
 		dialog.ShowError(fmt.Errorf("penaltyFunction has %d parameters but expects %d", len(params), paramCount), MainWindow)
@@ -235,7 +234,7 @@ func penaltyFunction(fcn *minimizer.MinuitFunction, params []float64) float64 {
 		dataTracks[i] = dataTrack.GetData()
 	}
 
-	//real penalty calculation
+	//penalty calculation
 	diff, err := physics.Sim2SigRMS(dataTracks, intensityPoints)
 	if err != nil {
 		dialog.ShowError(err, MainWindow)
@@ -248,9 +247,9 @@ func penaltyFunction(fcn *minimizer.MinuitFunction, params []float64) float64 {
 // this is the place to add function plots which are shown in graphs
 func registerFunctions() {
 	//a function needs to be added to the functionMap using a unique identifier so we can further handle it
-	//interpolation mode can rather be ignored here
-	functionMap["intensity"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
-	functionMap["eden"] = function.NewEmptyFunction(function.INTERPOLATION_NONE)
+	//interpolation mode can be ignored
+	functionMap["intensity"] = function.NewEmptyFunction()
+	functionMap["eden"] = function.NewEmptyFunction()
 }
 
 // creates the graph containers for the different graphs

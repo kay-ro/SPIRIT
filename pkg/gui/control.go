@@ -94,13 +94,13 @@ func (controlPanel *MinimizerControlPanel) MinuitUpdateHandler() {
 			}
 			continue
 		case MinimizerPaused:
-			time.Sleep(500 * time.Millisecond) // TODO idle efficient and responsive
+			time.Sleep(500 * time.Millisecond)
 			continue
 		case MinimizerFinished | MinimizerFailed | MinimizerNotStarted:
 			migrad = nil
 			migrad2 = nil
 			lastError = math.MaxFloat64
-			time.Sleep(1000 * time.Millisecond) // TODO idle efficient and responsive
+			time.Sleep(1000 * time.Millisecond)
 			continue
 		}
 	}

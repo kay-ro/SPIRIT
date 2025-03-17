@@ -27,6 +27,7 @@ func (p Points) Sort() {
 	})
 }
 
+// returns y-value for a specific x-value
 func GetY(points Points, x float64) (float64, error) {
 	for _, v := range points {
 		if v.X == x {

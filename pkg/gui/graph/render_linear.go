@@ -2,11 +2,12 @@ package graph
 
 import (
 	"fmt"
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"image/color"
 	"math"
 	"physicsGUI/pkg/function"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 )
 
 // draw a linear graph
@@ -15,7 +16,6 @@ func (r *GraphRenderer) DrawGraphLinear(scope *function.Scope, points, iPoints f
 	availableWidth := r.size.Width - (1.5 * r.margin)
 	availableHeight := r.size.Height - (1.5 * r.margin)
 
-	//
 	orderY := int(math.Floor(math.Log10(math.Abs(scope.MaxY - scope.MinY))))
 	orderX := int(math.Floor(math.Log10(math.Abs(scope.MaxX - scope.MinX))))
 	minX := floorInOrder(scope.MinX, orderX)
@@ -77,9 +77,13 @@ func (r *GraphRenderer) DrawGraphLinear(scope *function.Scope, points, iPoints f
 		r.DrawPoint(xt, yt, pointColor)
 	}
 }
+
+// needed for pretty grids
 func floorInOrder(num float64, order int) float64 {
 	return math.Floor(num*math.Pow10(-order)) * math.Pow10(order)
 }
+
+// needed for pretty grids
 func ceilInOrder(num float64, order int) float64 {
 	return math.Ceil(num*math.Pow10(-order)) * math.Pow10(order)
 }

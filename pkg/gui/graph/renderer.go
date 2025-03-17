@@ -224,10 +224,6 @@ func (r *GraphRenderer) normalize(x float32, y float32) (float32, float32) {
 	return x + r.margin, r.size.Height - r.margin - y
 }
 
-// TODO: fix the small gap between points and lines
-// TODO: if points are the same size as lines
-// TODO: -> points are on the bottom of the lines
-
 // draw a grid point
 func (r *GraphRenderer) DrawPoint(x float32, y float32, pointColor color.Color) {
 	r.AddObject(&canvas.Circle{

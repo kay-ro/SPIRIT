@@ -90,8 +90,7 @@ func (f *Parameter[T]) Widget() *widget.Entry {
 }
 
 // SetCheckbox sets the checkbox of the parameter
-//
-// returns always true if checkbox isn't set
+// returns true if checkbox isn't set
 func (f *Parameter[T]) IsChecked() bool {
 	if f.checkbox == nil {
 		return true
@@ -99,6 +98,7 @@ func (f *Parameter[T]) IsChecked() bool {
 
 	return f.checkbox.Checked
 }
+
 func (f *Parameter[T]) SetCheck(checked bool) {
 	if f.checkbox == nil {
 	}

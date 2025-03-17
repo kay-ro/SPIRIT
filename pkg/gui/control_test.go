@@ -23,7 +23,7 @@ func TestSetup(t *testing.T) {
 	param.GetFloatGroup("eden").GetParam("Eden a").SetCheck(true)
 	registerFunctions()
 	registerGraphs()
-	graphMap["intensity"].AddDataTrack(function.NewEmptyFunction(function.INTERPOLATION_NONE))
+	graphMap["intensity"].AddDataTrack(function.NewEmptyFunction())
 	// Set GODEBUG to enable scheduler trace for debugging
 	t.Setenv("GODEBUG", "schedtrace=1000")
 	// Limit to a single OS thread to control goroutines
@@ -63,7 +63,6 @@ func TestMinimizerControlPanel_Continue(t *testing.T) {
 }
 
 func TestMinimizerControlPanel_Stop(t *testing.T) {
-	//t.Skipf("Cant test in with dummy function, because minimizer is instant finished")
 	TestSetup(t)
 	pnlMinimizerUUt := NewMinimizerControlPanel()
 	pnlMinimizerUUt.Start()
@@ -98,7 +97,6 @@ func TestButtonStart(t *testing.T) {
 	TestSetup(t)
 	pnlMinimizerUUt := NewMinimizerControlPanel()
 	test.Tap(pnlMinimizerUUt.btnStart)
-	//time.Sleep(500 * time.Millisecond)
 	assert.Equal(t, MinimizerRunning, pnlMinimizerUUt.state)
 }
 
@@ -138,12 +136,12 @@ func TestButtonSequence(t *testing.T) {
 	TestSetup(t)
 	pnlMinimizerUUt := NewMinimizerControlPanel()
 
-	// Versuche Continue zu drücken, sollte ignoriert werden
+	// try trigger continue, should be ignored
 	test.Tap(pnlMinimizerUUt.btnContinue)
 	time.Sleep(500 * time.Millisecond)
 	assert.Equal(t, MinimizerNotStarted, pnlMinimizerUUt.state)
 
-	// Start drücken, dann Pause drücken
+	// trigger start and pause afterwards
 	test.Tap(pnlMinimizerUUt.btnStart)
 	time.Sleep(500 * time.Millisecond)
 	assert.Equal(t, MinimizerRunning, pnlMinimizerUUt.state)

@@ -26,26 +26,30 @@ type Scope struct {
 // returns a new function with the given data and interpolation mode
 func NewInterpolatedFunction(data Points, interpolationMode InterpolationMode) *Function {
 	// create function
-	f := NewEmptyFunction(interpolationMode)
-
+	f := NewEmptyInterpolatedFunction(interpolationMode)
 	// set data
 	f.SetData(data)
 
 	return f
 }
 
-// returns a new function with the given data and interpolation mode
+// returns a new function with the given data
 func NewFunction(data Points) *Function {
 	// create function
-	f := NewEmptyFunction(INTERPOLATION_NONE)
+	f := NewEmptyFunction()
 	// set data
 	f.SetData(data)
 
 	return f
 }
 
-// returns a new empty function with the given data and interpolation mode
-func NewEmptyFunction(interpolationMode InterpolationMode) *Function {
+// returns a new empty function
+func NewEmptyFunction() *Function {
+	return NewEmptyInterpolatedFunction(INTERPOLATION_NONE)
+}
+
+// returns a new empty function with the interpolation mode
+func NewEmptyInterpolatedFunction(interpolationMode InterpolationMode) *Function {
 	// create function
 	f := &Function{
 		data:  nil,
@@ -71,7 +75,6 @@ func (f *Function) Model(resolution int, isLog bool) Points {
 	for i := range interpolated {
 		x := f.Scope.MinX + float64(i)*deltaX
 
-		// TODO: add error handling
 		y, _ := f.eval(f.data, x)
 
 		interpolated[i] = &Point{
@@ -90,12 +93,10 @@ func (f *Function) Eval(x float64) (float64, error) {
 }
 
 // sanitizes the function data and removes all 0 values for potential log scale issues
-// TODO: add point y handling back, but for now we only need x value handling
 func (f *Function) Sanitize() {
 	for i, point := range f.data {
-		if point.X == 0 /* || point.Y == 0  */ {
+		if point.X == 0 {
 			f.data = append(f.data[:i], f.data[i+1:]...)
-			//f.data[i].X = math.SmallestNonzeroFloat64
 		}
 	}
 }
@@ -105,13 +106,8 @@ func (f *Function) SetInterpolation(interpolationMode InterpolationMode) {
 	switch interpolationMode {
 	case INTERPOLATION_NONE:
 		f.eval = simpleEvaluation
-		break
 	case INTERPOLATION_LINEAR:
 		f.eval = linearInterpolation
-		break
-	case INTERPOLATION_SPLINE:
-	case INTERPOLATION_PCHIP:
-		panic("SetInterpolation error: interpolation not implemented yet")
 	default:
 		panic("SetInterpolation error: Unknown interpolationMode. Please use only values provided by related const's in data package")
 	}
@@ -142,20 +138,18 @@ func (f *Function) GetData() Points {
 	return f.data
 }
 
+// returns how many points the function consists of
 func (f *Function) GetDataCount() int {
 	return len(f.data)
 }
 
-// range cuts off the function data to the given range
+// range cuts off function data outside the given range
 func (f *Function) Range(minX, maxX float64) {
-	// create new data slice
 	filtered := f.data.Filter(minX, maxX)
-
-	// set new data
+	// set filtered data
 	f.SetData(filtered)
 }
 
-// TODO: add full explanation
 type FunctionSegment struct {
 	start float64
 	end   float64
@@ -165,7 +159,6 @@ type FunctionSegment struct {
 }
 
 func NewFunctionSegment(start float64, end float64, f *func(x float64) float64) FunctionSegment {
-	//TODO Use finder for extrema?
 	// find zero of difference?
 	strct := FunctionSegment{
 		start: start,
@@ -175,7 +168,7 @@ func NewFunctionSegment(start float64, end float64, f *func(x float64) float64) 
 		f:     f,
 	}
 
-	// BEGIN TMP use end and start, assuming it monotone grow
+	// BEGIN TMP use end and start, assuming monotone growth
 	y1 := (*f)(start)
 	y2 := (*f)(end)
 	if y1 < y2 {
@@ -231,15 +224,15 @@ func (s *SegmentedFunction) Scope() (*Coordinate, *Coordinate) {
 	return &Coordinate{s.segments[0].start, s.minY}, &Coordinate{s.segments[len(s.segments)-1].end, s.maxY}
 }
 
-func (this *SegmentedFunction) Model(resolution int) ([]Point, []Point) {
-	if this.segments == nil || len(this.segments) == 0 {
+func (segmentFunc *SegmentedFunction) Model(resolution int) ([]Point, []Point) {
+	if segmentFunc.segments == nil || len(segmentFunc.segments) == 0 {
 		return nil, nil
 	}
-	dx := (this.segments[len(this.segments)-1].end - this.segments[0].start) / float64(resolution)
+	dx := (segmentFunc.segments[len(segmentFunc.segments)-1].end - segmentFunc.segments[0].start) / float64(resolution)
 	res := make([]Point, resolution)
-	var nx = this.segments[0].start
+	var nx = segmentFunc.segments[0].start
 	for i := 0; i < resolution; i++ {
-		val, err := this.Eval(nx)
+		val, err := segmentFunc.Eval(nx)
 		if err != nil {
 			println(err.Error())
 			res[i] = Point{
@@ -258,16 +251,16 @@ func (this *SegmentedFunction) Model(resolution int) ([]Point, []Point) {
 	return nil, res
 }
 
-func (this *SegmentedFunction) Eval(x float64) (float64, error) {
-	if this.segments == nil || len(this.segments) == 0 {
+func (segmentFunc *SegmentedFunction) Eval(x float64) (float64, error) {
+	if segmentFunc.segments == nil || len(segmentFunc.segments) == 0 {
 		return 0, errors.New("Evaluation_Error: Unable to evaluate when no segments are defined")
 	}
-	if x < this.segments[0].start || x > this.segments[len(this.segments)-1].end {
-		return 0, errors.New(fmt.Sprintf("Evaluation_Error: Out of bounds %f is not in the scoupe between %f and %f", x, this.segments[0].start, this.segments[len(this.segments)-1].end))
+	if x < segmentFunc.segments[0].start || x > segmentFunc.segments[len(segmentFunc.segments)-1].end {
+		return 0, errors.New(fmt.Sprintf("Evaluation_Error: Out of bounds %f is not in the scoupe between %f and %f", x, segmentFunc.segments[0].start, segmentFunc.segments[len(segmentFunc.segments)-1].end))
 	}
-	for i := 0; i < len(this.segments); i++ {
-		if this.segments[i].end >= x {
-			return (*this.segments[i].f)(x), nil
+	for i := 0; i < len(segmentFunc.segments); i++ {
+		if segmentFunc.segments[i].end >= x {
+			return (*segmentFunc.segments[i].f)(x), nil
 		}
 	}
 	panic("Evaluation_Error: This should not be able to happen")

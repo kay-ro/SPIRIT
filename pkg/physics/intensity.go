@@ -10,6 +10,10 @@ import (
 	"sort"
 )
 
+// need more than one? => Copy and rename it. Be careful when to use which axis.
+var qzAxis = GetDefaultQZAxis(qzNumber)
+var qzNumber = 500
+
 type IntensityOptions struct {
 	Background float64
 	Scaling    float64
@@ -95,7 +99,6 @@ func CalculateReflectivity(qzaxis []float64, deltaz float64, sld []float64) []fl
 		// Calculate wave vectors
 		k := make([]complex128, nmedia)
 		for i := 0; i < nmedia; i++ {
-			// ? real(k0) is fine? orig: k[i] = SQRT(DCOMPLEX(k0^2-4.0*pi*(rho[i]-rho[0]), 0))
 			k[i] = cmplx.Sqrt(complex(math.Pow(real(k0), 2)-4.0*math.Pi*(sld[i]-sld[0]), 0))
 		}
 
@@ -144,7 +147,6 @@ func GetDefaultQZAxis(qzNumber int) []float64 {
 	return qzAxis
 }
 
-// could be made more efficient
 // use the combined experimental axis as current qz axis
 func AlterQZAxis(dataSets function.Functions, graphID string) {
 	if graphID == "intensity" {
@@ -162,6 +164,7 @@ func AlterQZAxis(dataSets function.Functions, graphID string) {
 
 }
 
+// calculate a penalty between the calculated intensity and the loaded data sets
 func Sim2SigRMS(dataSets []function.Points, intensity function.Points) (float64, error) {
 	if len(intensity) != qzNumber {
 		return math.MaxFloat64, fmt.Errorf("rms calculation: intensity slice has the wrong length: %d vs %d", len(intensity), qzNumber)

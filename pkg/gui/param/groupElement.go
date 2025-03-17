@@ -83,38 +83,3 @@ func (g GroupElements[T]) GetValues() ([]T, error) {
 
 	return values, nil
 }
-
-// returns all minima in the group
-/* func (g GroupElements[T]) GetMinima() ([]T, error) {
-	values := make([]T, len(g.params))
-
-	for i, param := range g.params {
-		if len(param.GetRelatives()) > 0 {
-			v, err := param.GetRelatives()[0].Get()
-			if err != nil {
-				return nil, fmt.Errorf("error getting minima for parameter %d: %w", i, err)
-			}
-
-			values[i] = v
-		}
-	}
-
-	return values, nil
-} */
-
-// returns all maxima in the group
-/* func (g GroupElements[T]) GetMaxima() ([]T, error) {
-	values := make([]T, len(g.params))
-
-	for i, param := range g.params {
-		if len(param.GetRelatives()) > 1 {
-			v, err := param.GetRelatives()[1].Get()
-			if err != nil {
-				return nil, fmt.Errorf("error getting value for parameter %d: %w", i, err)
-			}
-			values[i] = v
-		}
-	}
-
-	return values, nil
-} */
