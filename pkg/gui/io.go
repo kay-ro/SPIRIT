@@ -140,7 +140,7 @@ func fileExporter(writer fyne.URIWriteCloser, err error) {
 	} else if strings.EqualFold(".csv", uri.Extension()) {
 		data, eError = io.ExportCSVToFile(exportInfo)
 	} else { // default point export format?
-		data, eError = io.ExportRAWToFile(exportInfo)
+		data, eError = io.ExportDefaultToFile(exportInfo)
 	}
 
 	if eError != nil {

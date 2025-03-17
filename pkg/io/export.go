@@ -81,7 +81,6 @@ func ExportCSVToFile(pointsToExport []PointsExport) ([]byte, error) {
 							} else {
 								// throw if not treated
 								return nil, errors.New(fmt.Sprintf("Could not convert point field %s (%s) to %s represenatation => Export failed", pointType.Field(fid).Name, field.Type().Name(), reflect.TypeOf("").Name()))
-
 							}
 						} else {
 							sVal := field.Convert(reflect.TypeOf(""))
@@ -105,6 +104,6 @@ func ExportCSVToFile(pointsToExport []PointsExport) ([]byte, error) {
 	return byteBuffer.Bytes(), nil
 }
 
-func ExportRAWToFile(pointsToExport []PointsExport) ([]byte, error) {
-	panic("Not yet implemented") //TODO
+func ExportDefaultToFile(pointsToExport []PointsExport) ([]byte, error) {
+	return ExportCSVToFile(pointsToExport) // use csv for default export of points
 }
