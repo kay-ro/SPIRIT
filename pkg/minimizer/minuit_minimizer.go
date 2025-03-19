@@ -3,7 +3,6 @@ package minimizer
 import (
 	"errors"
 	"fmt"
-	"physicsGUI/pkg/function"
 	"physicsGUI/pkg/gui/param"
 )
 
@@ -12,19 +11,14 @@ type PentaltyFunction func(dtrack *MinuitFunction, parameter []float64) float64
 type MinuitFunction struct {
 	// function for calculating the penalty
 	PenaltyFunction PentaltyFunction
-
-	// datatracks of the experimantel data
-	ExperimentalData []*function.Function
-
 	// parameter values
 	Parameters param.Parameters[float64]
 }
 
-func NewMinuitFcn(dtrack []*function.Function, pen PentaltyFunction, params param.Parameters[float64]) *MinuitFunction {
+func NewMinuitFcn(pen PentaltyFunction, params param.Parameters[float64]) *MinuitFunction {
 	return &MinuitFunction{
-		PenaltyFunction:  pen,
-		ExperimentalData: dtrack,
-		Parameters:       params,
+		PenaltyFunction: pen,
+		Parameters:      params,
 	}
 }
 

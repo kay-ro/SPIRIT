@@ -1,12 +1,13 @@
 package graph
 
 import (
-	"fyne.io/fyne/v2/theme"
 	"image/color"
 	"math"
 	"physicsGUI/pkg/function"
 	"physicsGUI/pkg/minimizer"
 	"slices"
+
+	"fyne.io/fyne/v2/theme"
 
 	"fyne.io/fyne/v2/container"
 
@@ -15,7 +16,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// GraphCanvas represents the graphical representation of a graph.
+// GraphCanvas represents the graphical representation of a graph
 type GraphCanvas struct {
 	widget.BaseWidget
 	Config     *GraphConfig
@@ -26,9 +27,8 @@ type GraphCanvas struct {
 	dataRemoveButtons []*fyne.Container
 }
 
-// NewGraphCanvas creates a new canvas instance with a provided Config.
-// Specfically, it sets up the underlying structure of a canvas including lines, axes, labels and background.
-// The method also calls 'ExtendBaseWidget' to cross-reference the canvas instance with the underlying fyne.BaseWidget struct.
+// NewGraphCanvas creates a new canvas instance with a provided config
+// specifically sets up the underlying structure of a canvas including lines, axes, labels and background
 func NewGraphCanvas(config *GraphConfig) *GraphCanvas {
 	if config.DisplayRange == nil {
 		config.DisplayRange = &GraphRange{
@@ -50,7 +50,7 @@ func NewGraphCanvas(config *GraphConfig) *GraphCanvas {
 		}
 	}
 
-	// needs to be to cross reference with the underlying struct
+	// cross-reference the canvas instance with the underlying fyne.BaseWidget struct.
 	g.ExtendBaseWidget(g)
 
 	return g
