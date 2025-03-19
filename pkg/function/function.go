@@ -17,10 +17,10 @@ type Functions []*Function
 
 // scope of a function
 type Scope struct {
-	MinX float64
-	MaxX float64
-	MinY float64
-	MaxY float64
+	MinX float64 `json:"min_x" xml:"min_x"`
+	MaxX float64 `json:"max_x" xml:"max_x"`
+	MinY float64 `json:"min_y" xml:"min_y"`
+	MaxY float64 `json:"max_y" xml:"max_y"`
 }
 
 // returns a new function with the given data and interpolation mode
