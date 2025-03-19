@@ -18,7 +18,7 @@ import (
 // GraphCanvas represents the graphical representation of a graph.
 type GraphCanvas struct {
 	widget.BaseWidget
-	config     *GraphConfig
+	Config     *GraphConfig
 	background *canvas.Rectangle
 
 	functions         function.Functions
@@ -26,7 +26,7 @@ type GraphCanvas struct {
 	dataRemoveButtons []*fyne.Container
 }
 
-// NewGraphCanvas creates a new canvas instance with a provided config.
+// NewGraphCanvas creates a new canvas instance with a provided Config.
 // Specfically, it sets up the underlying structure of a canvas including lines, axes, labels and background.
 // The method also calls 'ExtendBaseWidget' to cross-reference the canvas instance with the underlying fyne.BaseWidget struct.
 func NewGraphCanvas(config *GraphConfig) *GraphCanvas {
@@ -37,7 +37,7 @@ func NewGraphCanvas(config *GraphConfig) *GraphCanvas {
 		}
 	}
 	g := &GraphCanvas{
-		config:     config,
+		Config:     config,
 		background: canvas.NewRectangle(color.Black),
 
 		functions:  config.Functions,

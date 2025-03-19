@@ -39,7 +39,7 @@ func (r *GraphRenderer) base() {
 
 	// title
 	title := &canvas.Text{
-		Text:      r.graph.config.Title,
+		Text:      r.graph.Config.Title,
 		Color:     titleColor,
 		TextSize:  16,
 		TextStyle: fyne.TextStyle{Bold: true},
@@ -80,12 +80,12 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	// set the base for the canvas
 	r.base()
 
-	if r.graph.config.DisplayRange != nil {
-		for _, f := range r.graph.config.Functions {
-			f.Range(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max)
+	if r.graph.Config.DisplayRange != nil {
+		for _, f := range r.graph.Config.Functions {
+			f.Range(r.graph.Config.DisplayRange.Min, r.graph.Config.DisplayRange.Max)
 		}
 		for _, d := range r.graph.loadedData {
-			d.Range(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max)
+			d.Range(r.graph.Config.DisplayRange.Min, r.graph.Config.DisplayRange.Max)
 		}
 	}
 
@@ -98,7 +98,7 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	}
 	funcCount := len(r.graph.functions)
 	var magicPoints []function.Points
-	if r.graph.config.AdaptDraw {
+	if r.graph.Config.AdaptDraw {
 		magicPoints = make([]function.Points, funcCount+len(r.graph.loadedData))
 		for i, f := range r.graph.functions {
 			magicPoints[i] = f.GetData().Copy()
@@ -138,10 +138,10 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 	r.DrawRemoveButtons()
 
 	// draw model lines
-	if r.graph.config.IsLog {
+	if r.graph.Config.IsLog {
 		for i, f := range r.graph.functions {
 			var points function.Points
-			if r.graph.config.AdaptDraw {
+			if r.graph.Config.AdaptDraw {
 				points = magicPoints[i]
 			} else {
 				points = f.GetData().Copy()
@@ -149,9 +149,9 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 			r.DrawGraphLog(scope, points, points, pointColor, false)
 		}
 		for i, d := range r.graph.loadedData {
-			d.Range(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max)
+			d.Range(r.graph.Config.DisplayRange.Min, r.graph.Config.DisplayRange.Max)
 			var points function.Points
-			if r.graph.config.AdaptDraw {
+			if r.graph.Config.AdaptDraw {
 				points = magicPoints[funcCount+i]
 			} else {
 				points = d.GetData().Copy()
@@ -165,27 +165,27 @@ func (r *GraphRenderer) Layout(size fyne.Size) {
 
 	for i, f := range r.graph.functions {
 		var points function.Points
-		if r.graph.config.AdaptDraw {
+		if r.graph.Config.AdaptDraw {
 			points = magicPoints[i]
 		} else {
 			points = f.GetData().Copy()
 		}
 		r.DrawGraphLinear(scope,
-			points.Filter(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max),
-			points.Filter(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max),
+			points.Filter(r.graph.Config.DisplayRange.Min, r.graph.Config.DisplayRange.Max),
+			points.Filter(r.graph.Config.DisplayRange.Min, r.graph.Config.DisplayRange.Max),
 			pointColor, false)
 	}
 	for i, d := range r.graph.loadedData {
 		var points function.Points
-		if r.graph.config.AdaptDraw {
+		if r.graph.Config.AdaptDraw {
 			points = magicPoints[funcCount+i]
 		} else {
 			points = d.GetData().Copy()
 		}
 		dataColor := DataTrackColors[i%len(DataTrackColors)]
 		r.DrawGraphLinear(scope,
-			points.Filter(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max),
-			points.Filter(r.graph.config.DisplayRange.Min, r.graph.config.DisplayRange.Max),
+			points.Filter(r.graph.Config.DisplayRange.Min, r.graph.Config.DisplayRange.Max),
+			points.Filter(r.graph.Config.DisplayRange.Min, r.graph.Config.DisplayRange.Max),
 			dataColor, true)
 	}
 	r.DrawGridLinear(scope)

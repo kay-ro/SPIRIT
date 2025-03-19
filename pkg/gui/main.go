@@ -120,7 +120,8 @@ func addDataset(reader io.ReadCloser, uri fyne.URI, err error) function.Points {
 func createFileMenu() *fyne.Menu {
 	mnLoad := fyne.NewMenuItem("Load", loadFileChooser)
 	mnSave := fyne.NewMenuItem("Save", saveFileChooser)
-	return fyne.NewMenu("File", mnLoad, mnSave)
+	mnExport := fyne.NewMenuItem("Export", exportFileChooser)
+	return fyne.NewMenu("File", mnLoad, mnSave, mnExport)
 }
 
 // adaption should not be necessary here
