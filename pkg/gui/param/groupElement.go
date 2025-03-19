@@ -36,6 +36,9 @@ func (g *GroupElements[T]) Add(label string, param *Parameter[T]) {
 
 // returns the element for the specific label
 func (g GroupElements[T]) GetParam(label string) *Parameter[T] {
+	if !g.Check(label) {
+		return nil
+	}
 	if element := g.params[g.ref[label]-1]; element != nil {
 		return element
 	}

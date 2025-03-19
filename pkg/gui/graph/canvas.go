@@ -19,7 +19,7 @@ import (
 // GraphCanvas represents the graphical representation of a graph
 type GraphCanvas struct {
 	widget.BaseWidget
-	config     *GraphConfig
+	Config     *GraphConfig
 	background *canvas.Rectangle
 
 	functions         function.Functions
@@ -28,7 +28,7 @@ type GraphCanvas struct {
 }
 
 // NewGraphCanvas creates a new canvas instance with a provided config
-// specfically sets up the underlying structure of a canvas including lines, axes, labels and background
+// specifically sets up the underlying structure of a canvas including lines, axes, labels and background
 func NewGraphCanvas(config *GraphConfig) *GraphCanvas {
 	if config.DisplayRange == nil {
 		config.DisplayRange = &GraphRange{
@@ -37,7 +37,7 @@ func NewGraphCanvas(config *GraphConfig) *GraphCanvas {
 		}
 	}
 	g := &GraphCanvas{
-		config:     config,
+		Config:     config,
 		background: canvas.NewRectangle(color.Black),
 
 		functions:  config.Functions,
@@ -57,7 +57,7 @@ func NewGraphCanvas(config *GraphConfig) *GraphCanvas {
 }
 
 func (g *GraphCanvas) MouseInCanvas(position fyne.Position) bool {
-	pos := g.BaseWidget.Position()
+	pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(g)
 
 	return position.X >= pos.X && position.X <= pos.X+g.Size().Width && position.Y >= pos.Y && position.Y <= pos.Y+g.Size().Height
 }
