@@ -2,8 +2,9 @@ package minimizer
 
 import (
 	"errors"
-	"fyne.io/fyne/v2/data/binding"
 	"sync"
+
+	"fyne.io/fyne/v2/data/binding"
 )
 
 type Number interface {
@@ -13,7 +14,6 @@ type Number interface {
 }
 
 var (
-	// State 0: not ready, 1: ready, 2: running, 3: paused
 	State    = binding.NewInt()
 	NOTREADY = "minimizer is not ready"
 	PAUSED   = "minimizer is already paused"
