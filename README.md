@@ -19,10 +19,18 @@ SPIRIT is a tool for analyzing X-ray and neutron reflectivity data to determine 
 ### Recommended Tools
 
 - Install [Visual Studio Code](https://code.visualstudio.com)
+When you open the project folder it will ask you if it should install a go extension. Let it do that.
 
 - Install the Golang language extension from the Extension pack
 
 ![extension tab](.github/ext.png)
+
+- Install [GCC] (https://docs.fyne.io/started/)
+Therefore follow the instructions before the "Downloading" section.
+
+On Windows systems also...
+- Install [Git](https://git-scm.com/downloads/win)
+Use the preselected options of the installation wizard
 
 ### Building and Running
 
@@ -61,7 +69,7 @@ The SPIRIT interface consists of several main components:
 
 ### Loading Data
 
-1. Experimental data can be loaded by Dragging and dropping data files onto the Graph area
+1. Experimental data can be loaded by dragging and dropping data files onto the Graph area
    ![extension tab](.github/Gui_LoadDataDrop.png)
 
 
@@ -143,9 +151,38 @@ containers := container.NewVBox(
 5. Update the `minimize()` function to include new parameters:
 
 ```go
-if err := minimize(experimentalData, e1, e2, e3, e4, e5, t1, t2, t3, r1, r2, r3, r4, delta, background, scaling); err != nil {
-    // error handling
+	edens := param.GetFloatGroup("eden")
+	e1 := edens.GetParam("Eden a")
+	e2 := edens.GetParam("Eden 1")
+  //...
+
+if err := minimize(e1, e2, e3, e4, e5, t1, t2, t3, r1, r2, r3, r4, delta, background, scaling); err != nil {
 }
+```
+
+### Adding Custom Physics Calculations
+
+To implement a different physical model:
+
+1. Create a new file in the `pkg/physics` directory
+2. Implement your model's calculations
+3. Update the `RecalculateData()` function in `pkg/gui/main.go` to use your new calculations
+4. Update the `penaltyFunction()` as described in the next step
+
+Example for a new physical model:
+
+```go
+// In pkg/physics/<mymodel>.go
+package physics
+
+func MyModelCalculation(parameters []float64) function.Points {
+    // Your physics model implementation here
+    return points
+}
+
+// Then in pkg/gui/main.go, update RecalculateData() to call your function
+myModelPoints := physics.MyModelCalculation(parameterArray)
+functionMap["<mymodel>"].SetData(myModelPoints)
 ```
 
 ### Modifying the Penalty Function
@@ -157,37 +194,22 @@ The penalty function determines how the difference between model and data is cal
 3. Modify how the error is calculated:
 
 ```go
-// Current implementation uses:
-diff += math.Pow((data[i].Y-iy)*math.Pow(data[i].X*100, 4), 2)
+	// ...
+  // Calculate model data
+	intensityPoints := physics.CalculateIntensityPoints(edenPoints, deltaErr, &physics.IntensityOptions{
+		Background: backgroundErr,
+		Scaling:    scalingErr,
+	})
+  // fetch experimental data they need to be compared to
+	experimentalData := graphMap["intensity"].GetDataTracks()
+	dataTracks := make([]function.Points, len(experimentalData))
+	for i, dataTrack := range experimentalData {
+		dataTracks[i] = dataTrack.GetData()
+	}
 
-// You could change to, for example:
-diff += math.Abs(data[i].Y-iy) // L1 norm
-// or
-diff += math.Pow(data[i].Y-iy, 2) / data[i].Error // Chi-squared
-```
-
-### Adding Custom Physics Calculations
-
-To implement a different physical model:
-
-1. Create a new file in the `pkg/physics` directory
-2. Implement your model's calculations
-3. Update the `RecalculateData()` function in `pkg/gui/main.go` to use your new calculations
-
-Example for a new physical model:
-
-```go
-// In pkg/physics/mymodel.go
-package physics
-
-func MyModelCalculation(parameters []float64) function.Points {
-    // Your physics model implementation here
-    return points
-}
-
-// Then in pkg/gui/main.go, update RecalculateData() to call your function
-myModelPoints := physics.MyModelCalculation(parameterArray)
-functionMap["mymodel"].SetData(myModelPoints)
+	//penalty calculation, simple sum right now
+  // go to `pkg/gui/physics/intensity.go` to change it (for example use weights)
+	diff, err := physics.Sim2SigRMS(dataTracks, intensityPoints)
 ```
 
 ### Changing the Minimization Algorithm
