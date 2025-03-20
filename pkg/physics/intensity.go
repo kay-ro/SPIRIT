@@ -21,7 +21,7 @@ type IntensityOptions struct {
 
 func CalculateIntensityPoints(edenPoints function.Points, delta float64, opts *IntensityOptions) function.Points {
 	// transform points into sld floats
-	sld := make([]float64, ZNUMBER)
+	sld := make([]float64, len(edenPoints))
 	for i, e := range edenPoints {
 		sld[i] = e.Y * ELECTRON_RADIUS
 	}
@@ -33,7 +33,7 @@ func CalculateIntensityPoints(edenPoints function.Points, delta float64, opts *I
 	}
 
 	// calculate intensity
-	modifiedQzAxis := make([]float64, qzNumber)
+	modifiedQzAxis := make([]float64, len(qzAxis))
 	copy(modifiedQzAxis, qzAxis)
 
 	helper.Map(modifiedQzAxis, func(xPoint float64) float64 { return xPoint + delta })
