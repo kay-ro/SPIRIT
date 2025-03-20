@@ -83,12 +83,13 @@ func (controlPanel *MinimizerControlPanel) MinuitUpdateHandler() {
 			}
 			controlPanel.SetStats(err, res.Fval(), res.Nfcn())
 			_ = controlPanel.sharedStorage.mFunc.UpdateParameters(res.UserParameters().Params())
+			controlPanel.sharedStorage.mnParams = res.UserParameters()
 			controlPanel.sharedStorage.rw.Unlock()
 			if res.Fval() == lastError {
 				migrad = nil
 				migrad2 = nil
 				lastError = math.MaxFloat64
-				controlPanel.Completed()
+				controlPanel.Completed(res.UserParameters().Errors())
 			} else {
 				lastError = res.Fval()
 			}
@@ -278,9 +279,9 @@ func (controlPanel *MinimizerControlPanel) Reset() {
 
 }
 
-func (controlPanel *MinimizerControlPanel) Completed() {
+func (controlPanel *MinimizerControlPanel) Completed(errors []float64) {
 	controlPanel.Reset()
-	dialog.ShowInformation("Minimizer Completed", "Minimizer finished. No further improvements found.", MainWindow)
+	dialog.ShowInformation("Minimizer Completed", fmt.Sprintf("Minimizer finished. No further improvements found.\n Minuit Erros: %v", errors), MainWindow)
 	controlPanel.state = MinimizerFinished
 	// this blocks until current cycle is completed
 	controlPanel.sharedStorage.rw.Lock()

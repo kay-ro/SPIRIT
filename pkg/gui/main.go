@@ -165,23 +165,23 @@ func (controlPanel *MinimizerControlPanel) minimizerProblemSetup() error {
 	// get parameters + experimental data and put them into minimize()
 	edens := param.GetFloatGroup("eden")
 
-	e1 := edens.GetParam("Eden a")
-	e2 := edens.GetParam("Eden 1")
-	e3 := edens.GetParam("Eden 2")
-	e4 := edens.GetParam("Eden b")
+	e1 := edens.GetParam("Eden Au")
+	e2 := edens.GetParam("Eden Org")
+	e3 := edens.GetParam("Eden Bulk")
 
 	// get roughness parameters
-	roughness := param.GetFloatGroup("rough")
+	other := param.GetFloatGroup("other")
 
-	r1 := roughness.GetParam("Roughness a/1")
-	r2 := roughness.GetParam("Roughness 1/2")
-	r3 := roughness.GetParam("Roughness 2/b")
+	roughness := other.GetParam("Roughness")
+	coverage := other.GetParam("Coverage")
 
 	// get thickness parameters
-	thickness := param.GetFloatGroup("thick")
+	thickness := param.GetFloatGroup("size")
 
-	t1 := thickness.GetParam("Thickness 1")
-	t2 := thickness.GetParam("Thickness 2")
+	s1 := thickness.GetParam("Radius")
+	s2 := thickness.GetParam("Shell Thickness")
+	s3 := thickness.GetParam("z Offset")
+	s4 := thickness.GetParam("z Offset Au Org")
 
 	// get general parameters
 	general := param.GetFloatGroup("general")
@@ -190,7 +190,7 @@ func (controlPanel *MinimizerControlPanel) minimizerProblemSetup() error {
 	background := general.GetParam("background")
 	scaling := general.GetParam("scaling")
 
-	if err := controlPanel.minimize(e1, e2, e3, e4, t1, t2, r1, r2, r3, delta, background, scaling); err != nil {
+	if err := controlPanel.minimize(e1, e2, e3, s1, s2, s3, s4, roughness, coverage, delta, background, scaling); err != nil {
 		fmt.Println("Error while minimizing:", err)
 		return err
 	}
@@ -290,9 +290,9 @@ func registerParams() *fyne.Container {
 	z_offset, _ := param.FloatMinMax("size", "z Offset", 0.0)
 	z_offset_au_org, _ := param.FloatMinMax("size", "z Offset Au Org", 0.0)
 
-	deltaQ, _ := param.Float("general", "deltaq", 0.0)
-	background, _ := param.Float("general", "background", 1.0e-8)
-	scaling, _ := param.Float("general", "scaling", 1.0)
+	deltaQ, _ := param.FloatMinMax("general", "deltaq", 0.0)
+	background, _ := param.FloatMinMax("general", "background", 1.0e-8)
+	scaling, _ := param.FloatMinMax("general", "scaling", 1.0)
 
 	containers := container.NewVBox(
 		container.NewGridWithColumns(4, eden_au, eden_org, eden_b),
