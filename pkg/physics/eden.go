@@ -59,8 +59,8 @@ func GetEdensities(eden, size []float64, roughness, coverage float64) (function.
 			Error: 0,
 		}
 	}
-
-	return edensities, nil
+	newEden := convolute(ZNUMBER, zaxis, edensities, roughness)
+	return newEden, nil
 }
 
 func GetZAxis(radius, d_shell float64, zNumber int) []float64 {
