@@ -165,23 +165,23 @@ func (controlPanel *MinimizerControlPanel) minimizerProblemSetup() error {
 	// get parameters + experimental data and put them into minimize()
 	edens := param.GetFloatGroup("eden")
 
-	e1 := edens.GetParam("Eden a")
-	e2 := edens.GetParam("Eden 1")
-	e3 := edens.GetParam("Eden 2")
-	e4 := edens.GetParam("Eden b")
+	e1 := edens.GetParam("Eden Au")
+	e2 := edens.GetParam("Eden Org")
+	e3 := edens.GetParam("Eden Bulk")
 
 	// get roughness parameters
-	roughness := param.GetFloatGroup("rough")
+	other := param.GetFloatGroup("other")
 
-	r1 := roughness.GetParam("Roughness a/1")
-	r2 := roughness.GetParam("Roughness 1/2")
-	r3 := roughness.GetParam("Roughness 2/b")
+	roughness := other.GetParam("Roughness")
+	coverage := other.GetParam("Coverage")
 
 	// get thickness parameters
-	thickness := param.GetFloatGroup("thick")
+	thickness := param.GetFloatGroup("size")
 
-	t1 := thickness.GetParam("Thickness 1")
-	t2 := thickness.GetParam("Thickness 2")
+	s1 := thickness.GetParam("Radius")
+	s2 := thickness.GetParam("Shell Thickness")
+	s3 := thickness.GetParam("z Offset")
+	s4 := thickness.GetParam("z Offset Au Org")
 
 	// get general parameters
 	general := param.GetFloatGroup("general")
@@ -190,7 +190,7 @@ func (controlPanel *MinimizerControlPanel) minimizerProblemSetup() error {
 	background := general.GetParam("background")
 	scaling := general.GetParam("scaling")
 
-	if err := controlPanel.minimize(e1, e2, e3, e4, t1, t2, r1, r2, r3, delta, background, scaling); err != nil {
+	if err := controlPanel.minimize(e1, e2, e3, s1, s2, s3, s4, roughness, coverage, delta, background, scaling); err != nil {
 		fmt.Println("Error while minimizing:", err)
 		return err
 	}
@@ -206,27 +206,25 @@ func penaltyFunction(fcn *minimizer.MinuitFunction, params []float64) float64 {
 		return math.MaxFloat64
 	}
 
-	//sort the parameters
-	edenErr := params[0:4]
-	dErr := params[4:6]
-	sigmaErr := params[6:9]
-	deltaErr := params[9]
-	backgroundErr := params[10]
-	scalingErr := params[11]
+	eden := params[0:3]
+	size := params[3:7]
+	roughness := params[7]
+	coverage := params[8]
+	deltaq := params[9]
+	background := params[10]
+	scaling := params[11]
 
 	log.Println("params", params)
 
-	//precalculation for intensities
-	edenPoints, err := physics.GetEdensities(edenErr, dErr, sigmaErr)
+	edenPoints, err := physics.GetEdensities(eden, size, roughness, coverage)
 	if err != nil {
 		fmt.Println("Error while calculating edensities:", err)
 		return math.MaxFloat64
 	}
 
-	//intensity calculation itself
-	intensityPoints := physics.CalculateIntensityPoints(edenPoints, deltaErr, &physics.IntensityOptions{
-		Background: backgroundErr,
-		Scaling:    scalingErr,
+	intensityPoints := physics.CalculateIntensityPoints(edenPoints, deltaq, &physics.IntensityOptions{
+		Background: background,
+		Scaling:    scaling,
 	})
 
 	experimentalData := graphMap["intensity"].GetDataTracks()
@@ -256,23 +254,11 @@ func registerFunctions() {
 // creates the graph containers for the different graphs
 // this is the place to add graphs to the GUI
 func registerGraphs() *fyne.Container {
-
-	//a graph needs to be added to the graphMap using a unique identifier so we can further handle it
 	graphMap["intensity"] = graph.NewGraphCanvas(&graph.GraphConfig{
-
-		//title shown inside the GUI
-		Title: "Intensity Graph",
-
-		//use logarithmic scaling (both x and y axis)
-		IsLog: true,
-
-		//use magic scaling: p.Y = math.Pow(p.X, 4) * p.Y;  p.Error = math.Pow(p.X, 4) * p.Error
+		Title:     "Intensity Graph",
+		IsLog:     true,
 		AdaptDraw: true,
-
-		//chose the function to show inside the graph by it's identifier
 		Functions: function.Functions{functionMap["intensity"]},
-
-		//optionally set an x-range to plot, points outside it are ignored
 		DisplayRange: &graph.GraphRange{
 			Min: 0.01,
 			Max: math.MaxFloat64,
@@ -286,39 +272,32 @@ func registerGraphs() *fyne.Container {
 		Functions: function.Functions{functionMap["eden"]},
 	})
 
-	//chose how you like to arrange the graphs insige the GUI
 	return container.NewGridWithColumns(2, graphMap["eden"], graphMap["intensity"])
 }
 
 // creates and registers the parameter and adds them to the parameter repository
 // this is the place to alter parameters:
 func registerParams() *fyne.Container {
-	//created with a group name, an individual name and a default value
-	//you can get parameters as a group or individually (combining group and individual name) later on
-	//this can be helpful to easily pass similar parameters to a function and iterate over them
-	edenA, _ := param.FloatMinMax("eden", "Eden a", 0.0)
-	eden1, _ := param.FloatMinMax("eden", "Eden 1", 0.346197)
-	eden2, _ := param.FloatMinMax("eden", "Eden 2", 0.458849)
-	edenB, _ := param.FloatMinMax("eden", "Eden b", 0.334000)
+	eden_au, _ := param.FloatMinMax("eden", "Eden Au", 4.66)
+	eden_org, _ := param.FloatMinMax("eden", "Eden Org", 0.45)
+	eden_b, _ := param.FloatMinMax("eden", "Eden Bulk", 0.334000)
 
-	roughnessA1, _ := param.FloatMinMax("rough", "Roughness a/1", 3.39544)
-	roughness12, _ := param.FloatMinMax("rough", "Roughness 1/2", 2.15980)
-	roughness2B, _ := param.FloatMinMax("rough", "Roughness 2/b", 3.90204)
+	roughness, _ := param.FloatMinMax("other", "Roughness", 3.5)
+	coverage, _ := param.FloatMinMax("other", "Coverage", 0.3)
 
-	thickness1, _ := param.FloatMinMax("thick", "Thickness 1", 14.2657)
-	thickness2, _ := param.FloatMinMax("thick", "Thickness 2", 10.6906)
+	radius, _ := param.FloatMinMax("size", "Radius", 15.0)
+	d_shell, _ := param.FloatMinMax("size", "Shell Thickness", 17.0)
+	z_offset, _ := param.FloatMinMax("size", "z Offset", 0.0)
+	z_offset_au_org, _ := param.FloatMinMax("size", "z Offset Au Org", 0.0)
 
-	//parameters can be created with (above) or without (below) two additional fields for minimum and maximum values
-	deltaQ, _ := param.Float("general", "deltaq", -0.000305927)
-	background, _ := param.Float("general", "background", 1.43793e-7)
-	scaling, _ := param.Float("general", "scaling", 0.888730)
+	deltaQ, _ := param.FloatMinMax("general", "deltaq", 0.0)
+	background, _ := param.FloatMinMax("general", "background", 1.0e-8)
+	scaling, _ := param.FloatMinMax("general", "scaling", 1.0)
 
-	//you can chose how to arrange the parameters inside the GUI here
-	//by now it's 4x4 partitioning where some partitions are left empty
 	containers := container.NewVBox(
-		container.NewGridWithColumns(4, edenA, eden1, eden2, edenB),
-		container.NewGridWithColumns(4, roughnessA1, roughness12, roughness2B),
-		container.NewGridWithColumns(4, thickness1, thickness2),
+		container.NewGridWithColumns(4, eden_au, eden_org, eden_b),
+		container.NewGridWithColumns(4, roughness, coverage),
+		container.NewGridWithColumns(4, radius, d_shell, z_offset, z_offset_au_org),
 		container.NewGridWithColumns(4, deltaQ, background, scaling),
 	)
 
@@ -332,26 +311,30 @@ func registerParams() *fyne.Container {
 // RecalculateData recalculates the data for the current graphs
 // current parameter values need to be fetched, the physical calculations done and resulting points set to the functions
 func RecalculateData() {
-	// Fetch all parameters here
-	// Get current parameters by group identifier
+	// Get current parameter groups
 	eden, err := param.GetFloats("eden")
 	if err != nil {
 		log.Println("Error while getting eden parameters:", err)
 		return
 	}
-	d, err := param.GetFloats("thick")
+	size, err := param.GetFloats("size")
 	if err != nil {
 		log.Println("Error while getting thickness parameters:", err)
 		return
 	}
-	sigma, err := param.GetFloats("rough")
+	roughness, err := param.GetFloat("other", "Roughness")
+	if err != nil {
+		log.Println("Error while getting roughness parameters:", err)
+		return
+	}
+	coverage, err := param.GetFloat("other", "Coverage")
 	if err != nil {
 		log.Println("Error while getting roughness parameters:", err)
 		return
 	}
 
-	// get general parameters individually
-	delta, err := param.GetFloat("general", "deltaq")
+	// get general parameters
+	deltaq, err := param.GetFloat("general", "deltaq")
 	if err != nil {
 		log.Println("Error while getting deltaq parameter:", err)
 		return
@@ -367,24 +350,19 @@ func RecalculateData() {
 		return
 	}
 
-	// calculate all functions which need to be updated here
-
-	// calculate edensities
-	edenPoints, err := physics.GetEdensities(eden, d, sigma)
-	//only potential error handling
+	// calculate edensity
+	edenPoints, err := physics.GetEdensities(eden, size, roughness, coverage)
 	if err != nil {
 		log.Println("Error while calculating edensities:", err)
 		return
 	} else {
-		//set points to function which is automatically shown inside the graph
 		functionMap["eden"].SetData(edenPoints)
 	}
 
-	// calculate intensities
-	intensityPoints := physics.CalculateIntensityPoints(edenPoints, delta, &physics.IntensityOptions{
+	intensityPoints := physics.CalculateIntensityPoints(edenPoints, deltaq, &physics.IntensityOptions{
 		Background: background,
 		Scaling:    scaling,
 	})
-	//set points to function which is automatically shown inside the graph
+
 	functionMap["intensity"].SetData(intensityPoints)
 }

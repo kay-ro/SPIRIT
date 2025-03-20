@@ -19,9 +19,9 @@ type IntensityOptions struct {
 	Scaling    float64
 }
 
-func CalculateIntensityPoints(edenPoints function.Points, delta float64, opts *IntensityOptions) function.Points {
+func CalculateIntensityPoints(edenPoints function.Points, deltaq float64, opts *IntensityOptions) function.Points {
 	// transform points into sld floats
-	sld := make([]float64, ZNUMBER)
+	sld := make([]float64, len(edenPoints))
 	for i, e := range edenPoints {
 		sld[i] = e.Y * ELECTRON_RADIUS
 	}
@@ -33,12 +33,9 @@ func CalculateIntensityPoints(edenPoints function.Points, delta float64, opts *I
 	}
 
 	// calculate intensity
-	modifiedQzAxis := make([]float64, qzNumber)
-	copy(modifiedQzAxis, qzAxis)
+	modifiedQzAxis := helper.Map(qzAxis, func(xPoint float64) float64 { return xPoint + deltaq })
 
-	helper.Map(modifiedQzAxis, func(xPoint float64) float64 { return xPoint + delta })
-
-	intensity := CalculateIntensity(qzAxis, deltaz, sld, opts)
+	intensity := CalculateIntensity(modifiedQzAxis, deltaz, sld, opts)
 
 	// creates list with intensity points based on edenPoints x and error and calculated intensity as y
 	intensityPoints := make(function.Points, qzNumber)
@@ -140,11 +137,11 @@ func CalculateReflectivity(qzaxis []float64, deltaz float64, sld []float64) []fl
 }
 
 func GetDefaultQZAxis(qzNumber int) []float64 {
-	qzAxis := make([]float64, qzNumber)
+	qzAxis_tmp := make([]float64, qzNumber)
 	for i := 0; i < qzNumber; i++ {
-		qzAxis[i] = -0.02 + float64(i)*0.001
+		qzAxis_tmp[i] = -0.02 + float64(i)*0.001
 	}
-	return qzAxis
+	return qzAxis_tmp
 }
 
 // use the combined experimental axis as current qz axis
@@ -176,7 +173,7 @@ func Sim2SigRMS(dataSets []function.Points, intensity function.Points) (float64,
 			if err != nil {
 				return math.MaxFloat64, fmt.Errorf("rms calculation: there is no intensity for: %f", point.X)
 			}
-			diff += math.Pow(point.X, 2) * math.Pow(((y_intensity-point.Y)/point.Error), 2)
+			diff += math.Pow(point.X, 2) * math.Pow((y_intensity-point.Y)/point.Error, 2)
 		}
 	}
 	return diff, nil
