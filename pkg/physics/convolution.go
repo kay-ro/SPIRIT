@@ -1,6 +1,9 @@
 package physics
 
-import "math"
+import (
+	"math"
+	"physicsGUI/pkg/function"
+)
 
 // getConvolFunc calculates the weight for convolution
 func getConvolFunc(z, z0, roughness float64) float64 {
@@ -8,8 +11,8 @@ func getConvolFunc(z, z0, roughness float64) float64 {
 }
 
 // convolute performs the convolution
-func convolute(znumber int, zaxis, edens []float64, roughness float64) []float64 {
-	edenConv := make([]float64, znumber)
+func convolute(znumber int, zaxis []float64, edens function.Points, roughness float64) function.Points {
+	edenConv := make(function.Points, znumber)
 
 	for i := 0; i < znumber; i++ {
 		thisZ := zaxis[i]
@@ -26,7 +29,7 @@ func convolute(znumber int, zaxis, edens []float64, roughness float64) []float64
 		var loczaxis, locedens []float64
 		for _, idx := range indices {
 			loczaxis = append(loczaxis, zaxis[idx])
-			locedens = append(locedens, edens[idx])
+			locedens = append(locedens, edens[idx].Y)
 		}
 
 		// Calculate weights
@@ -48,7 +51,11 @@ func convolute(znumber int, zaxis, edens []float64, roughness float64) []float64
 		for j := range weights {
 			sum += weights[j] * locedens[j]
 		}
-		edenConv[i] = sum
+		edenConv[i] = &function.Point{
+			X:     edens[i].X,
+			Y:     sum,
+			Error: edens[i].Error,
+		}
 	}
 
 	return edenConv

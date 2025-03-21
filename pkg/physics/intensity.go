@@ -19,7 +19,7 @@ type IntensityOptions struct {
 	Scaling    float64
 }
 
-func CalculateIntensityPoints(edenPoints function.Points, delta float64, opts *IntensityOptions) function.Points {
+func CalculateIntensityPoints(edenPoints function.Points, deltaq float64, opts *IntensityOptions) function.Points {
 	// transform points into sld floats
 	sld := make([]float64, ZNUMBER)
 	for i, e := range edenPoints {
@@ -33,12 +33,10 @@ func CalculateIntensityPoints(edenPoints function.Points, delta float64, opts *I
 	}
 
 	// calculate intensity
-	modifiedQzAxis := make([]float64, qzNumber)
-	copy(modifiedQzAxis, qzAxis)
 
-	helper.Map(modifiedQzAxis, func(xPoint float64) float64 { return xPoint + delta })
+	modifiedQzAxis := helper.Map(qzAxis, func(xPoint float64) float64 { return xPoint + deltaq })
 
-	intensity := CalculateIntensity(qzAxis, deltaz, sld, opts)
+	intensity := CalculateIntensity(modifiedQzAxis, deltaz, sld, opts)
 
 	// creates list with intensity points based on edenPoints x and error and calculated intensity as y
 	intensityPoints := make(function.Points, qzNumber)
@@ -176,7 +174,7 @@ func Sim2SigRMS(dataSets []function.Points, intensity function.Points) (float64,
 			if err != nil {
 				return math.MaxFloat64, fmt.Errorf("rms calculation: there is no intensity for: %f", point.X)
 			}
-			diff += math.Pow(point.X, 2) * math.Pow(((y_intensity-point.Y)/point.Error), 2)
+			diff += math.Pow(point.X, 2) * math.Pow((y_intensity-point.Y)/point.Error, 2)
 		}
 	}
 	return diff, nil
