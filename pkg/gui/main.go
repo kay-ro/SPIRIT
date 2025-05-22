@@ -189,8 +189,9 @@ func (controlPanel *MinimizerControlPanel) minimizerProblemSetup() error {
 	delta := general.GetParam("deltaq")
 	background := general.GetParam("background")
 	scaling := general.GetParam("scaling")
+	resolution := general.GetParam("resolution")
 
-	if err := controlPanel.minimize(e1, e2, e3, s1, s2, s3, s4, roughness, coverage, delta, background, scaling); err != nil {
+	if err := controlPanel.minimize(e1, e2, e3, s1, s2, s3, s4, roughness, coverage, delta, background, scaling, resolution); err != nil {
 		fmt.Println("Error while minimizing:", err)
 		return err
 	}
@@ -200,7 +201,7 @@ func (controlPanel *MinimizerControlPanel) minimizerProblemSetup() error {
 // the penalty function defines the error we minimize with minuit
 // !the order of the parameters needs to fit
 func penaltyFunction(fcn *minimizer.MinuitFunction, params []float64) float64 {
-	paramCount := 12
+	paramCount := 13
 	if len(params) != paramCount {
 		dialog.ShowError(fmt.Errorf("penaltyFunction has %d parameters but expects %d", len(params), paramCount), MainWindow)
 		return math.MaxFloat64
@@ -213,6 +214,7 @@ func penaltyFunction(fcn *minimizer.MinuitFunction, params []float64) float64 {
 	deltaq := params[9]
 	background := params[10]
 	scaling := params[11]
+	resolution := params[12]
 
 	log.Println("params", params)
 
@@ -225,6 +227,7 @@ func penaltyFunction(fcn *minimizer.MinuitFunction, params []float64) float64 {
 	intensityPoints := physics.CalculateIntensityPoints(edenPoints, deltaq, &physics.IntensityOptions{
 		Background: background,
 		Scaling:    scaling,
+		Resolution: resolution,
 	})
 
 	experimentalData := graphMap["intensity"].GetDataTracks()
@@ -293,12 +296,13 @@ func registerParams() *fyne.Container {
 	deltaQ, _ := param.FloatMinMax("general", "deltaq", 0.0)
 	background, _ := param.FloatMinMax("general", "background", 1.0e-8)
 	scaling, _ := param.FloatMinMax("general", "scaling", 1.0)
+	resolution, _ := param.FloatMinMax("general", "resolution", 100.0)
 
 	containers := container.NewVBox(
 		container.NewGridWithColumns(4, eden_au, eden_org, eden_b),
 		container.NewGridWithColumns(4, roughness, coverage),
 		container.NewGridWithColumns(4, radius, d_shell, z_offset, z_offset_au_org),
-		container.NewGridWithColumns(4, deltaQ, background, scaling),
+		container.NewGridWithColumns(4, deltaQ, background, scaling, resolution),
 	)
 
 	//makes a scrollbar for the parameters
@@ -349,7 +353,11 @@ func RecalculateData() {
 		log.Println("Error while getting scaling parameter:", err)
 		return
 	}
-
+	resolution, err := param.GetFloat("general", "resolution")
+	if err != nil {
+		log.Println("Error while getting resolution parameter:", err)
+		return
+	}
 	// calculate edensity
 	edenPoints, err := physics.GetEdensities(eden, size, roughness, coverage)
 	if err != nil {
@@ -362,6 +370,7 @@ func RecalculateData() {
 	intensityPoints := physics.CalculateIntensityPoints(edenPoints, deltaq, &physics.IntensityOptions{
 		Background: background,
 		Scaling:    scaling,
+		Resolution: resolution,
 	})
 
 	functionMap["intensity"].SetData(intensityPoints)

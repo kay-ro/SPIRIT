@@ -17,6 +17,7 @@ var qzNumber = 500
 type IntensityOptions struct {
 	Background float64
 	Scaling    float64
+	Resolution float64
 }
 
 func CalculateIntensityPoints(edenPoints function.Points, deltaq float64, opts *IntensityOptions) function.Points {
@@ -47,7 +48,10 @@ func CalculateIntensityPoints(edenPoints function.Points, deltaq float64, opts *
 		}
 	}
 
-	return intensityPoints
+	intensityPoints_convoluted := make(function.Points, qzNumber)
+	intensityPoints_convoluted = convolute(qzNumber, qzAxis, intensityPoints, 1e-5*opts.Resolution)
+
+	return intensityPoints_convoluted
 }
 
 // CalculateIntensity calculates intensity from the slds

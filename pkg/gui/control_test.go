@@ -73,7 +73,7 @@ func TestMinimizerControlPanel_Stop(t *testing.T) {
 func TestMinimizerControlPanel_Completed(t *testing.T) {
 	TestSetup(t)
 	pnlMinimizerUUt := NewMinimizerControlPanel()
-	pnlMinimizerUUt.Completed(make([]float64, 0))
+	pnlMinimizerUUt.Completed()
 	assert.Equal(t, MinimizerFinished, pnlMinimizerUUt.state)
 }
 
