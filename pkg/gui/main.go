@@ -174,6 +174,7 @@ func (controlPanel *MinimizerControlPanel) minimizerProblemSetup() error {
 
 	roughness := other.GetParam("Roughness")
 	coverage := other.GetParam("Coverage")
+	coverage_2 := other.GetParam("Coverage 2")
 
 	// get thickness parameters
 	thickness := param.GetFloatGroup("size")
@@ -181,7 +182,8 @@ func (controlPanel *MinimizerControlPanel) minimizerProblemSetup() error {
 	s1 := thickness.GetParam("Radius")
 	s2 := thickness.GetParam("Shell Thickness")
 	s3 := thickness.GetParam("z Offset")
-	s4 := thickness.GetParam("z Offset Au Org")
+	s4 := thickness.GetParam("z Offset 2")
+	s5 := thickness.GetParam("z Offset Au Org")
 
 	// get general parameters
 	general := param.GetFloatGroup("general")
@@ -191,7 +193,7 @@ func (controlPanel *MinimizerControlPanel) minimizerProblemSetup() error {
 	scaling := general.GetParam("scaling")
 	resolution := general.GetParam("resolution")
 
-	if err := controlPanel.minimize(e1, e2, e3, s1, s2, s3, s4, roughness, coverage, delta, background, scaling, resolution); err != nil {
+	if err := controlPanel.minimize(e1, e2, e3, s1, s2, s3, s4, s5, roughness, coverage, coverage_2, delta, background, scaling, resolution); err != nil {
 		fmt.Println("Error while minimizing:", err)
 		return err
 	}
@@ -201,24 +203,25 @@ func (controlPanel *MinimizerControlPanel) minimizerProblemSetup() error {
 // the penalty function defines the error we minimize with minuit
 // !the order of the parameters needs to fit
 func penaltyFunction(fcn *minimizer.MinuitFunction, params []float64) float64 {
-	paramCount := 13
+	paramCount := 15
 	if len(params) != paramCount {
 		dialog.ShowError(fmt.Errorf("penaltyFunction has %d parameters but expects %d", len(params), paramCount), MainWindow)
 		return math.MaxFloat64
 	}
 
 	eden := params[0:3]
-	size := params[3:7]
-	roughness := params[7]
-	coverage := params[8]
-	deltaq := params[9]
-	background := params[10]
-	scaling := params[11]
-	resolution := params[12]
+	size := params[3:8]
+	roughness := params[8]
+	coverage := params[9]
+	coverage_2 := params[10]
+	deltaq := params[11]
+	background := params[12]
+	scaling := params[13]
+	resolution := params[14]
 
 	log.Println("params", params)
 
-	edenPoints, err := physics.GetEdensities(eden, size, roughness, coverage)
+	edenPoints, err := physics.GetEdensities(eden, size, roughness, coverage, coverage_2)
 	if err != nil {
 		fmt.Println("Error while calculating edensities:", err)
 		return math.MaxFloat64
@@ -287,10 +290,12 @@ func registerParams() *fyne.Container {
 
 	roughness, _ := param.FloatMinMax("other", "Roughness", 3.5)
 	coverage, _ := param.FloatMinMax("other", "Coverage", 0.3)
+	coverage_2, _ := param.FloatMinMax("other", "Coverage 2", 0.3)
 
 	radius, _ := param.FloatMinMax("size", "Radius", 15.0)
 	d_shell, _ := param.FloatMinMax("size", "Shell Thickness", 17.0)
 	z_offset, _ := param.FloatMinMax("size", "z Offset", 0.0)
+	z_offset_2, _ := param.FloatMinMax("size", "z Offset 2", 0.0)
 	z_offset_au_org, _ := param.FloatMinMax("size", "z Offset Au Org", 0.0)
 
 	deltaQ, _ := param.FloatMinMax("general", "deltaq", 0.0)
@@ -300,8 +305,8 @@ func registerParams() *fyne.Container {
 
 	containers := container.NewVBox(
 		container.NewGridWithColumns(4, eden_au, eden_org, eden_b),
-		container.NewGridWithColumns(4, roughness, coverage),
-		container.NewGridWithColumns(4, radius, d_shell, z_offset, z_offset_au_org),
+		container.NewGridWithColumns(4, roughness, coverage, coverage_2),
+		container.NewGridWithColumns(4, radius, d_shell, z_offset, z_offset_2, z_offset_au_org),
 		container.NewGridWithColumns(4, deltaQ, background, scaling, resolution),
 	)
 
@@ -333,7 +338,12 @@ func RecalculateData() {
 	}
 	coverage, err := param.GetFloat("other", "Coverage")
 	if err != nil {
-		log.Println("Error while getting roughness parameters:", err)
+		log.Println("Error while getting coverage parameters:", err)
+		return
+	}
+	coverage_2, err := param.GetFloat("other", "Coverage 2")
+	if err != nil {
+		log.Println("Error while getting coverage 2 parameters:", err)
 		return
 	}
 
@@ -359,7 +369,7 @@ func RecalculateData() {
 		return
 	}
 	// calculate edensity
-	edenPoints, err := physics.GetEdensities(eden, size, roughness, coverage)
+	edenPoints, err := physics.GetEdensities(eden, size, roughness, coverage, coverage_2)
 	if err != nil {
 		log.Println("Error while calculating edensities:", err)
 		return
