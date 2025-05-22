@@ -14,13 +14,25 @@ SPIRIT is a tool for analyzing X-ray and neutron reflectivity data to determine 
 
 ### Prerequisites (Must Install)
 
+Installing prerequisite may be simplified by following the instructions of Fyne in their [Prerequisites section](https://docs.fyne.io/started/#prerequisites).
+
+List of prerequisites:
 - [Go](https://go.dev/doc/install) (version >= 1.23.3)
-- [GCC](https://docs.fyne.io/started/) (Follow the instructions in their "Prerequisites")
-- [Git](https://git-scm.com/downloads/win) (Windows usually doesn't have this pre-installed, follow default install wizard options)
+- [GCC](https://gcc.gnu.org/) ([Windows install recommendation](https://code.visualstudio.com/docs/cpp/config-mingw))
+- ...
+
+If you encounter errors on Linux, try the following installs:
+```bash
+sudo apt install build-essential golang libxcursor-dev libxinerama-dev libxxf86vm-dev
+```
+
 
 ### Recommended Tools
 
-- Install [Visual Studio Code](https://code.visualstudio.com)
+- [Git](https://git-scm.com/downloads/win)
+  Version control tool.
+
+- [Visual Studio Code](https://code.visualstudio.com)
   When you open the project folder it will ask you if it should install a go extension. Let it do that.
 
 - Install the Golang language extension from the Extension pack
@@ -33,6 +45,12 @@ SPIRIT is a tool for analyzing X-ray and neutron reflectivity data to determine 
 
 Open a terminal and run the following command to clone the repository:
 
+_Forked_ with newest branches:
+```bash
+git clone https://github.com/kay-ro/SPIRIT/.git
+```
+
+Original:
 ```bash
 git clone https://github.com/empack/PortGUIPhysics/.git
 ```
@@ -41,22 +59,21 @@ This will create a local copy of the repository on your machine.
 
 #### Option 2: **Download the Repository**
 
-If you prefer to download the repository as a ZIP file, follow these steps:
-
-- Go to the repository page on GitHub: [BP-PortGUIPhysics Repository](https://github.com/empack/PortGUIPhysics/)
+- Go to the __forked__ repository page on GitHub: [kay-ro/SPIRIT](https://github.com/kay-ro/SPIRIT/)
+- On the top left, select your desired branch
 - Click the "Code" button
 - Select "Download ZIP"
 - Extract the downloaded ZIP file to your desired location
 
-#### **Navigate to the Project Directory**
+### **Navigate to the Project Directory**
 
 After cloning or downloading the repository, navigate to the project directory:
 
 ```bash
-cd /path/to/repo/BP-PortGUIPhysics
+cd /path/to/repo/
 ```
 
-#### **Install Go Dependencies**
+### **Install Go Dependencies**
 
 Make sure you have all the prerequisites installed as mentioned in the [Installation](#installation) section. Then, install any additional dependencies required by the project using:
 
@@ -67,6 +84,8 @@ go mod tidy
 # Building and Running
 
 There are two ways to run SPIRIT:
+
+**Note:** The first build process may take several minutes to complete without outputs in the terminal.
 
 #### Development Mode
 

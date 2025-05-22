@@ -2,8 +2,9 @@ package minimizer
 
 import (
 	"errors"
-	"fyne.io/fyne/v2/data/binding"
 	"sync"
+
+	"fyne.io/fyne/v2/data/binding"
 )
 
 type Number interface {
